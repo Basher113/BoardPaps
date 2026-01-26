@@ -4,6 +4,12 @@ const keys = require("./config/keys");
 
 const app = express();
 
+// Passport Section
+const passport = require("passport");
+const {configPassportJwt} = require("./services/passport.service");
+configPassportJwt(passport); // Use the configured jwt strategy
+app.use(passport.initialize()); // enable passport
+
 const authRoutes = require("./routes/auth.routes");
 const projectRoutes = require("./routes/project.routes");
 const projectMemberRoutes = require("./routes/project-member.routes");
