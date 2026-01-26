@@ -45,10 +45,15 @@ const getMyProjects = async (req, res) => {
 
 const updateProject = async (req, res) => {
     try {
-      const { id } = req.params;
+      const { projectId } = req.params;
       const { name, key } = req.body;
+
+      if (!name || !key) {
+        return res.status(400).json({ message: "Name and key are required" });
+      }
+
       const project = await prisma.project.update({
-        where: { id },
+        where: { projectId },
         data: { name, key },
         include: {
           owner: {
@@ -68,9 +73,9 @@ const updateProject = async (req, res) => {
 
 const deleteProject = async (req, res) => {
     try {
-      const { id } = req.params;
+      const { projectId } = req.params;
       await prisma.project.delete({
-        where: { id }
+        where: { projectId }
       });
       res.json({message: "Success Delete"});
     } catch (error) {

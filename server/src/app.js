@@ -27,8 +27,8 @@ app.use(express.urlencoded({extended: true}));
 
 // Routes
 app.use("/auth", authRoutes);
-app.use("/projects", projectRoutes);
-app.use("/projects/:projectId/members", projectMemberRoutes);
+app.use("/projects", passport.authenticate('jwt', { session: false }), projectRoutes);
+app.use("/projects/:projectId/members", passport.authenticate('jwt', { session: false }), projectMemberRoutes);
 
 app.listen(keys.PORT, () => {
   console.log(`Server running on http://localhost:${keys.PORT}`);
