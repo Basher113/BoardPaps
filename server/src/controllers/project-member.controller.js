@@ -1,4 +1,4 @@
-const prisma = require("../prisma/client");
+const prisma = require("../lib/prisma");
 
 const getProjectMembers = async (req, res) => {
   try {

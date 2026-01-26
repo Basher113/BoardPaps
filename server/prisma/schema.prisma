@@ -31,6 +31,12 @@ enum IssueType {
   EPIC
 }
 
+enum ProjectRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
 /////////////////////////
 // MODELS
 /////////////////////////
@@ -40,6 +46,13 @@ model User {
   email     String   @unique
   username  String   @unique
   password  String
+
+  // For login future google login.
+  provider   String   @default("local")
+  googleId   String?  @unique
+
+  // Storing active refresh tokens of users.
+  refreshTokens RefreshToken[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -53,6 +66,17 @@ model User {
   // Issues reported and assigned to this user
   reportedIssues Issue[] @relation("ReporterIssues")
   assignedIssues Issue[] @relation("AssignedIssues")
+}
+
+// RefreshToken model 
+model RefreshToken {
+  id String  @id @default(cuid())
+  token String @unique
+  revoked Boolean @default(false)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 }
 
 model Project {
@@ -76,7 +100,7 @@ model Project {
 
 model ProjectMember {
   id        String   @id @default(uuid())
-  role      String   // OWNER | ADMIN | MEMBER
+  role      ProjectRole 
 
   userId    String
   projectId String

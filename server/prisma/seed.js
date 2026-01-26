@@ -1,14 +1,33 @@
 const prisma = require("../src/lib/prisma");
+const bcrypt = require("bcryptjs");
 
 async function main() {
   console.log('Seeding database...');
 
+  // DELETION
+  // try {
+  //   await prisma.issue.deleteMany({});
+  //   await prisma.column.deleteMany({});
+  //   await prisma.board.deleteMany({});
+  //   await prisma.projectMember.deleteMany({});
+  //   await prisma.project.deleteMany({});
+  //   await prisma.user.deleteMany({});
+
+  //   console.log("Deleted successfully");
+  // } catch (error) {
+  //   console.error("Delete unsuccessful :", error.message);
+  // }
+  
+  
+
   // ===== 1️⃣ Create Users =====
+  const hashedPassword1 = await bcrypt.hash("12345678", 10);
+  const hashedPassword2 = await bcrypt.hash("12345678", 10);
   const alice = await prisma.user.create({
     data: {
       email: 'alice@example.com',
       username: 'alice',
-      password: 'hashedpassword1', // Replace with hashed password in production
+      password: hashedPassword1, // Replace with hashed password in production
     },
   });
 
@@ -16,7 +35,7 @@ async function main() {
     data: {
       email: 'bob@example.com',
       username: 'bob',
-      password: 'hashedpassword2',
+      password: hashedPassword2,
     },
   });
 

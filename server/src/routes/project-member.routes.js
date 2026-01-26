@@ -7,3 +7,5 @@ projectMemberRouter.get("/", projectMemberController.getProjectMembers)
 projectMemberRouter.post("/", projectMemberController.addProjectMember);
 projectMemberRouter.put("/:userId", projectMemberController.updateProjectMember);
 projectMemberRouter.delete("/:userId", projectMemberController.removeProjectMember);
+
+module.exports = projectMemberRouter;
