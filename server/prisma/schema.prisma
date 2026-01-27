@@ -6,12 +6,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
+
 
 /////////////////////////
 // ENUMS
@@ -164,3 +165,5 @@ model Issue {
   @@index([columnId])
   @@unique([columnId, position])
 }
+
+
