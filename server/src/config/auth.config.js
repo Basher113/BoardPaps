@@ -1,4 +1,3 @@
-require('dotenv').config();
 
 const authConfig = {
   access_secret: process.env.AUTH_ACCESS_SECRET,

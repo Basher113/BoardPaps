@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require("express");
 const cors = require("cors");
-const keys = require("./config/keys");
+const cookieParser = require("cookie-parser");
+const appConfig = require("./config/app.config")
 
 const app = express();
 
@@ -16,13 +18,14 @@ const projectMemberRoutes = require("./routes/project-member.routes");
 
 // Middleware
 app.use(cors({
-  origin: keys.CLIENT_URL,
+  origin: appConfig.CLIENT_URL,
   credentials: true,
 }));
 
 
 // parser
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({extended: true}));
 
 // Routes
@@ -30,6 +33,4 @@ app.use("/auth", authRoutes);
 app.use("/projects", passport.authenticate('jwt', { session: false }), projectRoutes);
 app.use("/projects/:projectId/members", passport.authenticate('jwt', { session: false }), projectMemberRoutes);
 
-app.listen(keys.PORT, () => {
-  console.log(`Server running on http://localhost:${keys.PORT}`);
-});
+module.exports = app;

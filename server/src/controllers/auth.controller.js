@@ -56,7 +56,7 @@ const loginController = async (req, res) => {
       return res.status(400).json({message: "Invalid Credentials"});
     }
 
-    const isValidPassword = bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(400).json({message: "Invalid Credentials"});
     }
@@ -75,8 +75,6 @@ const loginController = async (req, res) => {
       }
     }
 
-    console.log(user);
-
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
 
@@ -90,13 +88,13 @@ const loginController = async (req, res) => {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production" ? true : false,
       maxAge: 1000 * 60 * 60 * 24 * 5, // 5 days
       sameSite:  "None",
     });
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production" ? true : false,
       maxAge: 1000 * 60 * 15, // 15 minutes
       sameSite: "None",
     });
@@ -112,97 +110,80 @@ const loginController = async (req, res) => {
 const logoutController = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
-    if (refreshToken) {
-      await prisma.refreshToken.update({
-        where: {token: refreshToken},
-        data: {revoked: true},
-      });
-    }
+    console.log(refreshToken)
+    await prisma.refreshToken.updateMany({
+      where: { token: refreshToken },
+      data: { revoked: true },
+    });
+   
 
-    // Clear cookies
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "None",
     });
 
     res.clearCookie("accessToken", {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "None",
     });
 
-    return res.json({message: "Logged out successfully"});
+    return res.json({ message: "Logged out successfully" });
+
   } catch (error) {
     console.log("Logout Error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
-}
+};
+
 
 const refreshTokenController = async (req, res) => {
-
-  // Add clean up for expired refresh tokens.
   try {
     await prisma.refreshToken.deleteMany({
-    where: {
-      OR: [
-        { expiresAt: { lt: new Date() } }, // expired
-      ],
-    },
-  });
-  } catch (e) {
-    console.log("Error deleting xepired refresh tokens:", e)
-  }
-
-  try {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) {
-      return res.status(401).json({message: "Refresh Token not found"});
-    }
-
-    const storedToken = await prisma.refreshToken.findUnique({
-      where: {token: refreshToken},
+      where: { expiresAt: { lt: new Date() } },
     });
 
-    if (!storedToken) {
-      res.status(403).json({message: "Invalid Token"});
-    }
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) return res.status(401).json({ message: "Refresh Token not found" });
+
+    const storedToken = await prisma.refreshToken.findUnique({ where: { token: refreshToken } });
+    if (!storedToken) return res.status(403).json({ message: "Invalid Token" });
 
     if (storedToken.revoked) {
-      // if the token is revoked it is possibly hacked.
-      // in this case we can email or message the user like (detected unusual activity, send the IP + User-Agent of the request) to the user
-      // revoke all the active tokens for that user
-
-      // revoke all the active tokens
       await prisma.refreshToken.updateMany({
-        where: {userId: storedToken.userId, revoked: false},
-        data: {revoked: true}
+        where: { userId: storedToken.userId, revoked: false },
+        data: { revoked: true },
       });
-      res.status(403).json({message: "Revoked Token"});
+      return res.status(403).json({ message: "Revoked Token" });
     }
 
-    // verify the refreshToken (e.g. expired)
-    jwt.verify(refreshToken, authConfig.refresh_secret, (err, decoded) => {
-      if (err || decoded.userId !== storedToken.userId) {
-        console.log("Refresh Token Verify Error:", err);
-        return res.status(403).json({message: "Invalid token"});
+    // verify token synchronously
+    try {
+      const decoded = jwt.verify(refreshToken, authConfig.refresh_secret);
+      if (decoded.userId !== storedToken.userId) {
+        return res.status(403).json({ message: "Invalid token" });
       }
-    });
+    } catch (err) {
+      console.log("Refresh Token Verify Error:", err);
+      return res.status(403).json({ message: "Invalid token" });
+    }
 
     const accessToken = generateAccessToken(storedToken.userId);
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       maxAge: 1000 * 60 * 15, // 15 minutes
-      sameSite:  "None",
+      sameSite: "None",
     });
 
-    res.json({message: "Refresh token successfully"});
+    return res.json({ message: "Refresh token successfully" });
 
   } catch (error) {
-     console.log("Refresh Token Error:", error);
+    console.log("Refresh Token Error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
-}
+};
+
 
 module.exports = {registerController, loginController, logoutController, refreshTokenController,};
