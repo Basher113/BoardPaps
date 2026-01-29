@@ -9,7 +9,17 @@ const bcrypt = require("bcryptjs");
 
 
 describe("Auth Controllers (Integration)", () => {
-  const agent = request.agent(app);
+
+  let agent
+
+  beforeEach(async () => {
+    await prisma.refreshToken.deleteMany();
+    await prisma.user.deleteMany();
+   
+    agent = request.agent(app);
+
+  });
+
 
   describe("POST /auth/register", () => {
     it("registers a new user", async () => {

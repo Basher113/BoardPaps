@@ -4,7 +4,15 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const appConfig = require("./config/app.config")
 
+
 const app = express();
+
+// parser
+app.use(express.json());
+app.use(cookieParser());
+app.use(express.urlencoded({extended: true}));
+
+
 
 // Passport Section
 const passport = require("passport");
@@ -15,6 +23,7 @@ app.use(passport.initialize()); // enable passport
 const authRoutes = require("./routes/auth.routes");
 const projectRoutes = require("./routes/project.routes");
 const projectMemberRoutes = require("./routes/project-member.routes");
+const boardRoutes = require("./routes/board.routes")
 
 // Middleware
 app.use(cors({
@@ -23,14 +32,11 @@ app.use(cors({
 }));
 
 
-// parser
-app.use(express.json());
-app.use(cookieParser());
-app.use(express.urlencoded({extended: true}));
 
 // Routes
 app.use("/auth", authRoutes);
 app.use("/projects", passport.authenticate('jwt', { session: false }), projectRoutes);
 app.use("/projects/:projectId/members", passport.authenticate('jwt', { session: false }), projectMemberRoutes);
+app.use("/projects/:projectId/boards", passport.authenticate('jwt', { session: false }), boardRoutes)
 
 module.exports = app;

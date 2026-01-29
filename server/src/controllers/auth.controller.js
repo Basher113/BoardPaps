@@ -44,7 +44,7 @@ const registerController = async (req, res) => {
   }
 };
 
-// TODO: ADD LOGIN
+
 const loginController = async (req, res) => {
   const {email, password} = req.body;
   
@@ -61,19 +61,19 @@ const loginController = async (req, res) => {
       return res.status(400).json({message: "Invalid Credentials"});
     }
 
-    // (user login while still logged in)
-    const existingToken = req.cookies?.refreshToken;
-    if (existingToken) {
-      console.log("Revoke existing")
-      try {
-        await prisma.refreshToken.update({
-          where: { token: existingToken, userId: user.id, revoked: false },
-          data: { revoked: true },
-        });
-      } catch (err) {
-        console.log("Error revoking old refresh token:", err);
-      }
-    }
+    // // (user login while still logged in)
+    // const existingToken = req.cookies?.refreshToken;
+    // if (existingToken) {
+    //   console.log("Revoke existing")
+    //   try {
+    //     await prisma.refreshToken.update({
+    //       where: { token: existingToken, userId: user.id, revoked: false },
+    //       data: { revoked: true },
+    //     });
+    //   } catch (err) {
+    //     console.log("Error revoking old refresh token:", err);
+    //   }
+    // }
 
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
@@ -96,7 +96,7 @@ const loginController = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production" ? true : false,
       maxAge: 1000 * 60 * 15, // 15 minutes
-      sameSite: "None",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax"
     });
     const {id, email: userEmail, username, googleId, provider, role, createdAt, updatedAt } = user;
     return res.json({id, email: userEmail, username, googleId, provider, role, createdAt, updatedAt });
@@ -120,13 +120,13 @@ const logoutController = async (req, res) => {
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "None",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax"
     });
 
     res.clearCookie("accessToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "None",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax"
     });
 
     return res.json({ message: "Logged out successfully" });
@@ -174,7 +174,7 @@ const refreshTokenController = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 1000 * 60 * 15, // 15 minutes
-      sameSite: "None",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax"
     });
 
     return res.json({ message: "Refresh token successfully" });

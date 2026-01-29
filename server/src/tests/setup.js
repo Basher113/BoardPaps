@@ -8,6 +8,7 @@ beforeEach(async () => {
   await prisma.projectMember.deleteMany();
   await prisma.project.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.refreshToken.deleteMany();
 });
 
 afterAll(async () => {
