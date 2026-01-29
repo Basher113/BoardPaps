@@ -43,7 +43,7 @@ const getBoard = async (req, res) => {
     const { boardId } = req.params;
 
     const board = await prisma.board.findUnique({
-      where: { boardId },
+      where: { id: boardId },
       include: {
         project: {
           include: {
@@ -161,9 +161,8 @@ const updateBoard = async (req, res) => {
   try {
     const { boardId } = req.params;
     const { name } = req.body;
-    const userId = req.user.id;
 
-    // Validation
+    // Validation // Change THIS LATER TO ZOD VALIDATION!
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({
         success: false,
@@ -180,7 +179,7 @@ const updateBoard = async (req, res) => {
 
     // Check if board exists 
     const existingBoard = await prisma.board.findUnique({
-      where: { boardId },
+      where: { id: boardId },
       });
 
     if (!existingBoard) {
@@ -191,7 +190,7 @@ const updateBoard = async (req, res) => {
     }
 
     const board = await prisma.board.update({
-      where: { boardId },
+      where: { id: boardId },
       data: { name: name.trim() },
       include: {
         columns: {
@@ -221,7 +220,7 @@ const deleteBoard = async (req, res) => {
 
     // Check if board exists
     const board = await prisma.board.findUnique({
-      where: { boardId },
+      where: { id: boardId },
     });
 
     if (!board) {
@@ -231,9 +230,22 @@ const deleteBoard = async (req, res) => {
       });
     }
 
+
+    console.log(boardId, "BoardID");
+    
+
+    // CASCADE ISSUES AND COLUMN WHEN BOARD IS DELETED // CAN ADD "onDelete: Cascade" on prisma model relations
+    await prisma.issue.deleteMany({
+      where: {boardId}
+    });
+
+    await prisma.column.deleteMany({
+      where: {boardId}
+    })
+
     // Make sure you pass the middleware projectMemberRequireRole["OWNER"]
     await prisma.board.delete({
-      where: { boardId }
+      where: { id: boardId }
     });
 
     return res.status(200).json({
