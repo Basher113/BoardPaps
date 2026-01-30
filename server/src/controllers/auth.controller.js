@@ -9,7 +9,6 @@ require('dotenv').config();
 
 const registerController = async (req, res) => {
   const {username, email, password} = req.body;
-  console.log(email, "Email");
   try {
     // Check if email is still valid
     const emailInvalid = await prisma.user.findUnique({
@@ -110,7 +109,6 @@ const loginController = async (req, res) => {
 const logoutController = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
-    console.log(refreshToken)
     await prisma.refreshToken.updateMany({
       where: { token: refreshToken },
       data: { revoked: true },

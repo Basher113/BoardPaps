@@ -17,7 +17,7 @@ const generateAccessToken = (userId) => {
   return jwt.sign({ userId }, authConfig.access_secret, { expiresIn: '1h' });
 };
 
-describe('Board Routes - Complete Test Suite', () => {
+describe('Board Complete Test Suite', () => {
 
   afterAll(async () => {
     await teardownTest();

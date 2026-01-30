@@ -108,7 +108,6 @@ const createTestProject = async (options = {}) => {
 const createTestBoard = async (projectId, options = {}) => {
   const {
     name = 'Test Board',
-    withColumns = true
   } = options;
 
   const boardData = {
@@ -116,25 +115,26 @@ const createTestBoard = async (projectId, options = {}) => {
     projectId
   };
 
-  if (withColumns) {
-    boardData.columns = {
-      create: [
-        { name: 'To Do', position: 0 },
-        { name: 'In Progress', position: 1 },
-        { name: 'Done', position: 2 }
-      ]
-    };
-  }
-
+  boardData.columns = {
+    create: [
+      { name: 'To Do', position: 0 },
+      { name: 'In Progress', position: 1 },
+      { name: 'Done', position: 2 }
+    ]};
+ 
   const board = await prisma.board.create({
     data: boardData,
     include: {
       columns: {
-        orderBy: { position: 'asc' }
+        orderBy: { position: 'asc' },
+        include: {
+          board: true,
+        }
       }
     }
   });
 
+  
   return board;
 };
 

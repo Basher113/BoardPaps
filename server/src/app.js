@@ -23,7 +23,8 @@ app.use(passport.initialize()); // enable passport
 const authRoutes = require("./routes/auth.routes");
 const projectRoutes = require("./routes/project.routes");
 const projectMemberRoutes = require("./routes/project-member.routes");
-const boardRoutes = require("./routes/board.routes")
+const boardRoutes = require("./routes/board.routes");
+const issueRoutes = require('./routes/issue.routes');
 
 // Middleware
 app.use(cors({
@@ -37,6 +38,7 @@ app.use(cors({
 app.use("/auth", authRoutes);
 app.use("/projects", passport.authenticate('jwt', { session: false }), projectRoutes);
 app.use("/projects/:projectId/members", passport.authenticate('jwt', { session: false }), projectMemberRoutes);
-app.use("/projects/:projectId/boards", passport.authenticate('jwt', { session: false }), boardRoutes)
+app.use("/projects/:projectId/boards", passport.authenticate('jwt', { session: false }), boardRoutes);
+app.use("/projects/:projectId/boards/:boardId/issues/", passport.authenticate('jwt', { session: false }), issueRoutes)
 
 module.exports = app;
