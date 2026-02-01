@@ -1,7 +1,7 @@
 import styled from "styled-components";
 
 import bpIcon from "../../../../../assets/bp_icon_minimalist.png";
-import Button from "../../../../../components/button/Button";
+import Button from "../../../../../components/ui/button/Button";
 
 const Nav = styled.nav`
   position: fixed;

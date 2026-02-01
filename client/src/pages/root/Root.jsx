@@ -4,9 +4,17 @@ import { Outlet } from "react-router-dom"
 import LandingPage from "./components/LandingPage"
 
 const Root = () => {
+
+  const signedIn = true
+
   return (
     <Wrapper>
-      <LandingPage />
+      {signedIn ? (
+          <Outlet />
+        ) : (
+          <LandingPage />
+        )
+      }
     </Wrapper>
   )
 }

@@ -3,7 +3,7 @@ import styled, {css} from "styled-components";
 import { Goal, Users, Zap, Sparkles } from "lucide-react";
 import icon from "../../../assets/bp_icon_minimalist.jpg";
 
-import Button from "../../../components/button/Button";
+import Button from "../../../components/ui/button/Button";
 import { Navigation } from "./components/navigation/Navigation";
 import HeroSection from "./components/HeroSection/HeroSection";
 
