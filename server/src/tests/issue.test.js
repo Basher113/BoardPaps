@@ -8,14 +8,9 @@ const {
   createTestBoard,
 } = require('./helpers/test.helpers');
 
+const {generateAccessToken} = require("../utils/token.utils");
 const prisma = require("../lib/prisma");
-const jwt = require("jsonwebtoken");
-const authConfig = require("../config/auth.config");
 
-// Generate access token manually for testing
-const generateAccessToken = (userId) => {
-  return jwt.sign({ userId }, authConfig.access_secret, { expiresIn: '1h' });
-};
 
 describe('Issue tests - Test Suite for /GET and /POST', () => {
 
@@ -29,6 +24,8 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
     await prisma.board.deleteMany();
     await prisma.projectMember.deleteMany();
     await prisma.project.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.refreshToken.deleteMany();
   });
 
   // ==================== GET /projects/:projectId/boards/:boardId/issues ====================

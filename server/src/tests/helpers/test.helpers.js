@@ -27,6 +27,7 @@ const cleanDatabase = async () => {
   await prisma.projectMember.deleteMany({});
   await prisma.project.deleteMany({});
   await prisma.user.deleteMany({});
+  await prisma.refreshToken.deleteMany();
 };
 
 // Create test users
@@ -199,14 +200,6 @@ const createTestIssues = async (boardId, columnId, reporterId, count = 3) => {
   return issues;
 };
 
-// Mock authentication middleware for testing (for unit tests without full app)
-const mockAuthMiddleware = (userId) => {
-  return (req, res, next) => {
-    req.user = { id: userId };
-    next();
-  };
-};
-
 // Setup and teardown helpers
 const setupTest = async () => {
   await cleanDatabase();
@@ -218,7 +211,6 @@ const teardownTest = async () => {
 };
 
 module.exports = {
-  testUsers,
   cleanDatabase,
   createTestUsers,
   createTestProject,
@@ -226,7 +218,6 @@ module.exports = {
   createTestColumn,
   createTestIssue,
   createTestIssues,
-  mockAuthMiddleware,
   setupTest,
   teardownTest
 };
