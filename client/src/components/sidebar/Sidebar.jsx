@@ -6,8 +6,8 @@ import {
   ProjectInfo,
   LogoContainer,
   ProjectDetails,
-  ProjectName,
-  ProjectKey,
+  AppName,
+
   CollapseButton,
   SidebarNav,
   NavList,
@@ -25,38 +25,81 @@ import {
   UserMenuCurrentEmail,
   UserMenuList,
   UserMenuSectionTitle,
-  UserMenuItem,
-  UserMenuItemInfo,
-  UserMenuItemName,
-  UserMenuItemEmail,
-  MenuBackdrop
-} from './Sidebar.styles';
-import UserAvatar, { USERSDATA } from '../../../../components/ui/user-avatar/UserAvatar';
+  MenuBackdrop,
 
-const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUser, onSwitchUser }) => {
+  // Project Navigation Styles
+  ProjectSection,
+  ProjectSectionHeader,
+  ProjectSectionTitle,
+  ProjectList,
+  EmptyProjects,
+} from './Sidebar.styles';
+import UserAvatar from '../ui/user-avatar/UserAvatar';
+import { useGetMyProjectsQuery, useVisitProjectMutation } from '../../reducers/slices/project/project.apiSlice';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectActiveProjectId } from '../../reducers/slices/navigation/navigation.selector';
+import { setActiveProject } from '../../reducers/slices/navigation/navigation.slice';
+import ProjectItem from './ProjectItem';
+import icon from "../../assets/bp_icon.webp"
+
+const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUser }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [expandedProjects, setExpandedProjects] = useState({});
+  
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  
+  const activeProjectId = useSelector(selectActiveProjectId);
+  
+  const { data: projects = [], isLoading: projectsLoading } = useGetMyProjectsQuery();
+  const [visitProject] = useVisitProjectMutation();
   
   const menuItems = [
     { id: 'board', icon: LayoutDashboard, label: 'Board' },
     { id: 'team', icon: Users, label: 'Team' },
     { id: 'settings', icon: Settings, label: 'Settings' }
   ];
+  console.log(currentUser)
+  
+  const toggleProject = async (projectId) => {
+    setExpandedProjects(prev => ({
+      ...prev,
+      [projectId]: !prev[projectId]
+    }));
+    
+    if (!expandedProjects[projectId]) {
+      await visitProject(projectId).unwrap();
+    }
+  };
+  
+  const handleBoardClick = (projectId, boardId) => {
+    dispatch(setActiveProject({ projectId, boardId }));
+    navigate(`/board/${boardId}`);
+  };
+  
+  const handleProjectClick = (projectId) => {
+    dispatch(setActiveProject({ projectId }));
+  };
   
   return (
     <SidebarContainer collapsed={collapsed}>
       <SidebarHeader>
+        
         {!collapsed && (
-          <ProjectInfo>
-            <LogoContainer>
-              <Target size={20} />
-            </LogoContainer>
-            <ProjectDetails>
-              <ProjectName>TeamFlow Development</ProjectName>
-              <ProjectKey>TFD</ProjectKey>
-            </ProjectDetails>
-          </ProjectInfo>
+          
+          <LogoContainer>
+            <img src={icon} height="40" weight="40"/>
+            
+            <ProjectInfo>
+              <ProjectDetails>
+                <AppName>BoardPaps</AppName>
+              </ProjectDetails>
+            </ProjectInfo>
+          </LogoContainer>
+          
         )}
-        <CollapseButton onClick={() => setCollapsed(!collapsed)}>
+        <CollapseButton collapsed={collapsed} onClick={() => setCollapsed(!collapsed)}>
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </CollapseButton>
       </SidebarHeader>
@@ -75,6 +118,40 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
             </NavItem>
           ))}
         </NavList>
+        
+        {/* Project Navigation Section */}
+        {!collapsed && (
+          <ProjectSection>
+            <ProjectSectionHeader>
+              <ProjectSectionTitle>Projects</ProjectSectionTitle>
+            </ProjectSectionHeader>
+            
+            {projectsLoading ? (
+              <EmptyProjects>Loading...</EmptyProjects>
+            ) : projects.length === 0 ? (
+              <EmptyProjects>No projects yet</EmptyProjects>
+            ) : (
+              <ProjectList>
+                {projects.map((project) => {
+                  const isExpanded = expandedProjects[project.id] || false;
+                  const isActive = activeProjectId === project.id;
+                  
+                  return (
+                    <ProjectItem
+                      key={project.id}
+                      project={project}
+                      isActive={isActive}
+                      isExpanded={isExpanded}
+                      onToggle={() => toggleProject(project.id)}
+                      onProjectClick={handleProjectClick}
+                      onBoardClick={handleBoardClick}
+                    />
+                  );
+                })}
+              </ProjectList>
+            )}
+          </ProjectSection>
+        )}
       </SidebarNav>
       
       <SidebarFooter>
@@ -99,21 +176,6 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
                   </UserMenuHeader>
                   <UserMenuList>
                     <UserMenuSectionTitle>Switch User</UserMenuSectionTitle>
-                    {USERSDATA.filter(u => u.id !== currentUser.id).map(user => (
-                      <UserMenuItem
-                        key={user.id}
-                        onClick={() => {
-                          onSwitchUser(user.id);
-                          setShowUserMenu(false);
-                        }}
-                      >
-                        <UserAvatar userId={user.id} size="sm" />
-                        <UserMenuItemInfo>
-                          <UserMenuItemName>{user.fullName}</UserMenuItemName>
-                          <UserMenuItemEmail>{user.email}</UserMenuItemEmail>
-                        </UserMenuItemInfo>
-                      </UserMenuItem>
-                    ))}
                   </UserMenuList>
                 </UserMenuDropdown>
               </>
@@ -135,21 +197,6 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
                   </UserMenuHeader>
                   <UserMenuList>
                     <UserMenuSectionTitle>Switch User</UserMenuSectionTitle>
-                    {USERSDATA.filter(u => u.id !== currentUser.id).map(user => (
-                      <UserMenuItem
-                        key={user.id}
-                        onClick={() => {
-                          onSwitchUser(user.id);
-                          setShowUserMenu(false);
-                        }}
-                      >
-                        <UserAvatar userId={user.id} size="sm" />
-                        <UserMenuItemInfo>
-                          <UserMenuItemName>{user.fullName}</UserMenuItemName>
-                          <UserMenuItemEmail>{user.email}</UserMenuItemEmail>
-                        </UserMenuItemInfo>
-                      </UserMenuItem>
-                    ))}
                   </UserMenuList>
                 </UserMenuDropdown>
               </>

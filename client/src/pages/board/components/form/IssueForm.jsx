@@ -10,7 +10,8 @@ import {
   FormActions,
   Button
 } from './Form.styles';
-import { USERSDATA } from '../../../../components/ui/user-avatar/UserAvatar';
+
+import { usersData } from '../../../../utils/data';
 
 const IssueForm = ({ issue, onSubmit, onCancel, currentUserId }) => {
   const [formData, setFormData] = useState(issue || {
@@ -81,7 +82,7 @@ const IssueForm = ({ issue, onSubmit, onCancel, currentUserId }) => {
           value={formData.assigneeId}
           onChange={(e) => setFormData({ ...formData, assigneeId: e.target.value })}
         >
-          {USERSDATA.map(user => (
+          {usersData.map(user => (
             <option key={user.id} value={user.id}>{user.fullName}</option>
           ))}
         </Select>

@@ -1,7 +1,8 @@
 import styled from "styled-components";
 
-import bpIcon from "../../../../../assets/bp_icon_minimalist.png";
-import Button from "../../../../../components/ui/button/Button";
+import bpIcon from "../../../../assets/bp_icon.webp";
+import Button from "../../../../components/ui/button/Button";
+
 
 const Nav = styled.nav`
   position: fixed;
@@ -28,8 +29,8 @@ export const Logo = () => (
   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
     <div
       style={{
-        width: 50,
-        height: 50,
+        width: 36,
+        height: 36,
         background: "#2563eb",
         borderRadius: 6,
         display: "grid",

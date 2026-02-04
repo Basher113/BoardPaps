@@ -19,13 +19,15 @@ import {
   SettingsLabel,
   SettingsInput
 } from './Board.styles';
-import Sidebar from './components/sidebar/Sidebar';
-import MobileSidebar from './components/sidebar/MobileSidebar';
+
 import Header from './components/header/Header';
 import BoardColumn from './components/board-column/BoardColumn';
 import Modal from '../../components/ui/modal/Modal';
 import IssueForm from './components/form/IssueForm';
-import UserAvatar, { USERSDATA } from '../../components/ui/user-avatar/UserAvatar';
+import UserAvatar from '../../components/ui/user-avatar/UserAvatar';
+
+import { usersData } from '../../utils/data';
+import { useDispatch, useSelector } from 'react-redux';
 
 const projectData = {
   id: 'proj-1',
@@ -124,10 +126,6 @@ const initialIssues = [
 ];
 
 function Board() {
-  const [currentUserId, setCurrentUserId] = useState('user-1');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [activeView, setActiveView] = useState('board');
   const [issues, setIssues] = useState(initialIssues);
   const [draggedIssue, setDraggedIssue] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -135,12 +133,11 @@ function Board() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingIssue, setEditingIssue] = useState(null);
   const [newIssueColumnId, setNewIssueColumnId] = useState(null);
-  
-  const currentUser = USERSDATA.find(u => u.id === currentUserId);
-  
-  const handleSwitchUser = (userId) => {
-    setCurrentUserId(userId);
-  };
+  const activeView = useSelector((state) => state.navigation.activeView);
+  const dispatch = useDispatch();
+
+
+  const currentUserId = "user-1";
   
   const handleDragStart = (e, issue) => {
     setDraggedIssue(issue);
@@ -220,26 +217,11 @@ function Board() {
     issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     issue.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  
   
   return (
     <AppContainer>
-      <Sidebar 
-        collapsed={sidebarCollapsed} 
-        setCollapsed={setSidebarCollapsed}
-        activeView={activeView}
-        setActiveView={setActiveView}
-        currentUser={currentUser}
-        onSwitchUser={handleSwitchUser}
-      />
-      <MobileSidebar 
-        isOpen={mobileSidebarOpen} 
-        setIsOpen={setMobileSidebarOpen}
-        activeView={activeView}
-        setActiveView={setActiveView}
-        currentUser={currentUser}
-        onSwitchUser={handleSwitchUser}
-      />
-      
       <MainContent>
         <Header
           boardName={boardData.name}
@@ -249,7 +231,7 @@ function Board() {
           searchOpen={searchOpen}
           setSearchOpen={setSearchOpen}
           onCreateIssue={() => handleAddIssue('col-1')}
-          onMenuToggle={() => setMobileSidebarOpen(true)}
+          onMenuToggle={() => {}}
         />
         
         <BoardMain>
@@ -278,7 +260,7 @@ function Board() {
             <ContentCard>
               <ContentTitle>Team Members</ContentTitle>
               <div>
-                {USERSDATA.map(user => (
+                {usersData.map(user => (
                   <TeamMemberCard key={user.id}>
                     <UserAvatar userId={user.id} size="xl" />
                     <TeamMemberInfo>

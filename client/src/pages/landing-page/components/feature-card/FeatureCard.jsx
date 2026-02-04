@@ -24,11 +24,11 @@ const IconWrapper = styled.div`
   color: #4338ca;
 `;
 
-export function FeatureCard({ icon: Icon, title, description }) {
+export function FeatureCard({ icon, title, description }) {
   return (
     <Card>
       <IconWrapper>
-        <Icon size={28} />
+        {icon}
       </IconWrapper>
       
       <h3>{title}</h3>

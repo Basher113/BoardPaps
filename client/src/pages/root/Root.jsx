@@ -1,20 +1,34 @@
-import { Wrapper } from "./root.styles"
-import { Outlet } from "react-router-dom"
+import { useState } from "react"
+import { OutletWrapper, Wrapper } from "./root.styles"
+import { Outlet, useNavigate } from "react-router-dom"
+import Sidebar from "../../components/sidebar/Sidebar"
 
-import LandingPage from "./components/LandingPage"
+import { useGetCurrentUserQuery } from "../../reducers/slices/user/user.slice"
 
 const Root = () => {
+  const navigate = useNavigate();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  const {data: currentUser, isLoading: currentUserLoading} = useGetCurrentUserQuery();
 
-  const signedIn = true
-
+ 
+  if (currentUserLoading) return;
+  if (!currentUser) {
+    navigate("/");
+  }
+  console.log(currentUser);
   return (
+    
     <Wrapper>
-      {signedIn ? (
-          <Outlet />
-        ) : (
-          <LandingPage />
-        )
-      }
+      <Sidebar 
+        collapsed={sidebarCollapsed} 
+        setCollapsed={setSidebarCollapsed}
+        currentUser={currentUser}
+      />
+      <OutletWrapper>
+        <Outlet />
+      </OutletWrapper>
+      
     </Wrapper>
   )
 }

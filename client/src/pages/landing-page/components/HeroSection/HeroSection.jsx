@@ -1,7 +1,6 @@
+import Button from "../../../../components/ui/button/Button";
 import { ArrowRight, Check, Bug, BookOpen } from "lucide-react";
-
-import Button from "../../../../../components/ui/button/Button";
-import { Section, Container } from "../../../components/LandingPage";
+import { Section, Container } from "../../LandingPage";
 
 
 import {

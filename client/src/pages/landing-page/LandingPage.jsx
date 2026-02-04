@@ -1,11 +1,13 @@
 import styled, {css} from "styled-components";
 
 import { Goal, Users, Zap, Sparkles } from "lucide-react";
-import icon from "../../../assets/bp_icon_minimalist.jpg";
+import { Link, useNavigate } from "react-router-dom";
+import icon from "../../assets/bp_icon.webp";
 
-import Button from "../../../components/ui/button/Button";
+import Button from "../../components/ui/button/Button";
 import { Navigation } from "./components/navigation/Navigation";
 import HeroSection from "./components/HeroSection/HeroSection";
+import { useGetCurrentUserQuery } from "../../reducers/slices/user/user.slice";
 
 /* =======================
    STYLED COMPONENTS
@@ -127,6 +129,14 @@ const FeatureText = styled.p`
 `;
 
 export default function LandingPage() {
+  const navigate = useNavigate()
+  const {data: currentUser, isLoading: currentUserLoading } = useGetCurrentUserQuery();
+
+  if (currentUserLoading) return <div>Loading...</div>
+
+  if (currentUser) {
+    navigate("/app");
+  }
 
   return (
     <Page>
@@ -153,7 +163,7 @@ export default function LandingPage() {
             {[
               
               {
-                icon: Users,
+                icon: <Users />,
                 color:"#5c4ddf",
                 title: "Team Collaboration",
                 description:
@@ -161,7 +171,7 @@ export default function LandingPage() {
               },
               
               {
-                icon: Zap,
+                icon: <Zap />,
                 color: "#76df4d" ,
                 title: "Lightning fast performance",
                 description:
@@ -169,7 +179,7 @@ export default function LandingPage() {
               },
 
               {
-                icon: Goal,
+                icon: <Goal />,
                 color: "#c74ddf",
                 title: "Visual goal tracking",
                 description: "Align your team around shared objectives and track progress with beautiful, intuitive dashboards that everyone can understand."
@@ -177,7 +187,7 @@ export default function LandingPage() {
             ].map((feature, i) => (
               <FeatureCard key={i} >
                 <FeatureIcon color={feature.color}>
-                  <feature.icon size={32} />
+                  {feature.icon}
                 </FeatureIcon>
                 <FeatureTitle>{feature.title}</FeatureTitle>
                 <FeatureText>{feature.description}</FeatureText>
@@ -196,9 +206,11 @@ export default function LandingPage() {
               Move fast, stay aligned, and build better - together
             </CTAText>
 
-            <Button size="lg">
-              Sign In Now
-            </Button>
+            <Link to="/auth/sign-in">
+              <Button size="lg">
+                Sign In Now
+              </Button>
+            </Link>
           </CTAContent>
         </div>
       </Section>

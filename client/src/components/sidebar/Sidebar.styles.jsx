@@ -5,12 +5,14 @@ export const SidebarContainer = styled.div`
   background-color: #111827;
   color: white;
   transition: all 0.3s;
-  width: ${props => props.collapsed ? '4rem' : '16rem'};
+  width: ${props => props.collapsed ? '5rem' : '16rem'};
   flex-direction: column;
 
   @media (min-width: 1024px) {
     display: flex;
   }
+
+  height: 100vh;
 `;
 
 export const SidebarHeader = styled.div`
@@ -28,9 +30,9 @@ export const ProjectInfo = styled.div`
 `;
 
 export const LogoContainer = styled.div`
-  width: 2rem;
-  height: 2rem;
-  background-color: #2563eb;
+  display: flex;
+  gap: 1rem;
+  height: 100%;
   border-radius: 0.25rem;
   display: flex;
   align-items: center;
@@ -42,15 +44,12 @@ export const ProjectDetails = styled.div`
   flex-direction: column;
 `;
 
-export const ProjectName = styled.h2`
+export const AppName = styled.h2`
   font-weight: 700;
   font-size: 0.875rem;
 `;
 
-export const ProjectKey = styled.p`
-  font-size: 0.75rem;
-  color: #9ca3af;
-`;
+
 
 export const CollapseButton = styled.button`
   color: #9ca3af;
@@ -59,7 +58,7 @@ export const CollapseButton = styled.button`
   border: none;
   padding: 0;
   transition: color 0.2s;
-
+  margin: ${props => props.collapsed ? 'auto' : ''};
   &:hover {
     color: white;
   }
@@ -256,4 +255,110 @@ export const MobileSidebarContainer = styled.div`
   @media (min-width: 1024px) {
     display: none;
   }
+`;
+
+// Project Navigation Styles
+export const ProjectSection = styled.div`
+  padding: 0 1rem;
+  margin-bottom: 1rem;
+`;
+
+export const ProjectSectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+`;
+
+export const ProjectSectionTitle = styled.span`
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+`;
+
+export const ProjectList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+`;
+
+export const ProjectItem = styled.li``;
+
+export const ProjectButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  background: ${props => props.active ? '#1e3a5f' : 'transparent'};
+  color: ${props => props.active ? '#60a5fa' : '#d1d5db'};
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  &:hover {
+    background-color: ${props => props.active ? '#1e3a5f' : '#1f2937'};
+  }
+`;
+
+export const ProjectName = styled.span`
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const ExpandIcon = styled.span`
+  color: #9ca3af;
+  transition: transform 0.2s;
+  transform: ${props => props.expanded ? 'rotate(90deg)' : 'rotate(0deg)'};
+`;
+
+export const BoardDropdown = styled.div`
+  margin-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow: hidden;
+  max-height: ${props => props.expanded ? '500px' : '0'};
+  transition: max-height 0.3s ease;
+`;
+
+export const BoardItem = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  padding-left: 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  background: ${props => props.active ? '#2563eb' : 'transparent'};
+  color: ${props => props.active ? 'white' : '#9ca3af'};
+  border: none;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  text-align: left;
+
+  &:hover {
+    background-color: ${props => props.active ? '#2563eb' : '#1f2937'};
+    color: white;
+  }
+`;
+
+export const EmptyProjects = styled.div`
+  padding: 1rem 0.75rem;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.875rem;
 `;
