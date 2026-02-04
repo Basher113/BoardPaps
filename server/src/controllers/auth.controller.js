@@ -60,19 +60,19 @@ const loginController = async (req, res) => {
       return res.status(400).json({message: "Invalid Credentials"});
     }
 
-    // // (user login while still logged in)
-    // const existingToken = req.cookies?.refreshToken;
-    // if (existingToken) {
-    //   console.log("Revoke existing")
-    //   try {
-    //     await prisma.refreshToken.update({
-    //       where: { token: existingToken, userId: user.id, revoked: false },
-    //       data: { revoked: true },
-    //     });
-    //   } catch (err) {
-    //     console.log("Error revoking old refresh token:", err);
-    //   }
-    // }
+    // (user login while still logged in)
+    const existingToken = req.cookies?.refreshToken;
+    if (existingToken) {
+      console.log("Revoke existing")
+      try {
+        await prisma.refreshToken.update({
+          where: { token: existingToken, userId: user.id, revoked: false },
+          data: { revoked: true },
+        });
+      } catch (err) {
+        console.log("Error revoking old refresh token:", err);
+      }
+    }
 
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
@@ -89,7 +89,7 @@ const loginController = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production" ? true : false,
       maxAge: 1000 * 60 * 60 * 24 * 5, // 5 days
-      sameSite:  "None",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
     });
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
@@ -183,5 +183,24 @@ const refreshTokenController = async (req, res) => {
   }
 };
 
+const getCurrentUserDataController = async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: {id: req.user.id},
+      select: {
+        id: true,
+        email: true,
+        username: true,
+      }
+    
+    }
+    );
+    return res.json(user);
+  } catch (error) {
+    console.log("Error getting users:", error);
+    return res.status(500).json({message: "Internal Service Error"});
+  }
+}
 
-module.exports = {registerController, loginController, logoutController, refreshTokenController,};
+
+module.exports = {registerController, loginController, logoutController, refreshTokenController, getCurrentUserDataController};
