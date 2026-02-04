@@ -34,6 +34,14 @@ const getMyProjects = async (req, res) => {
           { members: { some: { userId } } },
         ],
       },
+      include: {
+        _count: {
+          select: {
+            boards: true
+          }
+        }
+      },
+      orderBy: { lastVisitedAt: 'desc' },
     });
 
     res.json(projects);
@@ -83,4 +91,20 @@ const deleteProject = async (req, res) => {
     }
 }
 
-module.exports = {createProject, getMyProjects, updateProject, deleteProject}
+const visitProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    await prisma.project.update({
+      where: { id: projectId },
+      data: { lastVisitedAt: new Date() }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to update last visited" });
+  }
+}
+
+module.exports = {createProject, getMyProjects, updateProject, deleteProject, visitProject}

@@ -13,6 +13,11 @@ boardRouter.get("/:boardId",
   requireProjectMember,
   BoardController.getBoard);
 
+// Recent board route - must be after /:boardId to avoid conflicts
+boardRouter.get("/recent",
+  requireProjectMember,
+  BoardController.getRecentBoard);
+
 boardRouter.post("/",
   requireProjectMember,
   BoardController.createBoard);

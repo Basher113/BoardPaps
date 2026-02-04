@@ -8,6 +8,7 @@ const projectRouter = Router();
 projectRouter.get("/", projectController.getMyProjects);
 projectRouter.post("/", projectController.createProject);
 projectRouter.patch("/:projectId", requireProjectMember, requireProjectRole(["ADMIN", "OWNER"]), projectController.updateProject);
+projectRouter.patch("/:projectId/visit", requireProjectMember, projectController.visitProject);
 projectRouter.put("/:projectId", requireProjectMember, requireProjectRole(["ADMIN", "OWNER"]), projectController.updateProject);
 projectRouter.delete("/:projectId", requireProjectMember, requireProjectRole(["OWNER"]), projectController.deleteProject);
 

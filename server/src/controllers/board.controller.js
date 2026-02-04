@@ -228,7 +228,7 @@ const deleteBoard = async (req, res) => {
         success: false,
         error: 'Board not found'
       });
-    }
+    };
 
 
     console.log(boardId, "BoardID");
@@ -261,5 +261,55 @@ const deleteBoard = async (req, res) => {
   }
 }
 
+/**
+ * Get the user's most recently accessed board
+ * @route GET /api/boards/recent
+ */
+const getRecentBoard = async (req, res) => {
+  try {
+    const userId = req.user.id;
 
-module.exports = {getBoards, getBoard, createBoard, updateBoard, deleteBoard};
+    // Find the most recently visited project the user has access to
+    const recentProject = await prisma.project.findFirst({
+      where: {
+        OR: [
+          { ownerId: userId },
+          { members: { some: { userId } } },
+        ],
+      },
+      orderBy: { lastVisitedAt: 'desc' },
+      include: {
+        boards: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!recentProject || recentProject.boards.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No recent board found"
+      });
+    }
+
+    const recentBoard = recentProject.boards[0];
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        board: recentBoard,
+        projectId: recentProject.id,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching recent board:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch recent board',
+    });
+  }
+}
+
+
+module.exports = {getBoards, getBoard, createBoard, updateBoard, deleteBoard, getRecentBoard};
