@@ -2,10 +2,10 @@ const prisma = require("../lib/prisma");
 
 const getColumns = async (req, res) => {
   try {
-    const { boardId } = req.params;
+    const { projectId } = req.params;
 
     const columns = await prisma.column.findMany({
-      where: { boardId },
+      where: { projectId },
       include: {
         _count: {
           select: { issues: true }
@@ -34,7 +34,7 @@ const getColumn = async (req, res) => {
     const column = await prisma.column.findUnique({
       where: { id: columnId },
       include: {
-        board: true,
+        project: true,
         issues: {
           orderBy: { position: 'asc' },
           include: {

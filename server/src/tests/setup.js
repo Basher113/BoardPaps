@@ -7,7 +7,6 @@ beforeAll(async () => {
 beforeEach(async () => {
   await prisma.issue.deleteMany({});
   await prisma.column.deleteMany({});
-  await prisma.board.deleteMany({});
   await prisma.projectMember.deleteMany({});
   await prisma.project.deleteMany({});
   await prisma.refreshToken.deleteMany({})

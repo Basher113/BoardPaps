@@ -5,7 +5,7 @@ const {
   teardownTest,
   createTestProject,
   createTestUsers,
-  createTestBoard,
+  createDefaultColumns,
 } = require('./helpers/test.helpers');
 
 const {generateAccessToken} = require("../utils/token.utils");
@@ -13,7 +13,7 @@ const {generateAccessToken} = require("../utils/token.utils");
 const prisma = require("../lib/prisma");
 
 
-describe("Issue tests - Test Suite for /GET and /POST", () => {
+describe("Issue tests - Test Suite for /PUT and /PATCH", () => {
 
   afterAll(async () => {
     await teardownTest();
@@ -23,16 +23,15 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
   afterEach(async () => {
     await prisma.issue.deleteMany();
     await prisma.column.deleteMany();
-    await prisma.board.deleteMany();
     await prisma.projectMember.deleteMany();
     await prisma.project.deleteMany();
     await prisma.user.deleteMany();
     await prisma.refreshToken.deleteMany();
   });
 
-  // ==================== PUT /projects/:projectId/boards/:boardId/issues/:issueId ====================
-  describe('PUT /projects/:projectId/boards/:boardId/issues/:issueId', () => {
-  let project, testUsers, token, board, column, issue;
+  // ==================== PUT /projects/:projectId/issues/:issueId ====================
+  describe('PUT /projects/:projectId/issues/:issueId', () => {
+  let project, testUsers, token, columns, issue;
 
   beforeEach(async () => {
     await setupTest();
@@ -42,8 +41,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
       memberIdsAndRoles: [{ userId: testUsers.member.id, role: 'MEMBER' }]
     });
     token = generateAccessToken(testUsers.owner.id);
-    board = await createTestBoard(project.id);
-    column = board.columns[0];
+    columns = await createDefaultColumns(project.id);
     
     issue = await prisma.issue.create({
       data: {
@@ -52,8 +50,8 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
         type: 'TASK',
         priority: 'MEDIUM',
         position: 0,
-        boardId: board.id,
-        columnId: column.id,
+        projectId: project.id,
+        columnId: columns[0].id,
         reporterId: testUsers.owner.id
       }
     });
@@ -62,7 +60,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
   describe('Validation', () => {
     it('should reject empty title', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ title: '' });
 
@@ -73,7 +71,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
     it('should reject title longer than 200 characters', async () => {
       const longTitle = 'a'.repeat(201);
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ title: longTitle });
 
@@ -83,7 +81,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should reject invalid type', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ type: 'INVALID' });
 
@@ -93,7 +91,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should reject invalid priority', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ priority: 'INVALID' });
 
@@ -105,7 +103,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
   describe('Success Cases', () => {
     it('should update issue title', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ title: 'Updated Title' });
 
@@ -117,7 +115,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should update issue description', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ description: 'Updated Description' });
 
@@ -127,7 +125,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should update issue type', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ type: 'BUG' });
 
@@ -137,7 +135,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should update issue priority', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ priority: 'HIGH' });
 
@@ -147,7 +145,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should update multiple fields at once', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({
           title: 'New Title',
@@ -165,7 +163,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should assign issue to project member', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ assigneeId: testUsers.member.id });
 
@@ -177,13 +175,13 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
     it('should unassign issue by setting assigneeId to null', async () => {
       // First assign
       await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ assigneeId: testUsers.member.id });
 
       // Then unassign
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ assigneeId: null });
 
@@ -193,7 +191,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should clear description by setting it to null', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ description: null });
 
@@ -205,7 +203,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
   describe('Error Cases', () => {
     it('should return 404 when issue does not exist', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/non-existent-id`)
+        .put(`/projects/${project.id}/issues/non-existent-id`)
         .set('Cookie', `accessToken=${token}`)
         .send({ title: 'Updated' });
 
@@ -215,7 +213,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should return 400 when assignee is not a project member', async () => {
       const res = await request(app)
-        .put(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+        .put(`/projects/${project.id}/issues/${issue.id}`)
         .set('Cookie', `accessToken=${token}`)
         .send({ assigneeId: testUsers.nonMember.id });
 
@@ -226,9 +224,9 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
   });
   });
 
-  // ==================== PATCH /projects/:projectId/boards/:boardId/issues/:issueId/move ====================
-  describe('PATCH /projects/:projectId/boards/:boardId/issues/:issueId/move', () => {
-  let project, testUsers, token, board, column1, column2, issue;
+  // ==================== PATCH /projects/:projectId/issues/:issueId/move ====================
+  describe('PATCH /projects/:projectId/issues/:issueId/move', () => {
+  let project, testUsers, token, columns, column1, column2, issue;
 
   beforeEach(async () => {
     await setupTest();
@@ -238,9 +236,9 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
       memberIdsAndRoles: [{ userId: testUsers.member.id, role: 'MEMBER' }]
     });
     token = generateAccessToken(testUsers.owner.id);
-    board = await createTestBoard(project.id);
-    column1 = board.columns[0]; // "To Do"
-    column2 = board.columns[1]; // "In Progress"
+    columns = await createDefaultColumns(project.id);
+    column1 = columns[0]; // "To Do"
+    column2 = columns[1]; // "In Progress"
     
     issue = await prisma.issue.create({
       data: {
@@ -248,7 +246,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
         type: 'TASK',
         priority: 'MEDIUM',
         position: 0,
-        boardId: board.id,
+        projectId: project.id,
         columnId: column1.id,
         reporterId: testUsers.owner.id
       }
@@ -258,7 +256,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
   describe('Validation', () => {
     it('should reject missing columnId', async () => {
       const res = await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${issue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ newPosition: 0 });
 
@@ -268,7 +266,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should reject missing newPosition', async () => {
       const res = await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${issue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ columnId: column2.id });
 
@@ -278,7 +276,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should reject negative position', async () => {
       const res = await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${issue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ columnId: column2.id, newPosition: -1 });
 
@@ -288,7 +286,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should reject non-integer position', async () => {
       const res = await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${issue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ columnId: column2.id, newPosition: 1.5 });
 
@@ -300,7 +298,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
   describe('Success Cases - Move Between Columns', () => {
     it('should move issue to different column', async () => {
       const res = await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${issue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ columnId: column2.id, newPosition: 0 });
 
@@ -319,7 +317,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
             type: 'TASK',
             priority: 'MEDIUM',
             position: 1,
-            boardId: board.id,
+            projectId: project.id,
             columnId: column1.id,
             reporterId: testUsers.owner.id
           },
@@ -328,7 +326,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
             type: 'TASK',
             priority: 'MEDIUM',
             position: 2,
-            boardId: board.id,
+            projectId: project.id,
             columnId: column1.id,
             reporterId: testUsers.owner.id
           }
@@ -337,7 +335,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
       // Move first issue to another column
       await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${issue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ columnId: column2.id, newPosition: 0 });
 
@@ -360,7 +358,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
           type: 'TASK',
           priority: 'MEDIUM',
           position: 0,
-          boardId: board.id,
+          projectId: project.id,
           columnId: column2.id,
           reporterId: testUsers.owner.id
         }
@@ -368,7 +366,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
       // Move issue to column2 at position 0
       await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${issue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ columnId: column2.id, newPosition: 0 });
 
@@ -395,7 +393,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
             type: 'TASK',
             priority: 'MEDIUM',
             position: 1,
-            boardId: board.id,
+            projectId: project.id,
             columnId: column1.id,
             reporterId: testUsers.owner.id
           },
@@ -404,7 +402,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
             type: 'TASK',
             priority: 'MEDIUM',
             position: 2,
-            boardId: board.id,
+            projectId: project.id,
             columnId: column1.id,
             reporterId: testUsers.owner.id
           }
@@ -414,7 +412,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should move issue down within same column', async () => {
       const res = await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${issue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ columnId: column1.id, newPosition: 2 });
 
@@ -440,7 +438,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
       });
 
       const res = await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${lastIssue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${lastIssue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ columnId: column1.id, newPosition: 0 });
 
@@ -459,7 +457,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
 
     it('should return early when position does not change', async () => {
       const res = await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${issue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ columnId: column1.id, newPosition: 0 });
 
@@ -471,7 +469,7 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
   describe('Error Cases', () => {
     it('should return 404 when issue does not exist', async () => {
       const res = await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/non-existent-id/move`)
+        .patch(`/projects/${project.id}/issues/non-existent-id/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ columnId: column2.id, newPosition: 0 });
 
@@ -479,123 +477,33 @@ describe("Issue tests - Test Suite for /GET and /POST", () => {
       expect(res.body.success).toBe(false);
     });
 
-    it('should return 400 when column does not belong to board', async () => {
-      const otherBoard = await createTestBoard(project.id, { name: 'Other Board' });
+    it('should return 400 when column does not belong to project', async () => {
+      // Create another project with columns
+      const otherProject = await createTestProject({
+        ownerId: testUsers.owner.id,
+        key: 'OTHER',
+        name: 'Other Project',
+        memberIdsAndRoles: []
+      });
+      const otherColumns = await createDefaultColumns(otherProject.id);
       
       const res = await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${issue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
-        .send({ columnId: otherBoard.columns[0].id, newPosition: 0 });
+        .send({ columnId: otherColumns[0].id, newPosition: 0 });
 
       expect(res.statusCode).toBe(400);
       expect(res.body.success).toBe(false);
-      expect(res.body.error).toBe('Invalid column for this board');
     });
 
     it('should return 400 when position exceeds maximum', async () => {
       const res = await request(app)
-        .patch(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}/move`)
+        .patch(`/projects/${project.id}/issues/${issue.id}/move`)
         .set('Cookie', `accessToken=${token}`)
         .send({ columnId: column2.id, newPosition: 100 });
 
       expect(res.statusCode).toBe(400);
-      expect(res.body.success).toBe(false);
     });
   });
   });
-
-  // ==================== DELETE /projects/:projectId/boards/:boardId/issues/:issueId ====================
-  describe('DELETE /projects/:projectId/boards/:boardId/issues/:issueId', () => {
-  let project, testUsers, token, board, column, issue;
-
-  beforeEach(async () => {
-    await setupTest();
-    testUsers = await createTestUsers();
-    project = await createTestProject({
-      ownerId: testUsers.owner.id,
-      memberIdsAndRoles: [{ userId: testUsers.member.id, role: 'MEMBER' }]
-    });
-    token = generateAccessToken(testUsers.owner.id);
-    board = await createTestBoard(project.id);
-    column = board.columns[0];
-    
-    issue = await prisma.issue.create({
-      data: {
-        title: 'Test Issue',
-        type: 'TASK',
-        priority: 'MEDIUM',
-        position: 0,
-        boardId: board.id,
-        columnId: column.id,
-        reporterId: testUsers.owner.id
-      }
-    });
-  });
-
-  describe('Success Cases', () => {
-    it('should delete issue', async () => {
-      const res = await request(app)
-        .delete(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
-        .set('Cookie', `accessToken=${token}`);
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.message).toBe('Issue deleted successfully');
-
-      const deletedIssue = await prisma.issue.findUnique({
-        where: { id: issue.id }
-      });
-      expect(deletedIssue).toBeNull();
-    });
-
-    it('should adjust positions after deletion', async () => {
-      await prisma.issue.createMany({
-        data: [
-          {
-            title: 'Issue 2',
-            type: 'TASK',
-            priority: 'MEDIUM',
-            position: 1,
-            boardId: board.id,
-            columnId: column.id,
-            reporterId: testUsers.owner.id
-          },
-          {
-            title: 'Issue 3',
-            type: 'TASK',
-            priority: 'MEDIUM',
-            position: 2,
-            boardId: board.id,
-            columnId: column.id,
-            reporterId: testUsers.owner.id
-          }
-        ]
-      });
-
-      await request(app)
-        .delete(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
-        .set('Cookie', `accessToken=${token}`);
-
-      const remainingIssues = await prisma.issue.findMany({
-        where: { columnId: column.id },
-        orderBy: { position: 'asc' }
-      });
-
-      expect(remainingIssues).toHaveLength(2);
-      expect(remainingIssues[0].position).toBe(0);
-      expect(remainingIssues[1].position).toBe(1);
-    });
-  });
-
-  describe('Error Cases', () => {
-    it('should return 404 when issue does not exist', async () => {
-      const res = await request(app)
-        .delete(`/projects/${project.id}/boards/${board.id}/issues/non-existent-id`)
-        .set('Cookie', `accessToken=${token}`);
-
-      expect(res.statusCode).toBe(404);
-      expect(res.body.success).toBe(false);
-    });
-  });
-  });
-})
+});

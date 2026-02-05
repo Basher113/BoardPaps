@@ -1,16 +1,16 @@
 const prisma = require("../lib/prisma");
 
 /**
- * Get all issues for a board
- * @route GET /api/boards/:boardId/issues
+ * Get all issues for a project
+ * @route GET /api/projects/:projectId/issues
  */
 const getIssues = async (req, res) => {
   try {
-    const { boardId } = req.params;
+    const { projectId } = req.params;
     const { columnId, assigneeId, reporterId, type, priority } = req.query;
 
     // Build filter
-    const where = { boardId };
+    const where = { projectId };
     if (columnId) where.columnId = columnId;
     if (assigneeId) where.assigneeId = assigneeId;
     if (reporterId) where.reporterId = reporterId;
@@ -60,7 +60,7 @@ const getIssue = async (req, res) => {
     const issue = await prisma.issue.findUnique({
       where: { id: issueId },
       include: {
-        board: true,
+        project: true,
         column: true,
         reporter: {
           select: { id: true, email: true, username: true }
@@ -93,15 +93,15 @@ const getIssue = async (req, res) => {
 
 /**
  * Create a new issue
- * @route POST /api/boards/:boardId/issues
+ * @route POST /api/projects/:projectId/issues
  */
 const createIssue = async (req, res) => {
   try {
-    const { boardId } = req.params;
+    const { projectId } = req.params;
     const { title, description, type, priority, columnId, assigneeId, } = req.body;
     const userId = req.user.id;
 
-    // Verify column belongs to the board
+    // Verify column belongs to the project
     const column = await prisma.column.findUnique({
       where: { id: columnId },
       include: {
@@ -110,28 +110,24 @@ const createIssue = async (req, res) => {
     });
 
 
-    if (!column || column.boardId !== boardId) {
+    if (!column || column.projectId !== projectId) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid column for this board'
+        error: 'Invalid column for this project'
       });
     }
 
     // If assigneeId provided, verify they're a member
     if (assigneeId) {
-      const board = await prisma.board.findUnique({
-        where: { id: boardId },
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
         include: {
-          project: {
-            include: {
-              members: true
-            }
-          }
+          members: true
         }
       });
 
-      const isMember = board.project.ownerId === assigneeId ||
-        board.project.members.some(member => member.userId === assigneeId);
+      const isMember = project.ownerId === assigneeId ||
+        project.members.some(member => member.userId === assigneeId);
 
       if (!isMember) {
         return res.status(400).json({
@@ -162,7 +158,7 @@ const createIssue = async (req, res) => {
         type,
         priority,
         position: issuePosition,
-        boardId,
+        projectId,
         columnId,
         reporterId: userId,
         assigneeId: assigneeId || null
@@ -200,7 +196,7 @@ const createIssue = async (req, res) => {
 const updateIssue = async (req, res) => {
   try {
     const { issueId } = req.params;
-    const { title, description, type, priority, assigneeId } = req.body;
+    const { title, description, type, priority, assigneeId, columnId } = req.body;
 
     // Build update data
     const updateData = {};
@@ -256,13 +252,9 @@ const updateIssue = async (req, res) => {
     const existingIssue = await prisma.issue.findUnique({
       where: { id: issueId },
       include: {
-        board: {
+        project: {
           include: {
-            project: {
-              include: {
-                members: true
-              }
-            }
+            members: true
           }
         }
       }
@@ -275,13 +267,24 @@ const updateIssue = async (req, res) => {
       });
     }
 
+    // Check if user is the assignee or reporter (can edit)
+    const userId = req.user.id;
+    const canEdit = existingIssue.assigneeId === userId || existingIssue.reporterId === userId;
+    
+    if (!canEdit) {
+      return res.status(403).json({
+        success: false,
+        error: 'You do not have permission to edit this issue'
+      });
+    }
+
     // Handle assignee update // CAN CHANGE THIS TO MIDDLEWARE INSTEAD
     if (assigneeId !== undefined) {
       if (assigneeId === null) {
         updateData.assigneeId = null;
       } else {
-        const isMember = existingIssue.board.project.ownerId === assigneeId ||
-          existingIssue.board.project.members.some(member => member.userId === assigneeId);
+        const isMember = existingIssue.project.ownerId === assigneeId ||
+          existingIssue.project.members.some(member => member.userId === assigneeId);
 
         if (!isMember) {
           return res.status(400).json({
@@ -291,6 +294,22 @@ const updateIssue = async (req, res) => {
         }
         updateData.assigneeId = assigneeId;
       }
+    }
+
+    // Handle columnId update (moving issue to different column)
+    if (columnId !== undefined) {
+      const newColumn = await prisma.column.findUnique({
+        where: { id: columnId }
+      });
+
+      if (!newColumn || newColumn.projectId !== existingIssue.projectId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid column for this project'
+        });
+      }
+
+      updateData.columnId = columnId;
     }
 
     const issue = await prisma.issue.update({
@@ -328,7 +347,7 @@ const moveIssue = async (req, res) => {
   try {
     const { issueId } = req.params;
     const { columnId, newPosition } = req.body;
-
+    console.log("Move")
     // Check if issue exists
     const issue = await prisma.issue.findUnique({
       where: { id: issueId }
@@ -341,7 +360,18 @@ const moveIssue = async (req, res) => {
       });
     }
 
-    // Verify new column belongs to the same board
+    // Check if user is the assignee (can only move if assigned)
+    const userId = req.user.id;
+    const canMove = issue.assigneeId === userId;
+    
+    if (!canMove) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only the assignee can move this issue'
+      });
+    }
+
+    // Verify new column belongs to the same project
     const newColumn = await prisma.column.findUnique({
       where: { id: columnId },
       include: {
@@ -349,10 +379,10 @@ const moveIssue = async (req, res) => {
       }
     });
 
-    if (!newColumn || newColumn.boardId !== issue.boardId) {
+    if (!newColumn || newColumn.projectId !== issue.projectId) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid column for this board'
+        error: 'Invalid column for this project'
       });
     }
 
@@ -498,6 +528,17 @@ const deleteIssue = async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Issue not found'
+      });
+    }
+
+    // Check if user is the assignee or reporter (can delete)
+    const userId = req.user.id;
+    const canDelete = issue.assigneeId === userId || issue.reporterId === userId;
+    
+    if (!canDelete) {
+      return res.status(403).json({
+        success: false,
+        error: 'You do not have permission to delete this issue'
       });
     }
 

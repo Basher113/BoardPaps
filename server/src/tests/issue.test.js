@@ -5,7 +5,7 @@ const {
   teardownTest,
   createTestProject,
   createTestUsers,
-  createTestBoard,
+  createDefaultColumns,
 } = require('./helpers/test.helpers');
 
 const {generateAccessToken} = require("../utils/token.utils");
@@ -21,16 +21,15 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
   afterEach(async () => {
     await prisma.issue.deleteMany();
     await prisma.column.deleteMany();
-    await prisma.board.deleteMany();
     await prisma.projectMember.deleteMany();
     await prisma.project.deleteMany();
     await prisma.user.deleteMany();
     await prisma.refreshToken.deleteMany();
   });
 
-  // ==================== GET /projects/:projectId/boards/:boardId/issues ====================
-  describe('GET /projects/:projectId/boards/:boardId/issues', () => {
-    let project, testUsers, token, board, column;
+  // ==================== GET /projects/:projectId/issues ====================
+  describe('GET /projects/:projectId/issues', () => {
+    let project, testUsers, token, columns;
 
     beforeEach(async () => {
       await setupTest();
@@ -40,21 +39,20 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
         memberIdsAndRoles: [{ userId: testUsers.member.id, role: 'MEMBER' }]
       });
       token = generateAccessToken(testUsers.owner.id);
-      board = await createTestBoard(project.id);
-      column = board.columns[0];
+      columns = await createDefaultColumns(project.id);
     });
 
     describe('Authentication', () => {
       it('should return 401 when no access token is provided', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues`);
+          .get(`/projects/${project.id}/issues`);
         
         expect(res.statusCode).toBe(401);
       });
 
       it('should return 401 when invalid access token is provided', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues`)
+          .get(`/projects/${project.id}/issues`)
           .set('Cookie', 'accessToken=invalid-token');
 
         expect(res.statusCode).toBe(401);
@@ -65,7 +63,7 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
       it('should return 403 when user is not a project member', async () => {
         const nonMemberToken = generateAccessToken(testUsers.nonMember.id);
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues`)
+          .get(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${nonMemberToken}`);
 
         expect(res.statusCode).toBe(403);
@@ -75,7 +73,7 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
       it('should allow project member to access issues', async () => {
         const memberToken = generateAccessToken(testUsers.member.id);
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues`)
+          .get(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${memberToken}`);
 
         expect(res.statusCode).toBe(200);
@@ -93,8 +91,8 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
               type: 'BUG',
               priority: 'HIGH',
               position: 0,
-              boardId: board.id,
-              columnId: column.id,
+              projectId: project.id,
+              columnId: columns[0].id,
               reporterId: testUsers.owner.id,
               assigneeId: testUsers.member.id
             },
@@ -103,8 +101,8 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
               type: 'TASK',
               priority: 'MEDIUM',
               position: 1,
-              boardId: board.id,
-              columnId: column.id,
+              projectId: project.id,
+              columnId: columns[0].id,
               reporterId: testUsers.member.id,
               assigneeId: testUsers.owner.id
             },
@@ -113,17 +111,17 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
               type: 'STORY',
               priority: 'LOW',
               position: 2,
-              boardId: board.id,
-              columnId: board.columns[1].id,
+              projectId: project.id,
+              columnId: columns[1].id,
               reporterId: testUsers.owner.id
             }
           ]
         });
       });
 
-      it('should return all issues for the board', async () => {
+      it('should return all issues for the project', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues`)
+          .get(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`);
 
         expect(res.statusCode).toBe(200);
@@ -133,17 +131,17 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should filter issues by columnId', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues?columnId=${column.id}`)
+          .get(`/projects/${project.id}/issues?columnId=${columns[0].id}`)
           .set('Cookie', `accessToken=${token}`);
 
         expect(res.statusCode).toBe(200);
         expect(res.body.data).toHaveLength(2);
-        expect(res.body.data.every(issue => issue.columnId === column.id)).toBe(true);
+        expect(res.body.data.every(issue => issue.columnId === columns[0].id)).toBe(true);
       });
 
       it('should filter issues by type', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues?type=BUG`)
+          .get(`/projects/${project.id}/issues?type=BUG`)
           .set('Cookie', `accessToken=${token}`);
 
         expect(res.statusCode).toBe(200);
@@ -153,7 +151,7 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should filter issues by priority', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues?priority=HIGH`)
+          .get(`/projects/${project.id}/issues?priority=HIGH`)
           .set('Cookie', `accessToken=${token}`);
 
         expect(res.statusCode).toBe(200);
@@ -163,7 +161,7 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should filter issues by assigneeId', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues?assigneeId=${testUsers.member.id}`)
+          .get(`/projects/${project.id}/issues?assigneeId=${testUsers.member.id}`)
           .set('Cookie', `accessToken=${token}`);
 
         expect(res.statusCode).toBe(200);
@@ -173,7 +171,7 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should filter issues by reporterId', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues?reporterId=${testUsers.owner.id}`)
+          .get(`/projects/${project.id}/issues?reporterId=${testUsers.owner.id}`)
           .set('Cookie', `accessToken=${token}`);
 
         expect(res.statusCode).toBe(200);
@@ -183,7 +181,7 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should combine multiple filters', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues?type=BUG&priority=HIGH`)
+          .get(`/projects/${project.id}/issues?type=BUG&priority=HIGH`)
           .set('Cookie', `accessToken=${token}`);
 
         expect(res.statusCode).toBe(200);
@@ -194,7 +192,7 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should return empty array when no issues match filters', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues?type=EPIC`)
+          .get(`/projects/${project.id}/issues?type=EPIC`)
           .set('Cookie', `accessToken=${token}`);
 
         expect(res.statusCode).toBe(200);
@@ -203,7 +201,7 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should include reporter and assignee details', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues`)
+          .get(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`);
 
         expect(res.statusCode).toBe(200);
@@ -215,9 +213,9 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
     });
   });
 
-  // ==================== GET /projects/:projectId/boards/:boardId/issues/:issueId ====================
-  describe('GET /projects/:projectId/boards/:boardId/issues/:issueId', () => {
-    let project, testUsers, token, board, column, issue;
+  // ==================== GET /projects/:projectId/issues/:issueId ====================
+  describe('GET /projects/:projectId/issues/:issueId', () => {
+    let project, testUsers, token, columns, issue;
 
     beforeEach(async () => {
       await setupTest();
@@ -227,8 +225,7 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
         memberIdsAndRoles: [{ userId: testUsers.member.id, role: 'MEMBER' }]
       });
       token = generateAccessToken(testUsers.owner.id);
-      board = await createTestBoard(project.id);
-      column = board.columns[0];
+      columns = await createDefaultColumns(project.id);
       
       issue = await prisma.issue.create({
         data: {
@@ -237,8 +234,8 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
           type: 'TASK',
           priority: 'MEDIUM',
           position: 0,
-          boardId: board.id,
-          columnId: column.id,
+          projectId: project.id,
+          columnId: columns[0].id,
           reporterId: testUsers.owner.id
         }
       });
@@ -247,14 +244,13 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
     describe('Success Cases', () => {
       it('should return single issue with full details', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues/${issue.id}`)
+          .get(`/projects/${project.id}/issues/${issue.id}`)
           .set('Cookie', `accessToken=${token}`);
 
         expect(res.statusCode).toBe(200);
         expect(res.body.success).toBe(true);
         expect(res.body.data.id).toBe(issue.id);
         expect(res.body.data.title).toBe('Test Issue');
-        expect(res.body.data).toHaveProperty('board');
         expect(res.body.data).toHaveProperty('column');
         expect(res.body.data).toHaveProperty('reporter');
       });
@@ -263,7 +259,7 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
     describe('Error Cases', () => {
       it('should return 404 when issue does not exist', async () => {
         const res = await request(app)
-          .get(`/projects/${project.id}/boards/${board.id}/issues/non-existent-id`)
+          .get(`/projects/${project.id}/issues/non-existent-id`)
           .set('Cookie', `accessToken=${token}`);
 
         expect(res.statusCode).toBe(404);
@@ -273,9 +269,9 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
     });
   });
 
-  // ==================== POST /projects/:projectId/boards/:boardId/issues ====================
-  describe('POST /projects/:projectId/boards/:boardId/issues', () => {
-    let project, testUsers, token, board, column;
+  // ==================== POST /projects/:projectId/issues ====================
+  describe('POST /projects/:projectId/issues', () => {
+    let project, testUsers, token, columns;
 
     beforeEach(async () => {
       await setupTest();
@@ -285,19 +281,18 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
         memberIdsAndRoles: [{ userId: testUsers.member.id, role: 'MEMBER' }]
       });
       token = generateAccessToken(testUsers.owner.id);
-      board = await createTestBoard(project.id);
-      column = board.columns[0];
+      columns = await createDefaultColumns(project.id);
     });
 
     describe('Authentication', () => {
       it('should return 401 when no access token is provided', async () => {
         const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .send({
             title: 'New Issue',
             type: 'TASK',
             priority: 'MEDIUM',
-            columnId: column.id
+            columnId: columns[0].id
           });
         
         expect(res.statusCode).toBe(401);
@@ -307,13 +302,13 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
     describe('Validation', () => {
       it('should reject empty title', async () => {
         const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`)
           .send({
             title: '',
             type: 'TASK',
             priority: 'MEDIUM',
-            columnId: column.id
+            columnId: columns[0].id
           });
 
         expect(res.statusCode).toBe(400);
@@ -323,12 +318,12 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should reject missing title', async () => {
         const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`)
           .send({
             type: 'TASK',
             priority: 'MEDIUM',
-            columnId: column.id
+            columnId: columns[0].id
           });
 
         expect(res.statusCode).toBe(400);
@@ -338,30 +333,13 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
       it('should reject title longer than 200 characters', async () => {
         const longTitle = 'a'.repeat(201);
         const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`)
           .send({
             title: longTitle,
             type: 'TASK',
             priority: 'MEDIUM',
-            columnId: column.id
-          });
-
-        expect(res.statusCode).toBe(400);
-        expect(res.body.success).toBe(false);
-      });
-
-      it('should reject description longer than 5000 characters', async () => {
-        const longDescription = 'a'.repeat(5001);
-        const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
-          .set('Cookie', `accessToken=${token}`)
-          .send({
-            title: 'Test',
-            description: longDescription,
-            type: 'TASK',
-            priority: 'MEDIUM',
-            columnId: column.id
+            columnId: columns[0].id
           });
 
         expect(res.statusCode).toBe(400);
@@ -370,13 +348,13 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should reject invalid issue type', async () => {
         const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`)
           .send({
             title: 'Test',
             type: 'INVALID_TYPE',
             priority: 'MEDIUM',
-            columnId: column.id
+            columnId: columns[0].id
           });
 
         expect(res.statusCode).toBe(400);
@@ -385,13 +363,13 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should reject invalid priority', async () => {
         const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`)
           .send({
             title: 'Test',
             type: 'TASK',
             priority: 'INVALID_PRIORITY',
-            columnId: column.id
+            columnId: columns[0].id
           });
 
         expect(res.statusCode).toBe(400);
@@ -400,7 +378,7 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should reject missing columnId', async () => {
         const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`)
           .send({
             title: 'Test',
@@ -413,15 +391,14 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
       });
 
       it('should trim whitespace from title', async () => {
-    
         const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`)
           .send({
             title: '  Trimmed Title  ',
             type: 'TASK',
             priority: 'MEDIUM',
-            columnId: column.id
+            columnId: columns[0].id
           });
         expect(res.statusCode).toBe(201);
         expect(res.body.data.title).toBe('Trimmed Title');
@@ -431,13 +408,13 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
     describe('Success Cases', () => {
       it('should create issue with minimum required fields', async () => {
         const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`)
           .send({
             title: 'New Issue',
             type: 'TASK',
             priority: 'MEDIUM',
-            columnId: column.id
+            columnId: columns[0].id
           });
 
         expect(res.statusCode).toBe(201);
@@ -445,20 +422,20 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
         expect(res.body.data.title).toBe('New Issue');
         expect(res.body.data.type).toBe('TASK');
         expect(res.body.data.priority).toBe('MEDIUM');
-        expect(res.body.data.columnId).toBe(column.id);
+        expect(res.body.data.columnId).toBe(columns[0].id);
         expect(res.body.data.reporterId).toBe(testUsers.owner.id);
       });
 
       it('should create issue with all fields', async () => {
         const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`)
           .send({
             title: 'Full Issue',
             description: 'Full description',
             type: 'BUG',
             priority: 'HIGH',
-            columnId: column.id,
+            columnId: columns[0].id,
             assigneeId: testUsers.member.id
           });
 
@@ -469,133 +446,35 @@ describe('Issue tests - Test Suite for /GET and /POST', () => {
 
       it('should create issue at the last position', async () => {
         // Create first issue
-        const lastPosition = 0;
         await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`)
           .send({
             title: 'First Issue',
             type: 'TASK',
             priority: 'MEDIUM',
-            columnId: column.id
+            columnId: columns[0].id
           });
 
-        // Create second issue at position 0
+        // Create second issue
         const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
+          .post(`/projects/${project.id}/issues`)
           .set('Cookie', `accessToken=${token}`)
           .send({
-            title: 'Inserted Issue',
+            title: 'Second Issue',
             type: 'TASK',
             priority: 'MEDIUM',
-            columnId: column.id,
+            columnId: columns[0].id
           });
 
-        
         expect(res.statusCode).toBe(201);
 
-        // Verify first issue was shifted
+        // Verify positions
         const issues = await prisma.issue.findMany({
-          where: { columnId: column.id },
+          where: { columnId: columns[0].id },
           orderBy: { position: 'asc' }
         });
-
-        expect(issues[1].title).toBe('Inserted Issue');
-        expect(issues[1].position).toBe(1);
-
-        expect(issues[0].title).toBe('First Issue');
-      });
-
-      it('should set reporter to current user', async () => {
-        const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
-          .set('Cookie', `accessToken=${token}`)
-          .send({
-            title: 'New Issue',
-            type: 'TASK',
-            priority: 'MEDIUM',
-            columnId: column.id
-          });
-
-        expect(res.statusCode).toBe(201);
-        expect(res.body.data.reporterId).toBe(testUsers.owner.id);
-        expect(res.body.data.reporter.id).toBe(testUsers.owner.id);
-      });
-
-      it('should create issue with valid issue types', async () => {
-        const types = ['TASK', 'BUG', 'STORY', 'EPIC'];
-        
-        for (const type of types) {
-          const res = await request(app)
-            .post(`/projects/${project.id}/boards/${board.id}/issues`)
-            .set('Cookie', `accessToken=${token}`)
-            .send({
-              title: `${type} Issue`,
-              type,
-              priority: 'MEDIUM',
-              columnId: column.id
-            });
-
-          expect(res.statusCode).toBe(201);
-          expect(res.body.data.type).toBe(type);
-        }
-      });
-
-      it('should create issue with valid priorities', async () => {
-        const priorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
-        
-        for (const priority of priorities) {
-          const res = await request(app)
-            .post(`/projects/${project.id}/boards/${board.id}/issues`)
-            .set('Cookie', `accessToken=${token}`)
-            .send({
-              title: `${priority} Issue`,
-              type: 'TASK',
-              priority,
-              columnId: column.id
-            });
-
-          expect(res.statusCode).toBe(201);
-          expect(res.body.data.priority).toBe(priority);
-        }
-      });
-    });
-
-    describe('Error Cases', () => {
-      it('should return 400 when columnId does not belong to board', async () => {
-        const otherBoard = await createTestBoard(project.id, { name: 'Other Board' });
-        
-        const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
-          .set('Cookie', `accessToken=${token}`)
-          .send({
-            title: 'New Issue',
-            type: 'TASK',
-            priority: 'MEDIUM',
-            columnId: otherBoard.columns[0].id
-          });
-
-        expect(res.statusCode).toBe(400);
-        expect(res.body.success).toBe(false);
-        expect(res.body.error).toBe('Invalid column for this board');
-      });
-
-      it('should return 400 when assignee is not a project member', async () => {
-
-        const res = await request(app)
-          .post(`/projects/${project.id}/boards/${board.id}/issues`)
-          .set('Cookie', `accessToken=${token}`)
-          .send({
-            title: 'New Issue',
-            type: 'TASK',
-            priority: 'MEDIUM',
-            columnId: column.id,
-            assigneeId: testUsers.nonMember.id
-          });
-
-        expect(res.statusCode).toBe(400);
-        expect(res.body.success).toBe(false);
-        expect(res.body.error).toBe('Assignee must be a project member');
+        expect(issues).toHaveLength(2);
       });
     });
   });

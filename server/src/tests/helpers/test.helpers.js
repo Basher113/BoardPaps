@@ -23,7 +23,6 @@ const testUsers = {
 const cleanDatabase = async () => {
   await prisma.issue.deleteMany({});
   await prisma.column.deleteMany({});
-  await prisma.board.deleteMany({});
   await prisma.projectMember.deleteMany({});
   await prisma.project.deleteMany({});
   await prisma.user.deleteMany({});
@@ -61,15 +60,6 @@ const createTestUsers = async () => {
   return reformatTestUsers;
 };
 
-// const call = async () => {
-//   await createTestUsers();
-//   await cleanDatabase();
-// }
-
-// call()
-
-
-
 // Create a test project with owner and members
 const createTestProject = async (options = {}) => {
   const {
@@ -78,9 +68,6 @@ const createTestProject = async (options = {}) => {
     name = 'Test Project',
     key = 'TEST'
   } = options;
-
-  
-
 
   const project = await prisma.project.create({
     data: {
@@ -105,42 +92,8 @@ const createTestProject = async (options = {}) => {
   return project;
 };
 
-// Create a test board
-const createTestBoard = async (projectId, options = {}) => {
-  const {
-    name = 'Test Board',
-  } = options;
-
-  const boardData = {
-    name,
-    projectId
-  };
-
-  boardData.columns = {
-    create: [
-      { name: 'To Do', position: 0 },
-      { name: 'In Progress', position: 1 },
-      { name: 'Done', position: 2 }
-    ]};
- 
-  const board = await prisma.board.create({
-    data: boardData,
-    include: {
-      columns: {
-        orderBy: { position: 'asc' },
-        include: {
-          board: true,
-        }
-      }
-    }
-  });
-
-  
-  return board;
-};
-
-// Create a test column
-const createTestColumn = async (boardId, options = {}) => {
+// Create a test column (directly under project)
+const createTestColumn = async (projectId, options = {}) => {
   const {
     name = 'Test Column',
     position = 0
@@ -150,15 +103,31 @@ const createTestColumn = async (boardId, options = {}) => {
     data: {
       name,
       position,
-      boardId
+      projectId
     }
   });
 
   return column;
 };
 
-// Create a test issue
-const createTestIssue = async (boardId, columnId, reporterId, options = {}) => {
+// Create default columns for a project
+const createDefaultColumns = async (projectId) => {
+  await prisma.column.createMany({
+    data: [
+      { name: 'To Do', position: 0, projectId },
+      { name: 'In Progress', position: 1, projectId },
+      { name: 'Done', position: 2, projectId }
+    ]
+  });
+  
+  return prisma.column.findMany({
+    where: { projectId },
+    orderBy: { position: 'asc' }
+  });
+};
+
+// Create a test issue (columns are now directly under project)
+const createTestIssue = async (projectId, columnId, reporterId, options = {}) => {
   const {
     title = 'Test Issue',
     description = 'Test Description',
@@ -175,7 +144,7 @@ const createTestIssue = async (boardId, columnId, reporterId, options = {}) => {
       type,
       priority,
       position,
-      boardId,
+      projectId,
       columnId,
       reporterId,
       assigneeId
@@ -186,10 +155,10 @@ const createTestIssue = async (boardId, columnId, reporterId, options = {}) => {
 };
 
 // Create multiple test issues
-const createTestIssues = async (boardId, columnId, reporterId, count = 3) => {
+const createTestIssues = async (projectId, columnId, reporterId, count = 3) => {
   const issues = [];
   for (let i = 0; i < count; i++) {
-    const issue = await createTestIssue(boardId, columnId, reporterId, {
+    const issue = await createTestIssue(projectId, columnId, reporterId, {
       title: `Test Issue ${i + 1}`,
       position: i,
       type: i % 2 === 0 ? 'TASK' : 'BUG',
@@ -214,8 +183,8 @@ module.exports = {
   cleanDatabase,
   createTestUsers,
   createTestProject,
-  createTestBoard,
   createTestColumn,
+  createDefaultColumns,
   createTestIssue,
   createTestIssues,
   setupTest,

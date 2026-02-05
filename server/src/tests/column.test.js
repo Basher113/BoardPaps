@@ -6,7 +6,7 @@ const {
   setupTest,
   createTestUsers,
   createTestProject,
-  createTestBoard,
+  createDefaultColumns,
 } = require("./helpers/test.helpers");
 const { generateAccessToken } = require("../utils/token.utils");
 
@@ -15,8 +15,8 @@ describe("Column - Test Suite", () => {
     await teardownTest();
   });
 
-  describe("GET /projects/:projectId/boards/:boardId/columns", () => {
-    let project, board, testUsers;
+  describe("GET /projects/:projectId/columns", () => {
+    let project, testUsers, columns;
 
     beforeEach(async () => {
       await setupTest();
@@ -26,12 +26,12 @@ describe("Column - Test Suite", () => {
         memberIdsAndRoles: [{ userId: testUsers.member.id, role: 'MEMBER' }]
       });
       token = generateAccessToken(testUsers.owner.id);
-      board = await createTestBoard(project.id);
+      columns = await createDefaultColumns(project.id);
     });
 
-    it("should allow members to see board columns", async () => {
+    it("should allow members to see project columns", async () => {
       const memberToken = generateAccessToken(testUsers.member.id);
-      const response = await request(app).get(`/projects/${project.id}/boards/${board.id}/columns`)
+      const response = await request(app).get(`/projects/${project.id}/columns`)
                             .set('Cookie', `accessToken=${memberToken}`);
 
       expect(response.statusCode).toBe(200);
@@ -39,9 +39,9 @@ describe("Column - Test Suite", () => {
       expect(response.body.data.length).toBe(3)
     });
 
-    it("should not allow non-members to see the board columns", async () => {
+    it("should not allow non-members to see the project columns", async () => {
       const nonMemberToken = generateAccessToken(testUsers.nonMember.id);
-      const response = await request(app).get(`/projects/${project.id}/boards/${board.id}/columns`)
+      const response = await request(app).get(`/projects/${project.id}/columns`)
                             .set('Cookie', `accessToken=${nonMemberToken}`);
 
       console.log(response.body);

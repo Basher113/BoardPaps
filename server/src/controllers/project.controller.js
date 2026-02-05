@@ -13,7 +13,19 @@ const createProject = async (req, res) => {
         members: {
           create: { userId: ownerId, role: "OWNER" },
         },
+        columns: {
+          create: [
+            { name: 'To Do', position: 0 },
+            { name: 'In Progress', position: 1 },
+            { name: 'Done', position: 2 }
+          ]
+        }
       },
+      include: {
+        columns: {
+          orderBy: { position: 'asc' }
+        }
+      }
     });
 
     res.status(201).json(project);
@@ -37,7 +49,7 @@ const getMyProjects = async (req, res) => {
       include: {
         _count: {
           select: {
-            boards: true
+            columns: true
           }
         }
       },
@@ -51,6 +63,65 @@ const getMyProjects = async (req, res) => {
   }
 };
 
+const getProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        owner: {
+          select: { id: true, email: true, username: true }
+        },
+        members: {
+          include: {
+            user: {
+              select: { id: true, email: true, username: true }
+            }
+          }
+        },
+        columns: {
+          orderBy: { position: 'asc' },
+          include: {
+            issues: {
+              orderBy: { position: 'asc' },
+              include: {
+                reporter: {
+                  select: { id: true, email: true, username: true }
+                },
+                assignee: {
+                  select: { id: true, email: true, username: true }
+                }
+              }
+            },
+            _count: {
+              select: { issues: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: project
+    });
+  } catch (error) {
+    console.error('Error fetching project:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch project'
+    });
+  }
+};
+
 const updateProject = async (req, res) => {
     try {
       const { projectId } = req.params;
@@ -61,7 +132,7 @@ const updateProject = async (req, res) => {
       }
 
       const project = await prisma.project.update({
-        where: { projectId },
+        where: { id: projectId },
         data: { name, key },
         include: {
           owner: {
@@ -83,7 +154,7 @@ const deleteProject = async (req, res) => {
     try {
       const { projectId } = req.params;
       await prisma.project.delete({
-        where: { projectId }
+        where: { id: projectId }
       });
       res.json({message: "Success Delete"});
     } catch (error) {
@@ -107,4 +178,4 @@ const visitProject = async (req, res) => {
   }
 }
 
-module.exports = {createProject, getMyProjects, updateProject, deleteProject, visitProject}
+module.exports = {createProject, getMyProjects, getProject, updateProject, deleteProject, visitProject}

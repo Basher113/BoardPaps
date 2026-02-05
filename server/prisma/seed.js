@@ -8,7 +8,6 @@ async function main() {
   
   await prisma.issue.deleteMany({});
   await prisma.column.deleteMany({});
-  await prisma.board.deleteMany({});
   await prisma.projectMember.deleteMany({});
   await prisma.project.deleteMany({});
   await prisma.refreshToken.deleteMany({})
@@ -98,38 +97,23 @@ async function main() {
   });
 
   // -------------------
-  // BOARDS
-  // -------------------
-  
-    const boardA1 =  await prisma.board.create({
-      data: { name: "Development", projectId: projectA.id },
-    })
-    const boardA2 = await prisma.board.create({
-      data: { name: "Backlog", projectId: projectA.id },
-    })
-    const boardB1 = await prisma.board.create({
-      data: { name: "Sprint Board", projectId: projectB.id },
-    })
-
-  // -------------------
   // COLUMNS (helper)
   // -------------------
-  async function createColumns(boardId) {
+  async function createColumns(projectId) {
     const columns = []
     
-    columns.push(await prisma.column.create({ data: { name: "To Do", position: 1, boardId } }))
+    columns.push(await prisma.column.create({ data: { name: "To Do", position: 1, projectId } }))
     columns.push(await prisma.column.create({
-      data: { name: "In Progress", position: 2, boardId },
+      data: { name: "In Progress", position: 2, projectId },
     }))
-    columns.push(await prisma.column.create({ data: { name: "Review", position: 3, boardId } }))
-    columns.push(await prisma.column.create({ data: { name: "Done", position: 4, boardId } }))
+    columns.push(await prisma.column.create({ data: { name: "Review", position: 3, projectId } }))
+    columns.push(await prisma.column.create({ data: { name: "Done", position: 4, projectId } }))
   
     return columns;
   }
 
-  const [a1Todo, a1Prog, a1Rev, a1Done] = await createColumns(boardA1.id);
-  const [a2Todo, a2Prog, a2Rev, a2Done] = await createColumns(boardA2.id);
-  const [b1Todo, b1Prog, b1Rev, b1Done] = await createColumns(boardB1.id);
+  const [aTodo, aProg, aRev, aDone] = await createColumns(projectA.id);
+  const [bTodo, bProg, bRev, bDone] = await createColumns(projectB.id);
 
   // -------------------
   // ISSUES (helper)
@@ -139,15 +123,15 @@ async function main() {
   }
 
   
-    // Project A – Development board
+    // Project A
     await createIssue({
       title: "Setup CI pipeline",
       description: "Add GitHub Actions",
       type: "TASK",
       priority: "MEDIUM",
       position: 1,
-      boardId: boardA1.id,
-      columnId: a1Todo.id,
+      projectId: projectA.id,
+      columnId: aTodo.id,
       reporterId: alice.id,
       assigneeId: bob.id,
     })
@@ -157,8 +141,8 @@ async function main() {
       type: "BUG",
       priority: "CRITICAL",
       position: 2,
-      boardId: boardA1.id,
-      columnId: a1Todo.id,
+      projectId: projectA.id,
+      columnId: aTodo.id,
       reporterId: bob.id,
       assigneeId: alice.id,
     })
@@ -167,31 +151,20 @@ async function main() {
       type: "STORY",
       priority: "HIGH",
       position: 1,
-      boardId: boardA1.id,
-      columnId: a1Prog.id,
+      projectId: projectA.id,
+      columnId: aProg.id,
       reporterId: carol.id,
       assigneeId: dave.id,
     })
 
-    // Project A – Backlog
-    await createIssue({
-      title: "Dark mode",
-      type: "EPIC",
-      priority: "LOW",
-      position: 1,
-      boardId: boardA2.id,
-      columnId: a2Todo.id,
-      reporterId: alice.id,
-    })
-
-    // Project B – Sprint board
+    // Project B
     await createIssue({
       title: "Push notifications",
       type: "STORY",
       priority: "HIGH",
       position: 1,
-      boardId: boardB1.id,
-      columnId: b1Prog.id,
+      projectId: projectB.id,
+      columnId: bProg.id,
       reporterId: carol.id,
       assigneeId: eve.id,
     })
@@ -200,8 +173,8 @@ async function main() {
       type: "TASK",
       priority: "MEDIUM",
       position: 1,
-      boardId: boardB1.id,
-      columnId: b1Done.id,
+      projectId: projectB.id,
+      columnId: bDone.id,
       reporterId: eve.id,
       assigneeId: carol.id,
     })

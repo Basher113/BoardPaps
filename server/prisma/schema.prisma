@@ -96,8 +96,11 @@ model Project {
   // Members of this project
   members   ProjectMember[]
 
-  // Boards in this project
-  boards    Board[]
+  // Columns in this project
+  columns   Column[]
+  
+  // Issues in this project
+  issues    Issue[]
 }
 
 model ProjectMember {
@@ -113,32 +116,19 @@ model ProjectMember {
   @@unique([userId, projectId])
 }
 
-model Board {
+model Column {
   id        String   @id @default(uuid())
   name      String
+  position  Int      // column order in project
   projectId String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  project   Project @relation(fields: [projectId], references: [id])
-  columns   Column[]
-  issues    Issue[]
-}
-
-model Column {
-  id        String   @id @default(uuid())
-  name      String
-  position  Int      // column order in board
-  boardId   String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  board     Board   @relation(fields: [boardId], references: [id])
+  project   Project  @relation(fields: [projectId], references: [id])
   issues    Issue[]
 
-  @@unique([boardId, position])
+  @@unique([projectId, position])
 }
 
 model Issue {
@@ -150,15 +140,15 @@ model Issue {
 
   position    Int           // order inside column
 
-  boardId     String
+  projectId   String
   columnId    String
   reporterId  String
   assigneeId  String?
 
   createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  updatedAt   DateTime @updatedAt
 
-  board       Board         @relation(fields: [boardId], references: [id])
+  project     Project       @relation(fields: [projectId], references: [id])
   column      Column        @relation(fields: [columnId], references: [id])
   reporter    User          @relation("ReporterIssues", fields: [reporterId], references: [id])
   assignee    User?         @relation("AssignedIssues", fields: [assigneeId], references: [id])
