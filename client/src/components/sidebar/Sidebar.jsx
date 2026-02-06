@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Settings, Users, ChevronLeft, ChevronRight, Target, MoreHorizontal } from 'lucide-react';
+import { LayoutDashboard, Settings, Users, ChevronLeft, ChevronRight, Target, MoreHorizontal, FolderKanban, LogOut } from 'lucide-react';
 import {
   SidebarContainer,
   SidebarHeader,
@@ -25,6 +25,7 @@ import {
   UserMenuCurrentEmail,
   UserMenuList,
   UserMenuSectionTitle,
+  UserMenuLogout,
   MenuBackdrop,
 
   // Project Navigation Styles
@@ -35,51 +36,38 @@ import {
   EmptyProjects,
 } from './Sidebar.styles';
 import UserAvatar from '../ui/user-avatar/UserAvatar';
-import { useGetMyProjectsQuery, useVisitProjectMutation } from '../../reducers/slices/project/project.apiSlice';
+import { useGetMyProjectsQuery, } from '../../reducers/slices/project/project.apiSlice';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { selectActiveProjectId } from '../../reducers/slices/navigation/navigation.selector';
-import { setActiveProject } from '../../reducers/slices/navigation/navigation.slice';
+import { useDispatch,  } from 'react-redux';
 import ProjectItem from './ProjectItem';
 import icon from "../../assets/bp_icon.webp"
+import { apiSlice } from '../../reducers/apiSlice';
+import { useLogoutUserMutation } from '../../reducers/slices/user/user.slice';
 
 const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUser }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [expandedProjects, setExpandedProjects] = useState({});
   
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const activeProjectId = useSelector(selectActiveProjectId);
   
   const { data: projects = [], isLoading: projectsLoading } = useGetMyProjectsQuery();
-  const [visitProject] = useVisitProjectMutation();
+  const [logoutUser] = useLogoutUserMutation();
   
   const menuItems = [
-    { id: 'board', icon: LayoutDashboard, label: 'Board' },
-    { id: 'team', icon: Users, label: 'Team' },
     { id: 'settings', icon: Settings, label: 'Settings' }
   ];
   console.log(currentUser)
   
-  const toggleProject = async (projectId) => {
-    setExpandedProjects(prev => ({
-      ...prev,
-      [projectId]: !prev[projectId]
-    }));
-    
-    if (!expandedProjects[projectId]) {
-      await visitProject(projectId).unwrap();
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser().unwrap();
+      dispatch(apiSlice.util.resetApiState());
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
     }
-  };
-  
-  const handleBoardClick = (projectId, boardId) => {
-    dispatch(setActiveProject({ projectId, boardId }));
-    navigate(`/board/${boardId}`);
-  };
-  
-  const handleProjectClick = (projectId) => {
-    dispatch(setActiveProject({ projectId }));
   };
   
   return (
@@ -117,13 +105,11 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
               </NavButton>
             </NavItem>
           ))}
-        </NavList>
-        
-        {/* Project Navigation Section */}
-        {!collapsed && (
+
           <ProjectSection>
             <ProjectSectionHeader>
-              <ProjectSectionTitle>Projects</ProjectSectionTitle>
+              <FolderKanban size={20}/> 
+              {!collapsed ? <ProjectSectionTitle>Projects</ProjectSectionTitle> : undefined} 
             </ProjectSectionHeader>
             
             {projectsLoading ? (
@@ -133,25 +119,19 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
             ) : (
               <ProjectList>
                 {projects.map((project) => {
-                  const isExpanded = expandedProjects[project.id] || false;
-                  const isActive = activeProjectId === project.id;
                   
                   return (
                     <ProjectItem
                       key={project.id}
                       project={project}
-                      isActive={isActive}
-                      isExpanded={isExpanded}
-                      onToggle={() => toggleProject(project.id)}
-                      onProjectClick={handleProjectClick}
-                      onBoardClick={handleBoardClick}
                     />
                   );
                 })}
               </ProjectList>
             )}
           </ProjectSection>
-        )}
+        </NavList>
+      
       </SidebarNav>
       
       <SidebarFooter>
@@ -175,7 +155,12 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
                     <UserMenuCurrentEmail>{currentUser.email}</UserMenuCurrentEmail>
                   </UserMenuHeader>
                   <UserMenuList>
-                    <UserMenuSectionTitle>Switch User</UserMenuSectionTitle>
+                  </UserMenuList>
+                  <UserMenuList>
+                    <UserMenuLogout onClick={handleLogout}>
+                      <LogOut size={16} />
+                      Log out
+                    </UserMenuLogout>
                   </UserMenuList>
                 </UserMenuDropdown>
               </>
@@ -197,6 +182,12 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
                   </UserMenuHeader>
                   <UserMenuList>
                     <UserMenuSectionTitle>Switch User</UserMenuSectionTitle>
+                  </UserMenuList>
+                  <UserMenuList>
+                    <UserMenuLogout onClick={handleLogout}>
+                      <LogOut size={16} />
+                      Log out
+                    </UserMenuLogout>
                   </UserMenuList>
                 </UserMenuDropdown>
               </>

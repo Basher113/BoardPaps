@@ -3,7 +3,6 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   activeView: "board",
   activeProjectId: null,
-  activeBoardId: null,
 };
 
 const navigationSlice = createSlice({
@@ -15,14 +14,9 @@ const navigationSlice = createSlice({
     },
     setActiveProject: (state, action) => {
       state.activeProjectId = action.payload.projectId;
-      state.activeBoardId = action.payload.boardId || null;
-    },
-    setActiveBoard: (state, action) => {
-      state.activeBoardId = action.payload;
     },
     clearNavigation: (state) => {
       state.activeProjectId = null;
-      state.activeBoardId = null;
     },
   },
 });
@@ -30,7 +24,6 @@ const navigationSlice = createSlice({
 export const {
   setActiveView,
   setActiveProject,
-  setActiveBoard,
   clearNavigation,
 } = navigationSlice.actions;
 

@@ -7,13 +7,22 @@ export const CardContainer = styled.div`
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
   transition: box-shadow 0.2s;
-  cursor: ${props => props.canEdit ? 'move' : 'default'};
+  cursor: ${props => props.$canEdit ? 'grab' : 'default'};
   margin-bottom: 0.75rem;
   position: relative;
-  opacity: ${props => props.canEdit ? 1 : 0.75};
+  opacity: ${props => props.$canEdit ? 1 : 0.50};
+  ${props => props.$isDragging && `
+    opacity: 0.5;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  `}
 
   &:hover {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+
+  &.dragging {
+    opacity: 0.5;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   }
 
   @media (min-width: 640px) {
@@ -81,12 +90,17 @@ export const MenuItem = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: ${props => props.danger ? '#dc2626' : 'inherit'};
+  color: ${props => props.$danger ? '#dc2626' : 'inherit'};
   transition: background-color 0.2s;
   border-radius: 0.25rem;
 
   &:hover {
-    background-color: #f9fafb;
+    background-color: ${props => props.$danger ? '#fef2f2' : '#f9fafb'};
+  }
+
+  &:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: -2px;
   }
 `;
 

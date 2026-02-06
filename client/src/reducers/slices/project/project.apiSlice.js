@@ -6,22 +6,141 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       query: () => "projects",
       providesTags: ["Project"],
     }),
-    getProjectBoards: builder.query({
-      query: (projectId) => `projects/${projectId}/boards`,
-      providesTags: (result, error, projectId) => [
-        { type: "Board", id: projectId },
-      ],
+    getProject: builder.query({
+      query: (projectId) => `projects/${projectId}`,
+      providesTags: ["Project"],
     }),
-    getRecentBoard: builder.query({
-      query: () => "boards/recent",
-      providesTags: (result) => 
-        result ? [{ type: "Board", id: "RECENT" }] : ["Board"],
-    }),
-    visitProject: builder.mutation({
-      query: (projectId) => ({
-        url: `projects/${projectId}/visit`,
-        method: "PATCH",
+
+    createIssue: builder.mutation({
+      query: ({ projectId, ...data }) => ({
+        url: `projects/${projectId}/issues`,
+        method: "POST",
+        body: data,
       }),
+      invalidatesTags: ["Project"],
+    }),
+    moveIssue: builder.mutation({
+      query: ({ projectId, issueId, columnId, newPosition }) => ({
+        url: `projects/${projectId}/issues/${issueId}/move`,
+        method: "PATCH",
+        body: { columnId, newPosition },
+      }),
+      async onQueryStarted({ issueId, columnId, newPosition }, { dispatch, queryFulfilled }) {
+        // Optimistic update - update the issue immediately
+        const patchResult = dispatch(
+          projectApiSlice.util.updateQueryData("getProject", undefined, (project) => {
+            if (!project?.columns) return;
+            
+            // Find the issue in any column
+            for (const column of project.columns) {
+              const issueIndex = column.issues?.findIndex(i => i.id === issueId);
+              if (issueIndex !== undefined && issueIndex !== -1) {
+                const issue = column.issues[issueIndex];
+                
+                // Remove from old column
+                column.issues.splice(issueIndex, 1);
+                
+                // Add to new column
+                const targetColumn = project.columns.find(c => c.id === columnId);
+                if (targetColumn) {
+                  // Insert at the correct position
+                  const insertIndex = Math.min(newPosition, targetColumn.issues.length);
+                  targetColumn.issues.splice(insertIndex, 0, { ...issue, columnId });
+                }
+                break;
+              }
+            }
+          })
+        );
+        
+        try {
+          await queryFulfilled;
+        } catch {
+          // Rollback on error
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: ["Project"],
+    }),
+    updateIssue: builder.mutation({
+      query: ({ issueId, columnId, newPosition, ...data }) => ({
+        url: `issues/${issueId}`,
+        method: "PUT",
+        body: { ...data, columnId, newPosition },
+      }),
+      async onQueryStarted({ issueId, columnId, newPosition, ...data }, { dispatch, queryFulfilled }) {
+        // Optimistic update - update the issue immediately
+        const patchResult = dispatch(
+          projectApiSlice.util.updateQueryData("getProject", undefined, (project) => {
+            if (!project?.columns) return;
+            
+            // Find the issue in any column
+            for (const column of project.columns) {
+              const issueIndex = column.issues?.findIndex(i => i.id === issueId);
+              if (issueIndex !== undefined && issueIndex !== -1) {
+                const issue = column.issues[issueIndex];
+                
+                // If moving to a different column
+                if (columnId && columnId !== issue.columnId) {
+                  // Remove from old column
+                  column.issues.splice(issueIndex, 1);
+                  
+                  // Add to new column
+                  const targetColumn = project.columns.find(c => c.id === columnId);
+                  if (targetColumn) {
+                    const insertIndex = newPosition !== undefined 
+                      ? Math.min(newPosition, targetColumn.issues.length)
+                      : targetColumn.issues.length;
+                    targetColumn.issues.splice(insertIndex, 0, { ...issue, columnId });
+                  }
+                } else {
+                  // Just update the issue properties
+                  column.issues[issueIndex] = { ...issue, ...data };
+                }
+                break;
+              }
+            }
+          })
+        );
+        
+        try {
+          await queryFulfilled;
+        } catch {
+          // Rollback on error
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: ["Project"],
+    }),
+    deleteIssue: builder.mutation({
+      query: (issueId) => ({
+        url: `issues/${issueId}`,
+        method: "DELETE",
+      }),
+      async onQueryStarted(issueId, { dispatch, queryFulfilled }) {
+        // Optimistic update - remove the issue immediately
+        const patchResult = dispatch(
+          projectApiSlice.util.updateQueryData("getProject", undefined, (project) => {
+            if (!project?.columns) return;
+            
+            // Find and remove the issue from any column
+            for (const column of project.columns) {
+              const issueIndex = column.issues?.findIndex(i => i.id === issueId);
+              if (issueIndex !== undefined && issueIndex !== -1) {
+                column.issues.splice(issueIndex, 1);
+                break;
+              }
+            }
+          })
+        );
+        
+        try {
+          await queryFulfilled;
+        } catch {
+          // Rollback on error
+          patchResult.undo();
+        }
+      },
       invalidatesTags: ["Project"],
     }),
   }),
@@ -29,7 +148,10 @@ export const projectApiSlice = apiSlice.injectEndpoints({
 
 export const {
   useGetMyProjectsQuery,
-  useGetProjectBoardsQuery,
-  useGetRecentBoardQuery,
+  useGetProjectQuery,
   useVisitProjectMutation,
+  useCreateIssueMutation,
+  useMoveIssueMutation,
+  useUpdateIssueMutation,
+  useDeleteIssueMutation,
 } = projectApiSlice;

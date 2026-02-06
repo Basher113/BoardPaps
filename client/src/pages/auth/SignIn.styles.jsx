@@ -80,7 +80,7 @@ export const ErrorMessage = styled.span`
 
 export const SubmitButton = styled.button`
   padding: 0.75rem 1.5rem;
-  background-color: #2563eb;
+  background-color: var(--primary);
   color: white;
   border: none;
   border-radius: 0.5rem;

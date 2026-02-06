@@ -1,4 +1,4 @@
-import { Menu, Search, Plus } from 'lucide-react';
+import { Menu, Search, Plus, Users } from 'lucide-react';
 import {
   HeaderContainer,
   HeaderContent,
@@ -14,8 +14,11 @@ import {
   SearchInput,
   CreateButton,
   ButtonText,
-  MobileSearchWrapper
+  MobileSearchWrapper,
+  MembersWrapper,
+  MemberAvatarWrapper
 } from './Header.styles';
+import UserAvatar from '../../../../components/ui/user-avatar/UserAvatar';
 
 const Header = ({
   boardName,
@@ -25,8 +28,13 @@ const Header = ({
   searchOpen,
   setSearchOpen,
   onCreateIssue,
-  onMenuToggle
+  onMenuToggle,
+  projectMembers
 }) => {
+  // Show max 5 avatars
+  const displayedMembers = projectMembers?.slice(0, 5) || [];
+  const remainingCount = (projectMembers?.length || 0) - 5;
+  
   return (
     <HeaderContainer>
       <HeaderContent>
@@ -41,6 +49,20 @@ const Header = ({
         </HeaderLeft>
         
         <HeaderRight>
+          {projectMembers && projectMembers.length > 0 && (
+            <MembersWrapper>
+              {displayedMembers.map((member) => (
+                <MemberAvatarWrapper key={member.userId} title={member.user.username}>
+                  <UserAvatar user={member.user} size="sm" />
+                </MemberAvatarWrapper>
+              ))}
+              {remainingCount > 0 && (
+                <MemberAvatarWrapper title={`+${remainingCount} more members`}>
+                  <UserAvatar user={{ username: `+${remainingCount}` }} size="sm" />
+                </MemberAvatarWrapper>
+              )}
+            </MembersWrapper>
+          )}
           <SearchToggle onClick={() => setSearchOpen(!searchOpen)}>
             <Search size={20} />
           </SearchToggle>

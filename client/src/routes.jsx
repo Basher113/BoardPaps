@@ -1,4 +1,4 @@
-import Board from "./pages/board/Board"
+import ProjectBoard from "./pages/board/Board"
 import Root from "./pages/root/Root"
 import AuthLayout from "./pages/auth/AuthLayout"
 import SignIn from "./pages/auth/SignIn"
@@ -22,12 +22,8 @@ export const routes = [
         element: <Projects />
       },
       {
-        path: "boards/:boardId",
-        element: <Board />
-      },
-      {
-        path: "project/:projectId/boards",
-        element: <Board />
+        path: "project/:projectId",
+        element: <ProjectBoard />
       }
     ]
   },

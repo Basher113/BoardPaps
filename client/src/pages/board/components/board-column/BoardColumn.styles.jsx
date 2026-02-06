@@ -7,6 +7,8 @@ export const ColumnContainer = styled.div`
   min-width: 280px;
   flex-shrink: 0;
   width: 100%;
+  border: 2px solid ${props => props.$isOver ? '#3b82f6' : 'transparent'};
+  transition: border-color 0.2s;
 
   @media (min-width: 640px) {
     padding: 1rem;
@@ -64,4 +66,15 @@ export const IssuesContainer = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 200px;
+  gap: 0.5rem;
+`;
+
+export const EmptyColumnMessage = styled.div`
+  color: #9ca3af;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 2rem 1rem;
+  border: 2px dashed #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #fafafa;
 `;

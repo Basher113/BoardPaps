@@ -224,6 +224,27 @@ export const UserMenuItemEmail = styled.p`
   color: #6b7280;
 `;
 
+export const UserMenuLogout = styled.button`
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-radius: 0.25rem;
+  color: #dc2626;
+  margin-top: 0.5rem;
+
+  &:hover {
+    background-color: #fef2f2;
+  }
+`;
+
 export const MenuBackdrop = styled.div`
   position: fixed;
   inset: 0;
@@ -265,18 +286,19 @@ export const ProjectSection = styled.div`
 
 export const ProjectSectionHeader = styled.div`
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: 0.5rem 0;
   margin-bottom: 0.5rem;
+  gap: 1rem;
 `;
 
 export const ProjectSectionTitle = styled.span`
   font-size: 0.75rem;
   font-weight: 600;
-  color: #9ca3af;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
 `;
 
 export const ProjectList = styled.ul`

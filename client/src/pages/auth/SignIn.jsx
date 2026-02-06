@@ -98,9 +98,9 @@ const SignIn = () => {
           {errors.password && <ErrorMessage>{errors.password}</ErrorMessage>}
         </FormGroup>
 
-        <SubmitButton type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading}>
           {isLoading ? "Signing in..." : "Sign In"}
-        </SubmitButton>
+        </Button>
       </Form>
 
       <FooterText>

@@ -4,7 +4,7 @@ export const HeaderContainer = styled.header`
   background-color: white;
   border-bottom: 1px solid #e5e7eb;
   padding: 0.75rem 1rem;
-
+  width: 100%;
   @media (min-width: 640px) {
     padding: 1rem 1.5rem;
   }
@@ -154,4 +154,39 @@ export const MobileSearchWrapper = styled.div`
   @media (min-width: 640px) {
     display: none;
   }
+`;
+
+export const MembersWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-right: 0.5rem;
+`;
+
+export const MemberAvatarWrapper = styled.div`
+  margin-left: -0.5rem;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s;
+  position: relative;
+
+  &:first-child {
+    margin-left: 0;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+    z-index: 10;
+  }
+`;
+
+export const MemberCountBadge = styled.div`
+  background-color: #6b7280;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 50%;
+  margin-left: 0.25rem;
 `;

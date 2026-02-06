@@ -26,7 +26,6 @@ import { useGetMyProjectsQuery } from "../../reducers/slices/project/project.api
 const Projects = ({
   
   openProject,
-  getTotalCards,
   handleDeleteProject,
   showNewProject,
   setShowNewProject,
