@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Settings, Users, ChevronLeft, ChevronRight, Target, MoreHorizontal, FolderKanban, LogOut } from 'lucide-react';
+import { LayoutDashboard, Settings, Users, ChevronLeft, ChevronRight, Target, MoreHorizontal, FolderKanban, LogOut, Mail, Bell } from 'lucide-react';
 import {
   SidebarContainer,
   SidebarHeader,
@@ -34,6 +34,11 @@ import {
   ProjectSectionTitle,
   ProjectList,
   EmptyProjects,
+
+  // Invitation Badge Styles
+  InvitationBadge,
+  InvitationNavItem,
+  InvitationBadgeDot,
 } from './Sidebar.styles';
 import UserAvatar from '../ui/user-avatar/UserAvatar';
 import { useGetMyProjectsQuery, } from '../../reducers/slices/project/project.apiSlice';
@@ -43,6 +48,7 @@ import ProjectItem from './ProjectItem';
 import icon from "../../assets/bp_icon.webp"
 import { apiSlice } from '../../reducers/apiSlice';
 import { useLogoutUserMutation } from '../../reducers/slices/user/user.slice';
+import { useGetMyInvitationsCountQuery } from '../../reducers/slices/invitation/invitation.apiSlice';
 
 const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUser }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -52,11 +58,14 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
   
   
   const { data: projects = [], isLoading: projectsLoading } = useGetMyProjectsQuery();
+  const { data: invitationsCountData } = useGetMyInvitationsCountQuery();
   const [logoutUser] = useLogoutUserMutation();
   
   const menuItems = [
     { id: 'settings', icon: Settings, label: 'Settings' }
   ];
+
+  const invitationsCount = invitationsCountData?.data?.count || 0;
   console.log(currentUser)
   
 
@@ -70,23 +79,31 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
     }
   };
   
+  const handleInvitationsClick = () => {
+    navigate('/app/invitations');
+  };
+  
+  const handleProjectsClick = () => {
+    navigate('/app');
+  };
+  
   return (
     <SidebarContainer collapsed={collapsed}>
       <SidebarHeader>
         
         {!collapsed && (
-          
-          <LogoContainer>
-            <img src={icon} height="40" weight="40"/>
-            
-            <ProjectInfo>
-              <ProjectDetails>
-                <AppName>BoardPaps</AppName>
-              </ProjectDetails>
-            </ProjectInfo>
-          </LogoContainer>
-          
-        )}
+           
+           <LogoContainer>
+             <img src={icon} height="40" weight="40"/>
+             
+             <ProjectInfo>
+               <ProjectDetails>
+                 <AppName>BoardPaps</AppName>
+               </ProjectDetails>
+             </ProjectInfo>
+           </LogoContainer>
+           
+         )}
         <CollapseButton collapsed={collapsed} onClick={() => setCollapsed(!collapsed)}>
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </CollapseButton>
@@ -94,6 +111,18 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
       
       <SidebarNav>
         <NavList>
+          <NavItem>
+            <InvitationNavItem
+              onClick={handleInvitationsClick}
+            >
+              <Bell size={20} />
+              {!collapsed && <span>Invitations</span>}
+              {invitationsCount > 0 && (
+                <InvitationBadge>{invitationsCount}</InvitationBadge>
+              )}
+            </InvitationNavItem>
+          </NavItem>
+          
           {menuItems.map(item => (
             <NavItem key={item.id}>
               <NavButton
@@ -107,7 +136,7 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
           ))}
 
           <ProjectSection>
-            <ProjectSectionHeader>
+            <ProjectSectionHeader onClick={handleProjectsClick}>
               <FolderKanban size={20}/> 
               {!collapsed ? <ProjectSectionTitle>Projects</ProjectSectionTitle> : undefined} 
             </ProjectSectionHeader>
@@ -119,7 +148,7 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
             ) : (
               <ProjectList>
                 {projects.map((project) => {
-                  
+                   
                   return (
                     <ProjectItem
                       key={project.id}
@@ -155,6 +184,11 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
                     <UserMenuCurrentEmail>{currentUser.email}</UserMenuCurrentEmail>
                   </UserMenuHeader>
                   <UserMenuList>
+                    <UserMenuSectionTitle>Actions</UserMenuSectionTitle>
+                    <UserMenuLogout onClick={handleInvitationsClick}>
+                      <Bell size={16} />
+                      View Invitations ({invitationsCount})
+                    </UserMenuLogout>
                   </UserMenuList>
                   <UserMenuList>
                     <UserMenuLogout onClick={handleLogout}>
@@ -170,6 +204,9 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
           <div style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
             <UserProfileButton onClick={() => setShowUserMenu(!showUserMenu)} style={{ width: 'auto' }}>
               <UserAvatar userId={currentUser.id} size="md" />
+              {invitationsCount > 0 && (
+                <InvitationBadgeDot />
+              )}
             </UserProfileButton>
             {showUserMenu && (
               <>
@@ -181,7 +218,11 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
                     <UserMenuCurrentEmail>{currentUser.email}</UserMenuCurrentEmail>
                   </UserMenuHeader>
                   <UserMenuList>
-                    <UserMenuSectionTitle>Switch User</UserMenuSectionTitle>
+                    <UserMenuSectionTitle>Actions</UserMenuSectionTitle>
+                    <UserMenuLogout onClick={handleInvitationsClick}>
+                      <Bell size={16} />
+                      View Invitations ({invitationsCount})
+                    </UserMenuLogout>
                   </UserMenuList>
                   <UserMenuList>
                     <UserMenuLogout onClick={handleLogout}>

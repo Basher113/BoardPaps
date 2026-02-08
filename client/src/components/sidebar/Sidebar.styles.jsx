@@ -289,6 +289,15 @@ export const ProjectSectionHeader = styled.div`
   padding: 0.5rem 0;
   margin-bottom: 0.5rem;
   gap: 1rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+  color: #9ca3af;
+
+  &:hover {
+    background-color: #1f2937;
+    color: white;
+  }
 `;
 
 export const ProjectSectionTitle = styled.span`
@@ -383,4 +392,47 @@ export const EmptyProjects = styled.div`
   text-align: center;
   color: #9ca3af;
   font-size: 0.875rem;
+`;
+
+// Invitation Badge Styles
+export const InvitationBadge = styled.span`
+  background-color: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  margin-left: auto;
+`;
+
+export const InvitationNavItem = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  background: ${props => props.active ? '#1e3a5f' : 'transparent'};
+  color: ${props => props.active ? '#60a5fa' : '#d1d5db'};
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  position: relative;
+
+  &:hover {
+    background-color: ${props => props.active ? '#1e3a5f' : '#1f2937'};
+  }
+`;
+
+export const InvitationBadgeDot = styled.span`
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  border: 2px solid #111827;
 `;

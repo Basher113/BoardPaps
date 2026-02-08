@@ -1,4 +1,5 @@
-import React from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Content,
   Header,
@@ -21,21 +22,90 @@ import {
   Button,
 } from "./Projects.styles";
 import { formatDate } from "../../utils/date";
-import { useGetMyProjectsQuery } from "../../reducers/slices/project/project.apiSlice";
+import {
+  useGetMyProjectsQuery,
+  useCreateProjectMutation,
+  useDeleteProjectMutation,
+} from "../../reducers/slices/project/project.apiSlice";
+import { addToast } from "../../reducers/slices/toast/toast.slice";
+import { useDispatch } from "react-redux";
+import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
 
-const Projects = ({
-  
-  openProject,
-  handleDeleteProject,
-  showNewProject,
-  setShowNewProject,
-  newProject,
-  setNewProject,
-  handleCreateProject,
-}) => {
-  const {data: projects = [], isLoading} = useGetMyProjectsQuery();
-  if (isLoading) return <div>Loading...</div>
-  console.log(projects)
+const Projects = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [newProject, setNewProject] = useState({ name: "", key: "", description: "" });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState(null);
+
+  const { data: projects = [], isLoading } = useGetMyProjectsQuery();
+  const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
+  const [deleteProject, { isLoading: isDeleting }] = useDeleteProjectMutation();
+
+  if (isLoading) return <div>Loading...</div>;
+
+  const openProject = (project) => {
+    navigate(`/app/project/${project.id}`);
+  };
+
+  const handleDeleteClick = (e, projectId) => {
+    e.stopPropagation();
+    setProjectToDelete(projectId);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+
+    try {
+      await deleteProject(projectToDelete).unwrap();
+      dispatch(addToast({ type: "success", message: "Project deleted successfully" }));
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+      dispatch(addToast({
+        type: "error",
+        message: error.data?.message || "Failed to delete project",
+      }));
+    } finally {
+      setShowDeleteConfirm(false);
+      setProjectToDelete(null);
+    }
+  };
+
+  const handleCreateProject = async () => {
+    if (!newProject.name.trim()) {
+      dispatch(addToast({ type: "error", message: "Project name is required" }));
+      return;
+    }
+
+    if (!newProject.key.trim()) {
+      dispatch(addToast({ type: "error", message: "Project key is required" }));
+      return;
+    }
+
+    try {
+      const result = await createProject({
+        name: newProject.name,
+        key: newProject.key.toUpperCase(),
+        description: newProject.description,
+      }).unwrap();
+
+      dispatch(addToast({ type: "success", message: "Project created successfully" }));
+      setShowNewProject(false);
+      setNewProject({ name: "", key: "", description: "" });
+
+      // Navigate to the newly created project
+      navigate(`/app/project/${result.id}`);
+    } catch (error) {
+      console.error("Failed to create project:", error);
+      dispatch(addToast({
+        type: "error",
+        message: error.data?.message || "Failed to create project",
+      }));
+    }
+  };
+
   return (
     <>
       <Content>
@@ -51,34 +121,46 @@ const Projects = ({
         </Header>
 
         <ProjectsGrid>
-          {projects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              onClick={() => openProject(project)}
-            >
-              <ProjectName>{project.name}</ProjectName>
-              <ProjectDescription>
-                {project.description}
-              </ProjectDescription>
+          {projects.length === 0 ? (
+            <div style={{ textAlign: "center", color: "#6b7280", padding: "2rem", fontSize: "1.5rem" }}>
+              No projects yet. 
+            </div>
+          ) : (
+            projects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                onClick={() => openProject(project)}
+              >
+                <ProjectName>{project.name}</ProjectName>
+                <ProjectDescription>
+                  {project.description || "No description"}
+                </ProjectDescription>
 
-              <ProjectMeta>
-                <div>
-                  <span>{project._count.boards} boards</span>
-                  <span style={{ margin: "0 0.5rem" }}>•</span>
-                  <span>{formatDate(project.lastVisitedAt)}</span>
-                </div>
+                <ProjectMeta>
+                  <div>
+                    <span>{project._count?.boards || 0} boards</span>
+                    <span style={{ margin: "0 0.5rem" }}>•</span>
+                    <span style={{ fontWeight: "bold" }}>{project.key}</span>
+                    <span style={{ margin: "0 0.5rem" }}>•</span>
+                    <span>
+                      {project.lastVisitedAt
+                        ? formatDate(project.lastVisitedAt)
+                        : "Never visited"}
+                    </span>
+                  </div>
 
-                <DeleteButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteProject(project.id);
-                  }}
-                >
-                  Delete
-                </DeleteButton>
-              </ProjectMeta>
-            </ProjectCard>
-          ))}
+                  <DeleteButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(e, project.id);
+                    }}
+                  >
+                    Delete
+                  </DeleteButton>
+                </ProjectMeta>
+              </ProjectCard>
+            ))
+          )}
         </ProjectsGrid>
       </Content>
 
@@ -88,12 +170,25 @@ const Projects = ({
             <ModalTitle>Create New Project</ModalTitle>
 
             <Input
+              placeholder="Project key (e.g. PROJ)"
+              value={newProject.key}
+              onChange={(e) =>
+                setNewProject({ ...newProject, key: e.target.value.toUpperCase() })
+              }
+              maxLength={10}
+              style={{ marginBottom: "1rem", textTransform: "uppercase" }}
+              disabled={isCreating}
+              required
+            />
+
+            <Input
               placeholder="Project name"
               value={newProject.name}
               onChange={(e) =>
                 setNewProject({ ...newProject, name: e.target.value })
               }
               autoFocus
+              disabled={isCreating}
             />
 
             <Textarea
@@ -105,17 +200,19 @@ const Projects = ({
                   description: e.target.value,
                 })
               }
+              disabled={isCreating}
             />
 
             <ButtonGroup>
-              <Button primary onClick={handleCreateProject}>
-                Create Project
+              <Button primary onClick={handleCreateProject} disabled={isCreating}>
+                {isCreating ? "Creating..." : "Create Project"}
               </Button>
               <Button
                 onClick={() => {
                   setShowNewProject(false);
-                  setNewProject({ name: "", description: "" });
+                  setNewProject({ name: "", key: "", description: "" });
                 }}
+                disabled={isCreating}
               >
                 Cancel
               </Button>
@@ -123,6 +220,21 @@ const Projects = ({
           </ModalContent>
         </ModalOverlay>
       )}
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setProjectToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Project"
+        message="Are you sure you want to delete this project? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </>
   );
 };

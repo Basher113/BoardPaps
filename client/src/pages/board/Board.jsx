@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Plus } from "lucide-react";
 import {
   BoardContainer,
@@ -14,6 +14,7 @@ import {
 import Header from "./components/header/Header";
 import IssueCard from "./components/issue-card/IssueCard";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
+import InviteModal from "./components/invite-modal/InviteModal";
 import { selectActiveProjectId } from "../../reducers/slices/navigation/navigation.selector";
 import { 
   useGetProjectQuery, 
@@ -25,6 +26,7 @@ import {
   selectIsDeleteModalOpen, 
   selectDeleteIssueId 
 } from "../../reducers/slices/issue/issue.slice";
+import { useGetCurrentUserQuery } from "../../reducers/slices/user/user.slice";
 
 const Board = () => {
   const dispatch = useDispatch();
@@ -43,9 +45,29 @@ const Board = () => {
   const [draggedCard, setDraggedCard] = useState(null);
   const [draggedFrom, setDraggedFrom] = useState(null);
   const [draggedOver, setDraggedOver] = useState(null);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   const columns = project?.columns || [];
   const projectKey = project?.key || "PROJ";
+
+  // Find current user's role in the project
+  const { data: currentUserData } = useGetCurrentUserQuery();
+  const currentUser = currentUserData; // /auth/me returns user directly, not wrapped in data
+  const currentUserMembership = project?.members?.find(
+    (m) => m.user?.id === currentUser?.id
+  );
+  const currentUserRole = currentUserMembership?.role || null;
+  const canInvite = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
+
+  // Debug logging for invite button visibility
+  console.log("=== Invite Button Debug ===");
+  console.log("Current User:", currentUser);
+  console.log("Current User ID:", currentUser?.id);
+  console.log("Project Members:", project?.members);
+  console.log("Current User Membership:", currentUserMembership);
+  console.log("Current User Role:", currentUserRole);
+  console.log("Can Invite:", canInvite);
+  console.log("=========================");
 
 
 
@@ -143,6 +165,9 @@ const Board = () => {
       <Header
         boardName={project.name || "Project Board"}
         projectName={project.name || ""}
+        onInvite={() => setIsInviteModalOpen(true)}
+        canInvite={canInvite}
+        projectMembers={project?.members}
       />
       <BoardContainer>
         {columns.map((column) => (
@@ -195,6 +220,13 @@ const Board = () => {
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"
+      />
+
+      {/* Invite Modal */}
+      <InviteModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        projectId={activeProjectId}
       />
     </>
   );

@@ -16,7 +16,9 @@ import {
   ButtonText,
   MobileSearchWrapper,
   MembersWrapper,
-  MemberAvatarWrapper
+  MemberAvatarWrapper,
+  InviteButton,
+  InviteButtonText
 } from './Header.styles';
 import UserAvatar from '../../../../components/ui/user-avatar/UserAvatar';
 
@@ -29,6 +31,8 @@ const Header = ({
   setSearchOpen,
   onCreateIssue,
   onMenuToggle,
+  onInvite,
+  canInvite,
   projectMembers
 }) => {
   // Show max 5 avatars
@@ -83,6 +87,13 @@ const Header = ({
             <Plus size={16} />
             <ButtonText>Create</ButtonText>
           </CreateButton>
+          
+          {canInvite && (
+            <InviteButton onClick={onInvite}>
+              <Users size={16} />
+              <InviteButtonText>Invite</InviteButtonText>
+            </InviteButton>
+          )}
         </HeaderRight>
       </HeaderContent>
       

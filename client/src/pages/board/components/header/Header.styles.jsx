@@ -190,3 +190,34 @@ export const MemberCountBadge = styled.div`
   border-radius: 50%;
   margin-left: 0.25rem;
 `;
+
+export const InviteButton = styled.button`
+  background-color: #10b981;
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+
+  &:hover {
+    background-color: #059669;
+  }
+
+  @media (min-width: 640px) {
+    padding: 0.5rem 1rem;
+    gap: 0.5rem;
+  }
+`;
+
+export const InviteButtonText = styled.span`
+  display: none;
+
+  @media (min-width: 640px) {
+    display: inline;
+  }
+`;
