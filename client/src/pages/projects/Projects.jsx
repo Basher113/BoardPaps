@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   Content,
   Header,
@@ -27,13 +28,10 @@ import {
   useCreateProjectMutation,
   useDeleteProjectMutation,
 } from "../../reducers/slices/project/project.apiSlice";
-import { addToast } from "../../reducers/slices/toast/toast.slice";
-import { useDispatch } from "react-redux";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
 
 const Projects = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProject, setNewProject] = useState({ name: "", key: "", description: "" });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -60,13 +58,10 @@ const Projects = () => {
 
     try {
       await deleteProject(projectToDelete).unwrap();
-      dispatch(addToast({ type: "success", message: "Project deleted successfully" }));
+      toast.success("Project deleted successfully");
     } catch (error) {
       console.error("Failed to delete project:", error);
-      dispatch(addToast({
-        type: "error",
-        message: error.data?.message || "Failed to delete project",
-      }));
+      toast.error(error.data?.message || "Failed to delete project");
     } finally {
       setShowDeleteConfirm(false);
       setProjectToDelete(null);
@@ -75,12 +70,12 @@ const Projects = () => {
 
   const handleCreateProject = async () => {
     if (!newProject.name.trim()) {
-      dispatch(addToast({ type: "error", message: "Project name is required" }));
+      toast.error("Project name is required");
       return;
     }
 
     if (!newProject.key.trim()) {
-      dispatch(addToast({ type: "error", message: "Project key is required" }));
+      toast.error("Project key is required");
       return;
     }
 
@@ -91,7 +86,7 @@ const Projects = () => {
         description: newProject.description,
       }).unwrap();
 
-      dispatch(addToast({ type: "success", message: "Project created successfully" }));
+      toast.success("Project created successfully");
       setShowNewProject(false);
       setNewProject({ name: "", key: "", description: "" });
 
@@ -99,10 +94,7 @@ const Projects = () => {
       navigate(`/app/project/${result.id}`);
     } catch (error) {
       console.error("Failed to create project:", error);
-      dispatch(addToast({
-        type: "error",
-        message: error.data?.message || "Failed to create project",
-      }));
+      toast.error(error.data?.message || "Failed to create project");
     }
   };
 

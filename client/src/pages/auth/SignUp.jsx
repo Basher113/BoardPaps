@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
 import { useRegisterUserMutation } from "../../reducers/slices/user/user.slice";
 import icon from "../../assets/bp_icon.webp";
@@ -67,7 +68,10 @@ const SignUp = () => {
 
     try {
       await registerUser({ email, username, password }).unwrap();
-      navigate("/");
+      toast.success(
+        "Account Created! Your account has been successfully created. Please sign in to continue."
+      );
+      navigate("/auth/sign-in");
     } catch (err) {
       setErrors({
         submit: err?.data?.message || "Registration failed. Please try again.",

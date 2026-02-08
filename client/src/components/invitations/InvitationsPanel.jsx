@@ -30,17 +30,15 @@ import {
   RetryButton,
 } from "./InvitationsPanel.styles";
 import { X, Check, Bell, Clock, User } from "lucide-react";
+import { toast } from "react-toastify";
 import {
   useGetMyInvitationsQuery,
   useAcceptInvitationMutation,
   useDeclineInvitationMutation,
 } from "../../reducers/slices/invitation/invitation.apiSlice";
 import { formatDistanceToNow } from "../../utils/date";
-import { useDispatch } from "react-redux";
-import { showToast } from "../../reducers/slices/toast/toast.slice";
 
 const InvitationsPanel = ({ onClose }) => {
-  const dispatch = useDispatch();
   const {
     data,
     isLoading,
@@ -56,38 +54,18 @@ const InvitationsPanel = ({ onClose }) => {
   const handleAccept = async (invitation) => {
     try {
       await acceptInvitation(invitation.id).unwrap();
-      dispatch(
-        showToast({
-          type: "success",
-          message: `You have joined ${invitation.project.name} as ${invitation.role}`,
-        })
-      );
+      toast.success(`You have joined ${invitation.project.name} as ${invitation.role}`);
     } catch (err) {
-      dispatch(
-        showToast({
-          type: "error",
-          message: err?.data?.message || "Failed to accept invitation",
-        })
-      );
+      toast.error(err?.data?.message || "Failed to accept invitation");
     }
   };
 
   const handleDecline = async (invitation) => {
     try {
       await declineInvitation(invitation.id).unwrap();
-      dispatch(
-        showToast({
-          type: "success",
-          message: `Invitation to ${invitation.project.name} declined`,
-        })
-      );
+      toast.success(`Invitation to ${invitation.project.name} declined`);
     } catch (err) {
-      dispatch(
-        showToast({
-          type: "error",
-          message: err?.data?.message || "Failed to decline invitation",
-        })
-      );
+      toast.error(err?.data?.message || "Failed to decline invitation");
     }
   };
 
