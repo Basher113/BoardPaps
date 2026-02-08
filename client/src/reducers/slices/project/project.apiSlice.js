@@ -10,7 +10,21 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       query: (projectId) => `projects/${projectId}`,
       providesTags: ["Project"],
     }),
-
+    createProject: builder.mutation({
+      query: (data) => ({
+        url: "projects",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Project"],
+    }),
+    deleteProject: builder.mutation({
+      query: (projectId) => ({
+        url: `projects/${projectId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Project"],
+    }),
     createIssue: builder.mutation({
       query: ({ projectId, ...data }) => ({
         url: `projects/${projectId}/issues`,
@@ -150,6 +164,8 @@ export const {
   useGetMyProjectsQuery,
   useGetProjectQuery,
   useVisitProjectMutation,
+  useCreateProjectMutation,
+  useDeleteProjectMutation,
   useCreateIssueMutation,
   useMoveIssueMutation,
   useUpdateIssueMutation,

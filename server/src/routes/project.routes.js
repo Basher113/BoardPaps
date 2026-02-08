@@ -4,6 +4,7 @@ const projectController = require("../controllers/project.controller");
 const {requireProjectMember, requireProjectRole} = require("../middlewares/projectMember.middleware")
 const columnRouter = require("./column.routes");
 const issueRouter = require("./issue.routes");
+const invitationRouter = require("./invitation.routes");
 
 const projectRouter = Router();
 
@@ -28,5 +29,6 @@ projectRouter.delete("/:projectId", requireProjectMember, requireProjectRole(["O
 // Nested routes
 projectRouter.use("/:projectId/columns", columnRouter);
 projectRouter.use("/:projectId/issues", issueRouter);
+projectRouter.use("/:projectId/invitations", invitationRouter); // Add this line for invitations")
 
 module.exports = projectRouter;

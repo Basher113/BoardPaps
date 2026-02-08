@@ -38,6 +38,13 @@ enum ProjectRole {
   MEMBER
 }
 
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
 /////////////////////////
 // MODELS
 /////////////////////////
@@ -67,6 +74,9 @@ model User {
   // Issues reported and assigned to this user
   reportedIssues Issue[] @relation("ReporterIssues")
   assignedIssues Issue[] @relation("AssignedIssues")
+
+  // Invitations sent by this user
+  invitationsSent Invitation[] @relation("InvitedByUser")
 }
 
 // RefreshToken model 
@@ -101,6 +111,9 @@ model Project {
   
   // Issues in this project
   issues    Issue[]
+
+  // Invitations for this project
+  invitations Invitation[]
 }
 
 model ProjectMember {
@@ -111,7 +124,7 @@ model ProjectMember {
   projectId String
 
   user      User    @relation(fields: [userId], references: [id])
-  project   Project @relation(fields: [projectId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projectId])
 }
@@ -125,7 +138,7 @@ model Column {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  project   Project  @relation(fields: [projectId], references: [id])
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   issues    Issue[]
 
   @@unique([projectId, position])
@@ -148,13 +161,34 @@ model Issue {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime @updatedAt
 
-  project     Project       @relation(fields: [projectId], references: [id])
-  column      Column        @relation(fields: [columnId], references: [id])
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  column      Column        @relation(fields: [columnId], references: [id], onDelete: Cascade)
   reporter    User          @relation("ReporterIssues", fields: [reporterId], references: [id])
   assignee    User?         @relation("AssignedIssues", fields: [assigneeId], references: [id])
 
   @@index([columnId])
   @@unique([columnId, position])
+}
+
+model Invitation {
+  id          String          @id @default(uuid())
+  email       String          // Email of invited user
+  projectId   String
+  role        ProjectRole     // Role to assign upon acceptance
+  status      InvitationStatus @default(PENDING)
+  invitedById String          // User who sent the invitation
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  expiresAt   DateTime        // Invitation valid for 7 days by default
+
+  // Relations
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invitedBy   User            @relation("InvitedByUser", fields: [invitedById], references: [id])
+
+  @@unique([email, projectId, status]) // Only one pending invite per user per project
+  @@index([email])
+  @@index([projectId])
 }
 
 
