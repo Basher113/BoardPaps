@@ -23,7 +23,7 @@ app.use(passport.initialize()); // enable passport
 const authRoutes = require("./routes/auth.routes");
 const projectRoutes = require("./routes/project.routes");
 const projectMemberRoutes = require("./routes/project-member.routes");
-
+const invitationRouter = require("./routes/invitation.routes");
 
 // Middleware
 app.use(cors({

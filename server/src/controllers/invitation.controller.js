@@ -118,7 +118,7 @@ const sendInvitation = async (req, res) => {
 const getProjectInvitations = async (req, res) => {
   try {
     const { projectId } = req.params;
-
+    console.log("My invitations!")
     const invitations = await prisma.invitation.findMany({
       where: {
         projectId,
