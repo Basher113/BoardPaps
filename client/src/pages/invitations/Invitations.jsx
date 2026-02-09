@@ -1,7 +1,9 @@
+import { useState } from "react";
 import styled from "styled-components";
 import { Mail, Check, X, Bell, Briefcase, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import Button from "../../components/ui/button/Button";
+import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
 import {
   useGetMyInvitationsQuery,
   useAcceptInvitationMutation,
@@ -248,6 +250,8 @@ const InvitationsPage = () => {
 
   const invitations = data?.data || [];
   const isProcessing = isAccepting || isDeclining;
+  const [showDeclineConfirm, setShowDeclineConfirm] = useState(false);
+  const [invitationToDecline, setInvitationToDecline] = useState(null);
 
   const handleAccept = async (invitationId) => {
     try {
@@ -257,12 +261,27 @@ const InvitationsPage = () => {
     }
   };
 
-  const handleDecline = async (invitationId) => {
+  const handleDeclineClick = (invitation) => {
+    setInvitationToDecline(invitation);
+    setShowDeclineConfirm(true);
+  };
+
+  const handleConfirmDecline = async () => {
+    if (!invitationToDecline) return;
+
     try {
-      await declineInvitation(invitationId).unwrap();
+      await declineInvitation(invitationToDecline.id).unwrap();
     } catch (error) {
       console.error("Failed to decline invitation:", error);
+    } finally {
+      setShowDeclineConfirm(false);
+      setInvitationToDecline(null);
     }
+  };
+
+  const handleDeclineCancel = () => {
+    setShowDeclineConfirm(false);
+    setInvitationToDecline(null);
   };
 
   return (
@@ -350,7 +369,7 @@ const InvitationsPage = () => {
                     </AcceptButton>
                     <DeclineButton
                       variant="secondary"
-                      onClick={() => handleDecline(invitation.id)}
+                      onClick={() => handleDeclineClick(invitation)}
                       disabled={isProcessing}
                     >
                       <X size={18} style={{ marginRight: "0.5rem" }} />
@@ -363,6 +382,16 @@ const InvitationsPage = () => {
           </Section>
         )}
       </Content>
+      <ConfirmModal
+        isOpen={showDeclineConfirm}
+        onClose={handleDeclineCancel}
+        onConfirm={handleConfirmDecline}
+        title="Decline Invitation"
+        message="Are you sure you want to decline this invitation? This action cannot be undone."
+        confirmText="Decline"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </PageContainer>
   );
 };

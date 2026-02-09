@@ -30,7 +30,9 @@ import {
   RetryButton,
 } from "./InvitationsPanel.styles";
 import { X, Check, Bell, Clock, User } from "lucide-react";
+import { useState } from "react";
 import { toast } from "react-toastify";
+import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
 import {
   useGetMyInvitationsQuery,
   useAcceptInvitationMutation,
@@ -50,6 +52,8 @@ const InvitationsPanel = ({ onClose }) => {
 
   const invitations = data?.data || [];
   const isProcessing = isAccepting || isDeclining;
+  const [showDeclineConfirm, setShowDeclineConfirm] = useState(false);
+  const [invitationToDecline, setInvitationToDecline] = useState(null);
 
   const handleAccept = async (invitation) => {
     try {
@@ -60,13 +64,28 @@ const InvitationsPanel = ({ onClose }) => {
     }
   };
 
-  const handleDecline = async (invitation) => {
+  const handleDeclineClick = (invitation) => {
+    setInvitationToDecline(invitation);
+    setShowDeclineConfirm(true);
+  };
+
+  const handleConfirmDecline = async () => {
+    if (!invitationToDecline) return;
+
     try {
-      await declineInvitation(invitation.id).unwrap();
-      toast.success(`Invitation to ${invitation.project.name} declined`);
+      await declineInvitation(invitationToDecline.id).unwrap();
+      toast.success(`Invitation to ${invitationToDecline.project.name} declined`);
     } catch (err) {
       toast.error(err?.data?.message || "Failed to decline invitation");
+    } finally {
+      setShowDeclineConfirm(false);
+      setInvitationToDecline(null);
     }
+  };
+
+  const handleDeclineCancel = () => {
+    setShowDeclineConfirm(false);
+    setInvitationToDecline(null);
   };
 
   // Calculate time remaining for invitation
@@ -181,7 +200,7 @@ const InvitationsPanel = ({ onClose }) => {
                     </ActionButton>
                     <ActionButton
                       variant="decline"
-                      onClick={() => handleDecline(invitation)}
+                      onClick={() => handleDeclineClick(invitation)}
                       disabled={isProcessing}
                     >
                       <X size={16} />
@@ -194,6 +213,16 @@ const InvitationsPanel = ({ onClose }) => {
           )}
         </InvitationsList>
       </PanelContainer>
+      <ConfirmModal
+        isOpen={showDeclineConfirm}
+        onClose={handleDeclineCancel}
+        onConfirm={handleConfirmDecline}
+        title="Decline Invitation"
+        message="Are you sure you want to decline this invitation? This action cannot be undone."
+        confirmText="Decline"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </PanelOverlay>
   );
 };

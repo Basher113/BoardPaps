@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { Mail, UserPlus, X, Users } from "lucide-react";
 import Modal from "../../../../components/ui/modal/Modal";
 import Button from "../../../../components/ui/button/Button";
+import ConfirmModal from "../../../../components/ui/confirm-modal/ConfirmModal";
 import {
   useSendInvitationMutation,
   useGetProjectInvitationsQuery,
@@ -135,6 +136,8 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("MEMBER");
   const [error, setError] = useState("");
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [invitationToCancel, setInvitationToCancel] = useState(null);
 
   const { data: invitationsData } =
     useGetProjectInvitationsQuery(projectId, { skip: !projectId });
@@ -157,16 +160,32 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
       setEmail("");
       // Invitations will be refetched automatically
     } catch (err) {
+      console.log(err);
       setError(err?.data?.message || "Failed to send invitation");
     }
   };
 
-  const handleCancelInvitation = async (invitationId) => {
+  const handleCancelClick = (invitation) => {
+    setInvitationToCancel(invitation);
+    setShowCancelConfirm(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!invitationToCancel) return;
+
     try {
-      await cancelInvitation({ projectId, invitationId });
+      await cancelInvitation({ projectId, invitationId: invitationToCancel.id });
     } catch (err) {
       console.error("Failed to cancel invitation:", err);
+    } finally {
+      setShowCancelConfirm(false);
+      setInvitationToCancel(null);
     }
+  };
+
+  const handleCancelModal = () => {
+    setShowCancelConfirm(false);
+    setInvitationToCancel(null);
   };
 
   return (
@@ -225,7 +244,7 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
                   </PendingRole>
                 </PendingInfo>
                 <CancelButton
-                  onClick={() => handleCancelInvitation(invitation.id)}
+                  onClick={() => handleCancelClick(invitation)}
                 >
                   Cancel
                 </CancelButton>
@@ -234,6 +253,16 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
           </PendingList>
         </Section>
       )}
+      <ConfirmModal
+        isOpen={showCancelConfirm}
+        onClose={handleCancelModal}
+        onConfirm={handleConfirmCancel}
+        title="Cancel Invitation"
+        message="Are you sure you want to cancel this invitation? The user will not be able to join the project."
+        confirmText="Cancel Invitation"
+        cancelText="Keep Invitation"
+        variant="danger"
+      />
     </Modal>
   );
 };
