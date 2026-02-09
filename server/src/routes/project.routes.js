@@ -29,6 +29,6 @@ projectRouter.delete("/:projectId", requireProjectMember, requireProjectRole(["O
 // Nested routes
 projectRouter.use("/:projectId/columns", columnRouter);
 projectRouter.use("/:projectId/issues", issueRouter);
-projectRouter.use("/:projectId/invitations", invitationRouter); // Add this line for invitations")
+projectRouter.use("/:projectId/invitations", invitationRouter);
 
 module.exports = projectRouter;

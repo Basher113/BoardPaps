@@ -29,25 +29,5 @@ invitationRouter.delete(
   invitationController.cancelInvitation
 );
 
-// User-scoped routes (require authentication, no project membership needed)
-invitationRouter.get(
-  "/users/me/invitations",
-  invitationController.getMyInvitations
-);
-
-invitationRouter.get(
-  "/users/me/invitations/count",
-  invitationController.getMyInvitationsCount
-);
-
-invitationRouter.post(
-  "/users/me/invitations/:invitationId/accept",
-  invitationController.acceptInvitation
-);
-
-invitationRouter.post(
-  "/users/me/invitations/:invitationId/decline",
-  invitationController.declineInvitation
-);
-
 module.exports = invitationRouter;
+
