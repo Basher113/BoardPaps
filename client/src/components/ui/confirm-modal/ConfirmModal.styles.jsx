@@ -1,24 +1,22 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
-const getVariantColor = (variant) => {
+const getVariantStyles = (variant) => {
   switch (variant) {
     case 'danger':
-      return '#dc2626';
+      return css`
+        background-color: #fef2f2;
+        color: #ef4444;
+      `;
     case 'warning':
-      return '#f59e0b';
+      return css`
+        background-color: #fafafa;
+        color: #52525b;
+      `;
     default:
-      return '#3b82f6';
-  }
-};
-
-const getVariantBgColor = (variant) => {
-  switch (variant) {
-    case 'danger':
-      return '#fef2f2';
-    case 'warning':
-      return '#fffbeb';
-    default:
-      return '#eff6ff';
+      return css`
+        background-color: #fafafa;
+        color: #52525b;
+      `;
   }
 };
 
@@ -27,15 +25,14 @@ export const ConfirmContent = styled.div`
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 1rem 0;
+  padding: 1.5rem 0;
 `;
 
 export const ConfirmIcon = styled.div`
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
-  background-color: ${props => getVariantBgColor(props.$variant)};
-  color: ${props => getVariantColor(props.$variant)};
+  ${props => getVariantStyles(props.$variant)}
   display: flex;
   align-items: center;
   justify-content: center;
@@ -43,7 +40,7 @@ export const ConfirmIcon = styled.div`
 `;
 
 export const ConfirmMessage = styled.p`
-  color: #4b5563;
+  color: #52525b;
   font-size: 0.875rem;
   line-height: 1.5;
   margin: 0 0 1.5rem 0;
@@ -58,22 +55,22 @@ export const ConfirmActions = styled.div`
 `;
 
 export const CancelButton = styled.button`
-  padding: 0.5rem 1.25rem;
-  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
   font-weight: 500;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid #d1d5db;
-  background-color: white;
-  color: #374151;
+  transition: all 0.15s ease;
+  border: 1px solid #e4e4e7;
+  background-color: #ffffff;
+  color: #18181b;
 
   &:hover:not(:disabled) {
-    background-color: #f9fafb;
+    background-color: #f4f4f5;
   }
 
   &:focus {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid #18181b;
     outline-offset: 2px;
   }
 
@@ -84,22 +81,40 @@ export const CancelButton = styled.button`
 `;
 
 export const ConfirmButton = styled.button`
-  padding: 0.5rem 1.25rem;
-  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
   font-weight: 500;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
   border: none;
-  background-color: ${props => getVariantColor(props.$variant)};
-  color: white;
+  background-color: ${props => {
+    switch (props.$variant) {
+      case 'danger':
+        return '#ef4444';
+      case 'warning':
+        return '#52525b';
+      default:
+        return '#18181b';
+    }
+  }};
+  color: #fafafa;
 
   &:hover:not(:disabled) {
-    opacity: 0.9;
+    background-color: ${props => {
+      switch (props.$variant) {
+        case 'danger':
+          return '#dc2626';
+        case 'warning':
+          return '#3f3f46';
+        default:
+          return '#27272a';
+      }
+    }};
   }
 
   &:focus {
-    outline: 2px solid ${props => getVariantColor(props.$variant)};
+    outline: 2px solid #18181b;
     outline-offset: 2px;
   }
 

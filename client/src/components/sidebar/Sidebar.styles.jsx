@@ -2,10 +2,10 @@ import styled from 'styled-components';
 
 export const SidebarContainer = styled.div`
   display: none;
-  background-color: #111827;
-  color: white;
-  transition: all 0.3s;
-  width: ${props => props.collapsed ? '5rem' : '16rem'};
+  background-color: #09090b;
+  color: #fafafa;
+  transition: all 0.2s ease;
+  width: ${props => props.$collapsed ? '4rem' : '16rem'};
   flex-direction: column;
 
   @media (min-width: 1024px) {
@@ -19,8 +19,8 @@ export const SidebarHeader = styled.div`
   padding: 1rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #1f2937;
+  justify-content: ${props => props.$collapsed ? 'center' : 'space-between'};
+  border-bottom: 1px solid #27272a;
 `;
 
 export const ProjectInfo = styled.div`
@@ -42,37 +42,40 @@ export const LogoContainer = styled.div`
 export const ProjectDetails = styled.div`
   display: flex;
   flex-direction: column;
+  ${props => props.$collapsed && 'display: none;'}
 `;
 
 export const AppName = styled.h2`
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.875rem;
 `;
 
-
-
 export const CollapseButton = styled.button`
-  color: #9ca3af;
+  color: #71717a;
   cursor: pointer;
   background: none;
   border: none;
-  padding: 0;
-  transition: color 0.2s;
-  margin: ${props => props.collapsed ? 'auto' : ''};
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.15s ease;
+  margin: ${props => props.$collapsed ? 'auto' : ''};
+
   &:hover {
-    color: white;
+    color: #fafafa;
+    background-color: #27272a;
   }
 `;
 
 export const SidebarNav = styled.nav`
   flex: 1;
-  padding: 1rem;
+  padding: 0.75rem;
+  overflow-y: auto;
 `;
 
 export const NavList = styled.ul`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
   list-style: none;
   padding: 0;
   margin: 0;
@@ -86,23 +89,25 @@ export const NavButton = styled.button`
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  transition: all 0.2s;
-  background: ${props => props.active ? '#2563eb' : 'transparent'};
-  color: ${props => props.active ? 'white' : '#d1d5db'};
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+  background: ${props => props.$active ? '#27272a' : 'transparent'};
+  color: ${props => props.$active ? '#fafafa' : '#a1a1aa'};
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
+  text-align: left;
 
   &:hover {
-    background-color: ${props => props.active ? '#2563eb' : '#1f2937'};
+    background-color: ${props => props.$active ? '#27272a' : '#27272a'};
+    color: #fafafa;
   }
 `;
 
 export const SidebarFooter = styled.div`
-  padding: 1rem;
-  border-top: 1px solid #1f2937;
+  padding: 0.75rem;
+  border-top: 1px solid #27272a;
 `;
 
 export const UserProfileButton = styled.button`
@@ -111,16 +116,16 @@ export const UserProfileButton = styled.button`
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s;
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
   background: none;
   border: none;
   cursor: pointer;
-  color: white;
+  color: #fafafa;
   position: relative;
 
   &:hover {
-    background-color: #1f2937;
+    background-color: #27272a;
   }
 `;
 
@@ -128,6 +133,7 @@ export const UserInfo = styled.div`
   flex: 1;
   min-width: 0;
   text-align: left;
+  ${props => props.$collapsed && 'display: none;'}
 `;
 
 export const Username = styled.p`
@@ -140,7 +146,7 @@ export const Username = styled.p`
 
 export const UserEmail = styled.p`
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: #71717a;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -152,45 +158,48 @@ export const UserMenuDropdown = styled.div`
   left: 0;
   right: 0;
   margin-bottom: 0.5rem;
-  background-color: white;
+  background-color: #ffffff;
   border-radius: 0.5rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e4e4e7;
   z-index: 40;
-  color: #111827;
+  color: #18181b;
 `;
 
 export const UserMenuHeader = styled.div`
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e4e4e7;
 `;
 
 export const UserMenuLabel = styled.p`
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #71717a;
   margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 `;
 
 export const UserMenuCurrentUser = styled.p`
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.875rem;
 `;
 
 export const UserMenuCurrentEmail = styled.p`
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #71717a;
 `;
 
 export const UserMenuList = styled.div`
-  padding: 0 0.5rem;
+  padding: 0.5rem;
 `;
 
 export const UserMenuSectionTitle = styled.p`
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #71717a;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 `;
 
 export const UserMenuItem = styled.button`
@@ -204,11 +213,12 @@ export const UserMenuItem = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.15s ease;
   border-radius: 0.25rem;
+  color: #18181b;
 
   &:hover {
-    background-color: #f9fafb;
+    background-color: #f4f4f5;
   }
 `;
 
@@ -221,7 +231,7 @@ export const UserMenuItemName = styled.p`
 
 export const UserMenuItemEmail = styled.p`
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #71717a;
 `;
 
 export const UserMenuLogout = styled.button`
@@ -235,10 +245,10 @@ export const UserMenuLogout = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.15s ease;
   border-radius: 0.25rem;
-  color: #dc2626;
-  margin-top: 0.5rem;
+  color: #ef4444;
+  margin-top: 0.25rem;
 
   &:hover {
     background-color: #fef2f2;
@@ -267,11 +277,11 @@ export const MobileSidebarContainer = styled.div`
   inset-y: 0;
   left: 0;
   width: 16rem;
-  background-color: #111827;
-  color: white;
+  background-color: #09090b;
+  color: #fafafa;
   z-index: 50;
   transform: translateX(0);
-  transition: transform 0.3s;
+  transition: transform 0.3s ease;
 
   @media (min-width: 1024px) {
     display: none;
@@ -280,23 +290,23 @@ export const MobileSidebarContainer = styled.div`
 
 // Project Navigation Styles
 export const ProjectSection = styled.div`
-  padding: 0 1rem;
-  margin-bottom: 1rem;
+  padding: 0 0.75rem;
+  margin-bottom: 0.75rem;
 `;
 
 export const ProjectSectionHeader = styled.div`
   display: flex;
-  padding: 0.5rem 0;
-  margin-bottom: 0.5rem;
+  padding: 0.375rem 0;
+  margin-bottom: 0.25rem;
   gap: 1rem;
   cursor: pointer;
   border-radius: 0.25rem;
-  transition: background-color 0.2s;
-  color: #9ca3af;
+  transition: all 0.15s ease;
+  color: #71717a;
 
   &:hover {
-    background-color: #1f2937;
-    color: white;
+    background-color: #27272a;
+    color: #fafafa;
   }
 `;
 
@@ -307,7 +317,7 @@ export const ProjectSectionTitle = styled.span`
   letter-spacing: 0.05em;
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: 0.5rem;
 `;
 
 export const ProjectList = styled.ul`
@@ -316,7 +326,7 @@ export const ProjectList = styled.ul`
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.125rem;
 `;
 
 export const ProjectItem = styled.li``;
@@ -327,17 +337,19 @@ export const ProjectButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  transition: all 0.2s;
-  background: ${props => props.active ? '#1e3a5f' : 'transparent'};
-  color: ${props => props.active ? '#60a5fa' : '#d1d5db'};
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+  background: ${props => props.$active ? '#27272a' : 'transparent'};
+  color: ${props => props.$active ? '#fafafa' : '#a1a1aa'};
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
+  text-align: left;
 
   &:hover {
-    background-color: ${props => props.active ? '#1e3a5f' : '#1f2937'};
+    background-color: ${props => props.$active ? '#27272a' : '#27272a'};
+    color: #fafafa;
   }
 `;
 
@@ -350,19 +362,19 @@ export const ProjectName = styled.span`
 `;
 
 export const ExpandIcon = styled.span`
-  color: #9ca3af;
-  transition: transform 0.2s;
-  transform: ${props => props.expanded ? 'rotate(90deg)' : 'rotate(0deg)'};
+  color: #71717a;
+  transition: transform 0.2s ease;
+  transform: ${props => props.$expanded ? 'rotate(90deg)' : 'rotate(0deg)'};
 `;
 
 export const BoardDropdown = styled.div`
-  margin-left: 1.5rem;
+  margin-left: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.125rem;
   overflow: hidden;
-  max-height: ${props => props.expanded ? '500px' : '0'};
-  transition: max-height 0.3s ease;
+  max-height: ${props => props.$expanded ? '500px' : '0'};
+  transition: max-height 0.2s ease;
 `;
 
 export const BoardItem = styled.button`
@@ -370,34 +382,34 @@ export const BoardItem = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.375rem 0.75rem;
   padding-left: 1rem;
-  border-radius: 0.5rem;
-  transition: all 0.2s;
-  background: ${props => props.active ? '#2563eb' : 'transparent'};
-  color: ${props => props.active ? 'white' : '#9ca3af'};
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+  background: ${props => props.$active ? '#27272a' : 'transparent'};
+  color: ${props => props.$active ? '#fafafa' : '#71717a'};
   border: none;
   cursor: pointer;
   font-size: 0.8125rem;
   text-align: left;
 
   &:hover {
-    background-color: ${props => props.active ? '#2563eb' : '#1f2937'};
-    color: white;
+    background-color: ${props => props.$active ? '#27272a' : '#27272a'};
+    color: #fafafa;
   }
 `;
 
 export const EmptyProjects = styled.div`
-  padding: 1rem 0.75rem;
+  padding: 0.75rem 0.5rem;
   text-align: center;
-  color: #9ca3af;
+  color: #71717a;
   font-size: 0.875rem;
 `;
 
 // Invitation Badge Styles
 export const InvitationBadge = styled.span`
-  background-color: #ef4444;
-  color: white;
+  background-color: #18181b;
+  color: #fafafa;
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.125rem 0.5rem;
@@ -411,18 +423,20 @@ export const InvitationNavItem = styled.button`
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  transition: all 0.2s;
-  background: ${props => props.active ? '#1e3a5f' : 'transparent'};
-  color: ${props => props.active ? '#60a5fa' : '#d1d5db'};
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+  background: ${props => props.$active ? '#27272a' : 'transparent'};
+  color: ${props => props.$active ? '#fafafa' : '#a1a1aa'};
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
   position: relative;
+  text-align: left;
 
   &:hover {
-    background-color: ${props => props.active ? '#1e3a5f' : '#1f2937'};
+    background-color: ${props => props.$active ? '#27272a' : '#27272a'};
+    color: #fafafa;
   }
 `;
 
@@ -430,9 +444,9 @@ export const InvitationBadgeDot = styled.span`
   position: absolute;
   top: -2px;
   right: -2px;
-  width: 12px;
-  height: 12px;
-  background-color: #ef4444;
+  width: 10px;
+  height: 10px;
+  background-color: #18181b;
   border-radius: 50%;
-  border: 2px solid #111827;
+  border: 2px solid #09090b;
 `;

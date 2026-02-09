@@ -1,32 +1,30 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
 export const BoardContainer = styled.div`
   display: flex;
-  gap: 1.5rem;
+  gap: 1rem;
   overflow-x: auto;
   padding: 1rem;
+  height: calc(100vh - 65px);
 `;
 
-
 export const Column = styled.div`
-  background: white;
-  border-radius: 8px;
-  min-width: 300px;
-  height: 600px;
+  background-color: #f4f4f5;
+  border-radius: 0.5rem;
+  min-width: 18rem;
+  width: 18rem;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  flex: 1;
+  flex-shrink: 0;
 `;
 
 export const ColumnHeader = styled.div`
-  padding:  0.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e4e4e7;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #e4e4e4;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0.5rem 0.5rem 0 0;
 `;
 
 export const ColumnHeaderLeft = styled.div`
@@ -38,53 +36,55 @@ export const ColumnHeaderLeft = styled.div`
 export const ColumnTitle = styled.h2`
   font-size: 0.875rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #18181b;
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.025em;
 `;
 
 export const Count = styled.span`
-  background: #f3f4f6;
-  color: #6b7280;
+  background-color: #e4e4e7;
+  color: #52525b;
   padding: 0.125rem 0.5rem;
-  border-radius: 12px;
+  border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 500;
 `;
 
 export const CardList = styled.div`
-  padding: 1rem;
+  padding: 0.75rem;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  min-height: 200px;
-  border: 1px solid ${({ isDraggingOver }) =>
-    isDraggingOver ? "var(--primary)" : "transparent"};
-  transition: border 0.2s;
+  gap: 0.5rem;
+  min-height: 100px;
 `;
 
 export const Card = styled.div`
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 1rem;
-  cursor: grab;
-  transition: all 0.2s;
-  opacity: ${({ isDragging }) => (isDragging ? 0.5 : 1)};
+  background-color: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  cursor: ${props => props.$canEdit ? 'grab' : 'default'};
+  transition: all 0.15s ease;
+  opacity: ${props => props.$canEdit ? 1 : 0.5};
+
+  &:hover {
+    border-color: #d4d4d8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
 `;
 
 export const CardTitle = styled.h3`
   font-size: 0.875rem;
   font-weight: 500;
-  color: #1a1a1a;
-  margin: 0 0 0.5rem 0;
+  color: #18181b;
+  margin: 0 0 0.375rem 0;
 `;
 
 export const CardDescription = styled.p`
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #71717a;
   margin: 0 0 0.75rem 0;
   line-height: 1.5;
 `;
@@ -96,50 +96,61 @@ export const CardFooter = styled.div`
 `;
 
 export const Tag = styled.span`
-  background: #f3f4f6;
-  color: #4b5563;
+  background-color: #f4f4f5;
+  color: #52525b;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.625rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
   font-weight: 500;
 `;
 
 export const AddButton = styled.button`
-  margin: 0 1rem 1rem;
-  padding: 0.75rem;
+  margin: 0.75rem;
+  padding: 0.5rem;
   background: transparent;
-  border: 2px dashed #e5e7eb;
-  border-radius: 6px;
-  color: #6b7280;
+  border: 1px dashed #d4d4d8;
+  border-radius: 0.375rem;
+  color: #71717a;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 
   &:hover {
-    border-color: #d1d5db;
-    color: #4b5563;
-    background: #f9fafb;
+    border-color: #a1a1aa;
+    color: #52525b;
+    background-color: #fafafa;
   }
 `;
 
 export const Input = styled.input`
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #18181b;
+  border-radius: 0.375rem;
   font-size: 0.875rem;
   margin-bottom: 0.5rem;
+  outline: none;
+
+  &:focus {
+    box-shadow: 0 0 0 2px #18181b;
+  }
 `;
 
 export const Textarea = styled.textarea`
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #18181b;
+  border-radius: 0.375rem;
   font-size: 0.875rem;
   margin-bottom: 0.5rem;
   resize: vertical;
   min-height: 60px;
+  outline: none;
+  font-family: inherit;
+
+  &:focus {
+    box-shadow: 0 0 0 2px #18181b;
+  }
 `;
 
 export const ButtonGroup = styled.div`
@@ -148,12 +159,17 @@ export const ButtonGroup = styled.div`
 `;
 
 export const Button = styled.button`
-  padding: 0.5rem 1rem;
+  padding: 0.375rem 0.75rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 0.25rem;
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  background: ${({ primary }) => (primary ? "#1a1a1a" : "#f3f4f6")};
-  color: ${({ primary }) => (primary ? "white" : "#6b7280")};
+  transition: all 0.15s ease;
+  background-color: ${props => props.primary ? '#18181b' : '#f4f4f5'};
+  color: ${props => props.primary ? '#fafafa' : '#52525b'};
+
+  &:hover {
+    background-color: ${props => props.primary ? '#27272a' : '#e4e4e7'};
+  }
 `;

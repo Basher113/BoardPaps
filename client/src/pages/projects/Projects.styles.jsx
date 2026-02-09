@@ -1,7 +1,9 @@
-import styled from "styled-components";
-export const Content = styled.div`
-  padding: 2rem;
+import styled from 'styled-components';
 
+export const Content = styled.div`
+  padding: 1.5rem 2rem;
+  min-height: 100vh;
+  background-color: #fafafa;
 `;
 
 export const Header = styled.div`
@@ -10,7 +12,6 @@ export const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  
 `;
 
 export const HeaderLeft = styled.div`
@@ -18,155 +19,203 @@ export const HeaderLeft = styled.div`
 `;
 
 export const Title = styled.h2`
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 0.5rem 0;
+  color: #18181b;
+  margin: 0 0 0.375rem 0;
 `;
 
 export const Subtitle = styled.p`
-  color: #6b7280;
+  color: #71717a;
   margin: 0;
   font-size: 0.875rem;
 `;
 
 export const NewButton = styled.button`
-  padding: 0.75rem 1.5rem;
-  background: #1a1a1a;
-  color: white;
+  padding: 0.5rem 1rem;
+  background-color: #18181b;
+  color: #fafafa;
   border: none;
-  border-radius: 6px;
+  border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.15s ease;
 
   &:hover {
-    background: #374151;
+    background-color: #27272a;
   }
 `;
 
 export const ProjectsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
 `;
 
 export const ProjectCard = styled.div`
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  padding: 1.25rem;
   cursor: pointer;
-  border: 1px solid transparent;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
+  border: 1px solid #e4e4e7;
+  transition: all 0.15s ease;
 
   &:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border-color: #e5e7eb;
+    border-color: #d4d4d8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
 `;
 
 export const ProjectName = styled.h3`
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 0.5rem 0;
+  color: #18181b;
+  margin: 0 0 0.375rem 0;
 `;
 
 export const ProjectDescription = styled.p`
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #71717a;
   margin: 0 0 1rem 0;
   line-height: 1.5;
 `;
 
 export const ProjectMeta = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f4f4f5;
+`;
+
+export const MemberCount = styled.span`
   font-size: 0.75rem;
-  color: #9ca3af;
-  padding-top: 1rem;
-  border-top: 1px solid #f3f4f6;
+  color: #71717a;
+`;
+
+export const EmptyState = styled.div`
+  text-align: center;
+  padding: 3rem;
+  color: #71717a;
 `;
 
 export const DeleteButton = styled.button`
-  background: transparent;
-  border: none;
-  color: #ef4444;
+  padding: 0.25rem 0.5rem;
+  background-color: transparent;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 0.25rem;
   font-size: 0.75rem;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  transition: all 0.15s ease;
+  margin-left: auto;
 
   &:hover {
-    background: #fee2e2;
+    background-color: #fef2f2;
+    border-color: #f87171;
   }
 `;
 
-/* Modal */
 export const ModalOverlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.5);
 `;
 
 export const ModalContent = styled.div`
-  background: white;
-  border-radius: 8px;
-  padding: 2rem;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-width: 32rem;
+  width: 100%;
+  z-index: 10;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
 `;
 
 export const ModalTitle = styled.h3`
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #18181b;
   margin: 0 0 1.5rem 0;
 `;
 
 export const Input = styled.input`
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.375rem;
   font-size: 0.875rem;
-  margin-bottom: 0.5rem;
-  outline: none;
+  transition: all 0.15s ease;
+  margin-bottom: 1rem;
+
+  &:focus {
+    outline: none;
+    border-color: #18181b;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  }
+
+  &:disabled {
+    background-color: #f4f4f5;
+    cursor: not-allowed;
+  }
 `;
 
 export const Textarea = styled.textarea`
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.375rem;
   font-size: 0.875rem;
-  margin-bottom: 0.5rem;
+  transition: all 0.15s ease;
+  margin-bottom: 1rem;
+  min-height: 80px;
   resize: vertical;
-  min-height: 60px;
-  outline: none;
   font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: #18181b;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  }
+
+  &:disabled {
+    background-color: #f4f4f5;
+    cursor: not-allowed;
+  }
 `;
 
 export const ButtonGroup = styled.div`
   display: flex;
-  gap: 0.5rem;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
 `;
 
 export const Button = styled.button`
   padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  background: ${({ primary }) => (primary ? "#1a1a1a" : "#f3f4f6")};
-  color: ${({ primary }) => (primary ? "white" : "#6b7280")};
+  transition: all 0.15s ease;
+  border: 1px solid #e4e4e7;
+  background-color: ${props => props.primary ? '#18181b' : '#ffffff'};
+  color: ${props => props.primary ? '#ffffff' : '#18181b'};
+
+  &:hover {
+    background-color: ${props => props.primary ? '#27272a' : '#f4f4f5'};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;

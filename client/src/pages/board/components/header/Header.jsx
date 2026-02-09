@@ -13,7 +13,6 @@ import {
   SearchIconWrapper,
   SearchInput,
   CreateButton,
-  ButtonText,
   MobileSearchWrapper,
   MembersWrapper,
   MemberAvatarWrapper,
@@ -85,7 +84,7 @@ const Header = ({
           
           <CreateButton onClick={onCreateIssue}>
             <Plus size={16} />
-            <ButtonText>Create</ButtonText>
+            <div>Create</div>
           </CreateButton>
           
           {canInvite && (
