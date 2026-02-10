@@ -62,6 +62,7 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
   const [logoutUser] = useLogoutUserMutation();
   
   const menuItems = [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'settings', icon: Settings, label: 'Settings' }
   ];
 
@@ -83,8 +84,12 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
     navigate('/app/invitations');
   };
   
-  const handleProjectsClick = () => {
+  const handleDashboardClick = () => {
     navigate('/app');
+  };
+  
+  const handleProjectsClick = () => {
+    navigate('/app/projects');
   };
   
   return (
@@ -127,7 +132,7 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
             <NavItem key={item.id}>
               <NavButton
                 active={activeView === item.id}
-                onClick={() => setActiveView(item.id)}
+                onClick={item.id === 'dashboard' ? handleDashboardClick : () => setActiveView(item.id)}
               >
                 <item.icon size={20} />
                 {!collapsed && <span>{item.label}</span>}
@@ -138,7 +143,7 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
           <ProjectSection>
             <ProjectSectionHeader onClick={handleProjectsClick}>
               <FolderKanban size={20}/> 
-              {!collapsed ? <ProjectSectionTitle>Projects</ProjectSectionTitle> : undefined} 
+              {!collapsed ? <ProjectSectionTitle>All Projects</ProjectSectionTitle> : undefined} 
             </ProjectSectionHeader>
             
             {projectsLoading ? (

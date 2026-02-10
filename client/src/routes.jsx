@@ -4,6 +4,7 @@ import AuthLayout from "./pages/auth/AuthLayout"
 import SignIn from "./pages/auth/SignIn"
 import SignUp from "./pages/auth/SignUp"
 import LandingPage from "./pages/landing-page/LandingPage"
+import Dashboard from "./pages/dashboard/Dashboard"
 import Projects from "./pages/projects/Projects"
 import InvitationsPage from "./pages/invitations/Invitations"
 
@@ -20,6 +21,10 @@ export const routes = [
     children: [
       {
         index: true,
+        element: <Dashboard />
+      },
+      {
+        path: "projects",
         element: <Projects />
       },
       {
