@@ -24,6 +24,7 @@ const authRoutes = require("./routes/auth.routes");
 const projectRoutes = require("./routes/project.routes");
 const projectMemberRoutes = require("./routes/project-member.routes");
 const usersRouter = require("./routes/users.routes");
+const dashboardRouter = require("./routes/dashboard.routes");
 
 // Middleware
 app.use(cors({
@@ -38,5 +39,6 @@ app.use("/auth", authRoutes);
 app.use("/projects", passport.authenticate('jwt', { session: false }), projectRoutes);
 app.use("/projects/:projectId/members", passport.authenticate('jwt', { session: false }), projectMemberRoutes);
 app.use("/users", passport.authenticate('jwt', { session: false }), usersRouter);
+app.use("/dashboard", passport.authenticate('jwt', { session: false }), dashboardRouter);
 
 module.exports = app;
