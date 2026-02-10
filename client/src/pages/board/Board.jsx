@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Plus } from "lucide-react";
 import {
@@ -15,16 +15,27 @@ import Header from "./components/header/Header";
 import IssueCard from "./components/issue-card/IssueCard";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
 import InviteModal from "./components/invite-modal/InviteModal";
+import Modal from "../../components/ui/modal/Modal";
+import IssueForm from "./components/form/IssueForm";
 import { selectActiveProjectId } from "../../reducers/slices/navigation/navigation.selector";
 import { 
   useGetProjectQuery, 
   useDeleteIssueMutation,
-  useMoveIssueMutation 
+  useMoveIssueMutation,
+  useCreateIssueMutation,
+  useUpdateIssueMutation 
 } from "../../reducers/slices/project/project.apiSlice";
 import { 
   closeDeleteModal, 
+  closeEditModal,
   selectIsDeleteModalOpen, 
-  selectDeleteIssueId 
+  selectDeleteIssueId,
+  openCreateModal,
+  closeCreateModal,
+  selectIsCreateModalOpen,
+  selectCreateColumnId,
+  selectIsEditModalOpen,
+  selectSelectedIssueId
 } from "../../reducers/slices/issue/issue.slice";
 import { useGetCurrentUserQuery } from "../../reducers/slices/user/user.slice";
 
@@ -41,11 +52,31 @@ const Board = () => {
 
   const [deleteIssue] = useDeleteIssueMutation();
   const [moveIssue] = useMoveIssueMutation();
+  const [createIssue] = useCreateIssueMutation();
+  const [updateIssue] = useUpdateIssueMutation();
 
   const [draggedCard, setDraggedCard] = useState(null);
   const [draggedFrom, setDraggedFrom] = useState(null);
   const [draggedOver, setDraggedOver] = useState(null);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+
+  // Create issue modal state from Redux
+  const isCreateModalOpen = useSelector(selectIsCreateModalOpen);
+  const createColumnId = useSelector(selectCreateColumnId);
+
+  // Edit issue modal state from Redux
+  const isEditModalOpen = useSelector(selectIsEditModalOpen);
+  const selectedIssueId = useSelector(selectSelectedIssueId);
+
+  // Find the selected issue from project data
+  const selectedIssue = React.useMemo(() => {
+    if (!selectedIssueId || !project?.columns) return null;
+    for (const column of project.columns) {
+      const issue = column.issues?.find(i => i.id === selectedIssueId);
+      if (issue) return issue;
+    }
+    return null;
+  }, [selectedIssueId, project]);
 
   const columns = project?.columns || [];
   const projectKey = project?.key || "PROJ";
@@ -86,9 +117,9 @@ const Board = () => {
     e.preventDefault();
     if (!draggedCard || !draggedFrom || !activeProjectId) return;
 
-    // Calculate new position
+    // Calculate new position - append to end of target column
     const targetColumn = columns.find(c => c.id === columnId);
-    const newPosition = targetColumn?.issues?.findIndex(i => i.id === draggedCard.id) ?? 0;
+    const newPosition = targetColumn?.issues?.length || 0;
 
     // Optimistic update handled by RTK Query
     try {
@@ -109,10 +140,10 @@ const Board = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteIssueId) return;
+    if (!deleteIssueId || !activeProjectId) return;
     
     try {
-      await deleteIssue(deleteIssueId);
+      await deleteIssue({ projectId: activeProjectId, issueId: deleteIssueId });
       dispatch(closeDeleteModal());
     } catch (err) {
       console.error("Failed to delete issue:", err);
@@ -179,12 +210,9 @@ const Board = () => {
                 </ColumnHeaderLeft>
                 
               <AddButton 
-                onClick={() => {
-                  // For simple add, we can use the inline form or dispatch openCreateModal
-                  // For now, let's use a simple approach
-                }}
-                aria-label={`Add issue to ${column.title}`}
-                title={`Add issue to ${column.title}`}
+                onClick={() => dispatch(openCreateModal(column.id))}
+                aria-label={`Add issue to ${column.name}`}
+                title={`Add issue to ${column.name}`}
               >
                 <Plus size={16} />
               </AddButton>
@@ -228,6 +256,59 @@ const Board = () => {
         onClose={() => setIsInviteModalOpen(false)}
         projectId={activeProjectId}
       />
+
+      {/* Create Issue Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => dispatch(closeCreateModal())}
+        title="Create Issue"
+      >
+        <IssueForm
+          columnId={createColumnId}
+          currentUserId={currentUser?.id}
+          projectMembers={project?.members || []}
+          onSubmit={async (formData) => {
+            try {
+              await createIssue({
+                projectId: activeProjectId,
+                ...formData
+              });
+              dispatch(closeCreateModal());
+            } catch (err) {
+              console.error("Failed to create issue:", err);
+            }
+          }}
+          onCancel={() => dispatch(closeCreateModal())}
+        />
+      </Modal>
+
+      {/* Edit Issue Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => dispatch(closeEditModal())}
+        title="Edit Issue"
+      >
+        {selectedIssue && (
+          <IssueForm
+            issue={selectedIssue}
+            currentUserId={currentUser?.id}
+            projectMembers={project?.members || []}
+            onSubmit={async (formData) => {
+              try {
+                await updateIssue({
+                  projectId: activeProjectId,
+                  issueId: selectedIssue.id,
+                  ...formData
+                });
+                dispatch(closeEditModal());
+              } catch (err) {
+                console.error("Failed to update issue:", err);
+              }
+            }}
+            onCancel={() => dispatch(closeEditModal())}
+          />
+        )}
+      </Modal>
     </>
   );
 };

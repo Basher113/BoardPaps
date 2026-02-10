@@ -31,6 +31,38 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         method: "POST",
         body: data,
       }),
+      async onQueryStarted({ projectId, columnId, ...data }, { dispatch, queryFulfilled }) {
+        // Optimistic update - add the issue immediately
+        const patchResult = dispatch(
+          projectApiSlice.util.updateQueryData("getProject", projectId, (project) => {
+            if (!project?.columns) return;
+            
+            const column = project.columns.find(c => c.id === columnId);
+            if (column) {
+              const newIssue = {
+                id: `temp-${Date.now()}`,
+                ...data,
+                columnId,
+                position: column.issues?.length || 0,
+                reporter: { id: "current", username: "Current User" },
+                assignee: data.assigneeId ? { id: data.assigneeId, username: "Assignee" } : null,
+              };
+              
+              if (!column.issues) {
+                column.issues = [];
+              }
+              column.issues.push(newIssue);
+            }
+          })
+        );
+        
+        try {
+          await queryFulfilled;
+        } catch {
+          // Rollback on error
+          patchResult.undo();
+        }
+      },
       invalidatesTags: ["Project"],
     }),
     moveIssue: builder.mutation({
@@ -77,8 +109,8 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["Project"],
     }),
     updateIssue: builder.mutation({
-      query: ({ issueId, columnId, newPosition, ...data }) => ({
-        url: `issues/${issueId}`,
+      query: ({ projectId, issueId, columnId, newPosition, ...data }) => ({
+        url: `projects/${projectId}/issues/${issueId}`,
         method: "PUT",
         body: { ...data, columnId, newPosition },
       }),
@@ -127,8 +159,8 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["Project"],
     }),
     deleteIssue: builder.mutation({
-      query: (issueId) => ({
-        url: `issues/${issueId}`,
+      query: ({ projectId, issueId }) => ({
+        url: `projects/${projectId}/issues/${issueId}`,
         method: "DELETE",
       }),
       async onQueryStarted(issueId, { dispatch, queryFulfilled }) {
