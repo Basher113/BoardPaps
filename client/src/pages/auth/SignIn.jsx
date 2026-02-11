@@ -2,11 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLoginUserMutation } from "../../reducers/slices/user/user.slice";
 import Button from "../../components/ui/button/Button";
-import icon from "../../assets/bp_icon.webp";
+import { Logo } from "../../components/ui/logo/Logo";
 import {
   SignInWrapper,
   LogoContainer,
-  Logo,
   Title,
   Subtitle,
   Form,
@@ -63,7 +62,7 @@ const SignIn = () => {
   return (
     <SignInWrapper>
       <LogoContainer>
-        <Logo src={icon} alt="BoardPaps Logo" />
+        <Logo size="lg" />
       </LogoContainer>
 
       <Title>Welcome back</Title>

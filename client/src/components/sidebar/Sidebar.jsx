@@ -41,11 +41,11 @@ import {
   InvitationBadgeDot,
 } from './Sidebar.styles';
 import UserAvatar from '../ui/user-avatar/UserAvatar';
+import { Logo, LogoIcon } from '../ui/logo/Logo';
 import { useGetMyProjectsQuery, } from '../../reducers/slices/project/project.apiSlice';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch,  } from 'react-redux';
 import ProjectItem from './ProjectItem';
-import icon from "../../assets/bp_icon.webp"
 import { apiSlice } from '../../reducers/apiSlice';
 import { useLogoutUserMutation } from '../../reducers/slices/user/user.slice';
 import { useGetMyInvitationsCountQuery } from '../../reducers/slices/invitation/invitation.apiSlice';
@@ -99,20 +99,13 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
   return (
     <SidebarContainer collapsed={collapsed}>
       <SidebarHeader>
-        
-        {!collapsed && (
-           
-           <LogoContainer>
-             <img src={icon} height="40" weight="40"/>
-             
-             <ProjectInfo>
-               <ProjectDetails>
-                 <AppName>BoardPaps</AppName>
-               </ProjectDetails>
-             </ProjectInfo>
-           </LogoContainer>
-           
-         )}
+        {!collapsed ? (
+          <LogoContainer>
+            <Logo size="lg" />
+          </LogoContainer>
+        ) : (
+          <LogoIcon size="lg" />
+        )}
         <CollapseButton collapsed={collapsed} onClick={() => setCollapsed(!collapsed)}>
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </CollapseButton>
@@ -120,17 +113,7 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
       
       <SidebarNav>
         <NavList>
-          <NavItem>
-            <InvitationNavItem
-              onClick={handleInvitationsClick}
-            >
-              <Bell size={20} />
-              {!collapsed && <span>Invitations</span>}
-              {invitationsCount > 0 && (
-                <InvitationBadge>{invitationsCount}</InvitationBadge>
-              )}
-            </InvitationNavItem>
-          </NavItem>
+          
           
           {menuItems.map(item => (
             <NavItem key={item.id}>
@@ -143,6 +126,18 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
               </NavButton>
             </NavItem>
           ))}
+
+          <NavItem>
+            <InvitationNavItem
+              onClick={handleInvitationsClick}
+            >
+              <Bell size={20} />
+              {!collapsed && <span>Invitations</span>}
+              {invitationsCount > 0 && (
+                <InvitationBadge>{invitationsCount}</InvitationBadge>
+              )}
+            </InvitationNavItem>
+          </NavItem>
 
           <ProjectSection>
             <ProjectSectionHeader onClick={handleProjectsClick}>

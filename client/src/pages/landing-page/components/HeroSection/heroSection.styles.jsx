@@ -1,213 +1,140 @@
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 
-export const HeroGrid = styled.div`
-  display: grid;
-  gap: 3rem;
-  align-items: center;
+const fadeInUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const underlineDraw = keyframes`
+  from { width: 0; }
+  to { width: 100%; }
+`;
+
+export const HeroWrapper = styled.section`
+  padding-top: 10rem;
+  padding-bottom: 4rem;
+  text-align: center;
 
   @media (min-width: 768px) {
-    grid-template-columns: 1fr 1fr;
+    padding-top: 12rem;
+    padding-bottom: 6rem;
   }
 `;
 
 export const HeroContent = styled.div`
+  max-width: 48rem;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 1.5rem;
 `;
 
 export const HeroTitle = styled.h1`
-  font-size: clamp(2.75rem, 5vw, 3.75rem);
+  font-size: clamp(2.5rem, 6vw, 4.25rem);
   font-weight: 800;
-  line-height: 1.1;
-  color: #111827;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: #18181b;
+  animation: ${fadeInUp} 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+`;
+
+export const AnimatedWord = styled.span`
+  position: relative;
+  display: inline-block;
+
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    height: 4px;
+    background: #18181b;
+    border-radius: 2px;
+    animation: ${underlineDraw} 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
+  }
+
+  @media (min-width: 768px) {
+    &::after {
+      height: 5px;
+      bottom: 4px;
+    }
+  }
 `;
 
 export const HeroText = styled.p`
-  font-size: 1.25rem;
-  color: #4b5563;
-  max-width: 36rem;
+  font-size: 1.175rem;
+  line-height: 1.65;
+  color: #71717a;
+  max-width: 32rem;
+  animation: ${fadeInUp} 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+
+  @media (min-width: 768px) {
+    font-size: 1.25rem;
+  }
 `;
 
 export const HeroActions = styled.div`
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
+  justify-content: center;
+  animation: ${fadeInUp} 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
 `;
 
-export const HeroVisual = styled.div`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-`;
-
-export const BoardContainer = styled.div`
-  background: white;
-  border-radius: 16px; /* rounded-2xl */
-  padding: 16px; /* p-4 */
-  border: 1px solid #e5e7eb; /* border-gray-200 */
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* shadow-2xl */
-  transform: scale(1);
-  transition: transform 0.5s ease; /* duration-500 */
-
-  &:hover {
-    transform: scale(1.05);
-  }
-`
-
-export const BoardWrapper = styled.div`
-  background: linear-gradient(135deg, #3b82f6, #7c3aed);
-  padding: 2rem;
-  border-radius: 1.25rem;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
-  transition: transform 0.5s;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  &:hover {
-    transform: scale(1.05);
-  }
-`;
-
-export const Column = styled.div`
-  background: white;
-  border-radius: 12px;
-  padding: 10px;
-  min-width: 140px;
-  flex: 1;
-`;
-
-export const ColumnHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-`;
-
-export const ColumnTitle = styled.h3`
-  font-size: 12px;
-  font-weight: 600;
-  color: #111827;
-`;
-
-export const CountBadge = styled.span`
-  background: #e5e7eb;
-  color: #374151;
-  font-size: 10px;
-  font-weight: 500;
-  padding: 2px 6px;
-  border-radius: 999px;
-`;
-
-export const Card = styled.div`
-  background: white;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  transition: box-shadow 0.2s ease;
-  margin-bottom: 8px;
-
-  &:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-  }
-`;
-
-export const CardMeta = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 6px;
-`;
-
-export const MetaLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-export const IssueId = styled.span`
-  font-size: 10px;
-  color: #6b7280;
-  font-family: monospace;
-`;
-
-export const CardTitle = styled.h4`
-  font-size: 12px;
-  font-weight: 500;
-  color: #111827;
-  margin-bottom: 8px;
-`;
-
-
-export const CardFooter = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-
-const priorityStyles = {
-  LOW: { bg: "#f3f4f6", color: "#4b5563" },
-  MEDIUM: { bg: "#dbeafe", color: "#2563eb" },
-  HIGH: { bg: "#ffedd5", color: "#ea580c" },
-  CRITICAL: { bg: "#fee2e2", color: "#dc2626" },
-};
-
-export const PriorityBadge = styled.span`
-  font-size: 10px;
-  font-weight: 500;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: ${({ priority }) => priorityStyles[priority].bg};
-  color: ${({ priority }) => priorityStyles[priority].color};
-`;
-
-
-const assigneeGradients = {
-  JD: "linear-gradient(135deg, #3b82f6, #9333ea)",
-  SS: "linear-gradient(135deg, #22c55e, #14b8a6)",
-  MW: "linear-gradient(135deg, #f97316, #ef4444)",
-  EB: "linear-gradient(135deg, #ec4899, #9333ea)",
-};
-
-export const Avatar = styled.div`
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: ${({ assignee }) => assigneeGradients[assignee]};
-  display: flex;
+export const PrimaryButton = styled.button`
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
-  font-weight: 600;
-  color: white;
-`;
-
-
-
-export const Board = styled.div`
-  background: white;
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-`;
-
-
-
-
-
-
-export const BoardHeaderActions = styled.div`
-  display: flex;
-  gap: 4px;
-`;
-
-export const BoardDots = styled.div`
-  display: flex;
   gap: 0.5rem;
+  height: 3.25rem;
+  padding: 0 2rem;
+  background: #18181b;
+  color: #fafafa;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
 
-  span {
-    width: 0.75rem;
-    height: 0.75rem;
-    border-radius: 50%;
+  &:hover {
+    background: #27272a;
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+`;
+
+export const SecondaryButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 3.25rem;
+  padding: 0 2rem;
+  background: transparent;
+  color: #18181b;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease,
+    transform 0.1s ease;
+
+  &:hover {
+    border-color: #a1a1aa;
+    background: #f4f4f5;
+  }
+
+  &:active {
+    transform: scale(0.97);
   }
 `;

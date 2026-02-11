@@ -2,11 +2,10 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
 import { useRegisterUserMutation } from "../../reducers/slices/user/user.slice";
-import icon from "../../assets/bp_icon.webp";
+import { Logo } from "../../components/ui/logo/Logo";
 import {
   SignUpWrapper,
   LogoContainer,
-  Logo,
   Title,
   Subtitle,
   Form,
@@ -82,7 +81,7 @@ const SignUp = () => {
   return (
     <SignUpWrapper>
       <LogoContainer>
-        <Logo src={icon} alt="BoardPaps Logo" />
+        <Logo size="lg" />
       </LogoContainer>
 
       <Title>Create an account</Title>
