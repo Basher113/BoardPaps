@@ -97,8 +97,8 @@ const loginController = async (req, res) => {
       maxAge: 1000 * 60 * 15, // 15 minutes
       sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax"
     });
-    const {id, email: userEmail, username, googleId, provider, role, createdAt, updatedAt } = user;
-    return res.json({id, email: userEmail, username, googleId, provider, role, createdAt, updatedAt });
+    const {id, email: userEmail, username, googleId, provider, avatar, role, createdAt, updatedAt } = user;
+    return res.json({id, email: userEmail, username, googleId, provider, avatar, role, createdAt, updatedAt });
 
   } catch (error) {
     console.log("Login Error:", error);
@@ -187,6 +187,7 @@ const getCurrentUserDataController = async (req, res) => {
         id: true,
         email: true,
         username: true,
+        avatar: true,
       }
     
     }

@@ -3,6 +3,7 @@ const invitationController = require("../controllers/invitation.controller");
 const settingsController = require("../controllers/settings.controller");
 const { validateBody } = require("../middlewares/validation.middleware");
 const { profileSchema, changePasswordSchema } = require("../validations/settings.schema");
+const { uploadAvatar } = require("../middlewares/upload.middleware");
 
 const usersRouter = Router();
 
@@ -34,7 +35,10 @@ usersRouter.post(
 usersRouter.get("/me/profile", settingsController.getProfile);
 usersRouter.put("/me/profile", validateBody(profileSchema), settingsController.updateProfile);
 
+// ==================== AVATAR ====================
 
+usersRouter.put("/me/avatar", uploadAvatar.single("avatar"), settingsController.updateAvatar);
+usersRouter.delete("/me/avatar", settingsController.deleteAvatar);
 
 // ==================== SECURITY ====================
 

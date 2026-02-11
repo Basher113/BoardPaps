@@ -1,6 +1,7 @@
 const { error } = require("node:console");
 const prisma = require("../lib/prisma");
 const bcrypt = require("bcryptjs");
+const { cloudinary } = require("../config/cloudinary.config");
 
 // ==================== PROFILE ====================
 
@@ -13,6 +14,7 @@ const getProfile = async (req, res) => {
         id: true,
         email: true,
         username: true,
+        avatar: true,
         provider: true,
         createdAt: true,
         updatedAt: true,
@@ -61,6 +63,7 @@ const updateProfile = async (req, res) => {
         id: true,
         email: true,
         username: true,
+        avatar: true,
         provider: true,
         createdAt: true,
         updatedAt: true,
@@ -70,6 +73,72 @@ const updateProfile = async (req, res) => {
     return res.json(updatedUser);
   } catch (error) {
     console.log("Update Profile Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// ==================== AVATAR ====================
+
+// PUT /api/users/me/avatar
+const updateAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    // Delete old avatar from Cloudinary if exists
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { avatar: true }
+    });
+
+    if (currentUser.avatar) {
+      try {
+        const publicId = currentUser.avatar.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(`avatars/${publicId}`);
+      } catch (err) {
+        console.log("Error deleting old avatar:", err);
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { avatar: req.file.path },
+      select: { id: true, avatar: true, username: true, email: true }
+    });
+
+    return res.json(updatedUser);
+  } catch (error) {
+    console.log("Update Avatar Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// DELETE /api/users/me/avatar
+const deleteAvatar = async (req, res) => {
+  try {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { avatar: true }
+    });
+
+    if (currentUser.avatar) {
+      try {
+        const publicId = currentUser.avatar.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(`avatars/${publicId}`);
+      } catch (err) {
+        console.log("Error deleting avatar from Cloudinary:", err);
+      }
+    }
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { avatar: null }
+    });
+
+    return res.json({ message: "Avatar deleted successfully" });
+  } catch (error) {
+    console.log("Delete Avatar Error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -320,6 +389,8 @@ const deleteAccount = async (req, res) => {
 module.exports = {
   getProfile,
   updateProfile,
+  updateAvatar,
+  deleteAvatar,
   getPreferences,
   updatePreferences,
   changePassword,

@@ -76,7 +76,7 @@ const getProject = async (req, res) => {
         members: {
           include: {
             user: {
-              select: { id: true, email: true, username: true }
+              select: { id: true, email: true, username: true, avatar: true }
             }
           }
         },
@@ -87,10 +87,10 @@ const getProject = async (req, res) => {
               orderBy: { position: 'asc' },
               include: {
                 reporter: {
-                  select: { id: true, email: true, username: true }
+                  select: { id: true, email: true, username: true, avatar: true }
                 },
                 assignee: {
-                  select: { id: true, email: true, username: true }
+                  select: { id: true, email: true, username: true, avatar: true }
                 }
               }
             },

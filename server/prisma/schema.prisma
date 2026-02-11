@@ -59,6 +59,8 @@ model User {
   provider   String   @default("local")
   googleId   String?  @unique
 
+  // Avatar URL from Cloudinary
+  avatar     String?
   
   // Storing active refresh tokens of users.
   refreshTokens RefreshToken[]
