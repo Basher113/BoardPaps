@@ -59,6 +59,7 @@ model User {
   provider   String   @default("local")
   googleId   String?  @unique
 
+  
   // Storing active refresh tokens of users.
   refreshTokens RefreshToken[]
 
@@ -88,7 +89,16 @@ model RefreshToken {
   expiresAt DateTime
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
+  
+  // Session info for session management
+  userAgent String?
+  ipAddress String?
+  
+  @@index([userId, revoked, expiresAt])
 }
+
+// UserPreferences model for user settings
+
 
 model Project {
   id        String   @id @default(uuid())

@@ -138,10 +138,6 @@ const logoutController = async (req, res) => {
 
 const refreshTokenController = async (req, res) => {
   try {
-    await prisma.refreshToken.deleteMany({
-      where: { expiresAt: { lt: new Date() } },
-    });
-
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) return res.status(401).json({ message: "Refresh Token not found" });
 
