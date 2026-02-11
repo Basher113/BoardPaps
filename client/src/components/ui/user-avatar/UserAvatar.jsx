@@ -1,24 +1,24 @@
 import { Avatar } from './UserAvatar.styles';
-import { usersData } from '../../../utils/data';
 
-const UserAvatar = ({ userId, user, size = 'sm' }) => {
-  let displayUser;
+const UserAvatar = ({ user, size = 'sm' }) => {
+  if (!user) return null;
   
-  if (user) {
-    displayUser = user;
-  } else if (userId) {
-    displayUser = usersData.find(u => u.id === userId);
-  }
+  // Check if avatar is a valid URL (Cloudinary or other)
+  const isAvatarUrl = user?.avatar && (
+    user.avatar.startsWith('http') || 
+    user.avatar.startsWith('/')
+  );
   
-  if (!displayUser) return null;
-  
-  const avatar = displayUser.avatar || displayUser.username?.charAt(0).toUpperCase() || displayUser.email?.charAt(0).toUpperCase() || '?';
-  const fullName = displayUser.fullName || displayUser.username;
-  const color = displayUser.color || '#3b82f6, #9333ea';
+  const fullName = user.fullName || user.username;
+  const color = user.color || '#3b82f6, #9333ea';
   
   return (
-    <Avatar size={size} gradient={color} title={fullName}>
-      {avatar}
+    <Avatar $size={size} gradient={color} title={fullName}>
+      {isAvatarUrl ? (
+        <img src={user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        user.username?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || '?'
+      )}
     </Avatar>
   );
 };

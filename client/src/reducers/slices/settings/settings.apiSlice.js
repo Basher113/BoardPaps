@@ -16,6 +16,23 @@ export const settingsApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["Settings"],
     }),
     
+    // Avatar
+    uploadUserAvatar: builder.mutation({
+      query: (formData) => ({
+        url: "users/me/avatar",
+        method: "PUT",
+        body: formData,
+      }),
+      invalidatesTags: ["Settings", "User"],
+    }),
+    deleteUserAvatar: builder.mutation({
+      query: () => ({
+        url: "users/me/avatar",
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Settings", "User"],
+    }),
+    
     // Security
     changePassword: builder.mutation({
       query: (data) => ({
@@ -55,6 +72,8 @@ export const settingsApiSlice = apiSlice.injectEndpoints({
 export const {
   useGetUserProfileQuery,
   useUpdateUserProfileMutation,
+  useUploadUserAvatarMutation,
+  useDeleteUserAvatarMutation,
   useChangePasswordMutation,
   useGetSessionsQuery,
   useRevokeSessionMutation,

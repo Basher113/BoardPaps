@@ -110,7 +110,7 @@ const IssueCard = ({
     dispatch(openDeleteModal(issue.id));
     setShowMenu(false);
   }, [dispatch, issue.id, canEdit]);
-
+  console.log(issue.assignee);
   return (
     <CardContainer
       draggable={!!currentUserId}
