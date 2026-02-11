@@ -9,22 +9,31 @@ export const BoardContainer = styled.div`
 `;
 
 export const Column = styled.div`
-  background-color: #f4f4f5;
-  border-radius: 0.5rem;
-  min-width: 18rem;
-  width: 18rem;
+  background-color: #ffffff;
+  border-radius: 24px;
+  
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  min-width: 363px;
+  max-width: 363px;
+  min-height: 500px;
+  max-height: 750px;
+  border: 1px solid oklch(0.922 0 0);
+  overflow: auto;
+  padding: 1rem;
+  padding-bottom: 2rem;
+  box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
 `;
 
 export const ColumnHeader = styled.div`
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e4e4e7;
+  border-bottom: 1px solid #cccccc;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-radius: 0.5rem 0.5rem 0 0;
+  position: sticky;
 `;
 
 export const ColumnHeaderLeft = styled.div`
@@ -66,9 +75,10 @@ export const Card = styled.div`
   border-radius: 0.375rem;
   padding: 0.75rem;
   cursor: ${props => props.$canEdit ? 'grab' : 'default'};
+  box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+
   transition: all 0.15s ease;
   opacity: ${props => props.$canEdit ? 1 : 0.5};
-
   &:hover {
     border-color: #d4d4d8;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);

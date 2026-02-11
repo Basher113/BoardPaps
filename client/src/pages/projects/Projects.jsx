@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import {
   Content,
@@ -28,11 +29,19 @@ import {
   useCreateProjectMutation,
   useDeleteProjectMutation,
 } from "../../reducers/slices/project/project.apiSlice";
+import { setActiveView } from "../../reducers/slices/navigation/navigation.slice";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
 
 const Projects = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [showNewProject, setShowNewProject] = useState(false);
+  
+  // Set active view on mount
+  useEffect(() => {
+    dispatch(setActiveView('projects'));
+  }, [dispatch]);
+  
   const [newProject, setNewProject] = useState({ name: "", key: "", description: "" });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState(null);

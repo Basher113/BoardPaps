@@ -29,8 +29,7 @@ const ProjectItem = ({ project }) => {
     <ProjectItemWrapper>
       <ProjectButton
         onClick={onProjectClick}
-        active={projectId === project.id}
-
+        $active={projectId === project.id}
       >
         {projectId === project.id ? <FolderOpen size={16} /> : <Folder size={16} />}
         <ProjectName>{project.name}</ProjectName>

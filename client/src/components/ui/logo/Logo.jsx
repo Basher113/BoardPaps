@@ -79,6 +79,10 @@ const LogoText = styled.span`
   letter-spacing: -0.02em;
   line-height: 1;
 
+  &.sidebar-logo {
+    color: white;
+  }
+
   ${({ $size }) => {
     switch ($size) {
       case "sm":

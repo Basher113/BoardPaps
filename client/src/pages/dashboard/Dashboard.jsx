@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setActiveView } from '../../reducers/slices/navigation/navigation.slice';
 import { useGetDashboardIssuesQuery } from '../../reducers/slices/dashboard/dashboard.apiSlice';
 import PriorityBadge from '../board/components/priority-badge/PriorityBadge';
 import IssueTypeIcon from '../board/components/issue-type-icon/IssueTypeIcon';
@@ -88,7 +90,14 @@ const getStatusIcon = (statusName) => {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [selectedStatus, setSelectedStatus] = useState(null);
+  
+  // Set active view on mount
+  useEffect(() => {
+    dispatch(setActiveView('dashboard'));
+  }, [dispatch]);
+  
   const { data, isLoading, error } = useGetDashboardIssuesQuery();
 
   const issues = data?.issues || [];

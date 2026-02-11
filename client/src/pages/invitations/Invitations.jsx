@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Mail, Check, X, Bell, Briefcase, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setActiveView } from "../../reducers/slices/navigation/navigation.slice";
 import Button from "../../components/ui/button/Button";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
 import {
@@ -244,6 +246,13 @@ const LoadingState = styled.div`
 `;
 
 const InvitationsPage = () => {
+  const dispatch = useDispatch();
+  
+  // Set active view on mount
+  useEffect(() => {
+    dispatch(setActiveView('invitations'));
+  }, [dispatch]);
+  
   const { data, isLoading } = useGetMyInvitationsQuery();
   const [acceptInvitation, { isLoading: isAccepting }] = useAcceptInvitationMutation();
   const [declineInvitation, { isLoading: isDeclining }] = useDeclineInvitationMutation();

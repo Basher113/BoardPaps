@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Plus } from "lucide-react";
 import {
@@ -38,9 +38,16 @@ import {
   selectSelectedIssueId
 } from "../../reducers/slices/issue/issue.slice";
 import { useGetCurrentUserQuery } from "../../reducers/slices/user/user.slice";
+import { setActiveView } from "../../reducers/slices/navigation/navigation.slice";
 
 const Board = () => {
   const dispatch = useDispatch();
+  
+  // Set active view on mount
+  useEffect(() => {
+    dispatch(setActiveView('board'));
+  }, [dispatch]);
+  
   const activeProjectId = useSelector(selectActiveProjectId);
   const isDeleteModalOpen = useSelector(selectIsDeleteModalOpen);
   const deleteIssueId = useSelector(selectDeleteIssueId);

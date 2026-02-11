@@ -95,8 +95,8 @@ export const NavButton = styled.button`
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
   transition: all 0.15s ease;
-  background: ${props => props.$active ? '#27272a' : 'transparent'};
-  color: ${props => props.$active ? '#fafafa' : '#a1a1aa'};
+  background: ${props => props.$active ? '#fafafa' : 'transparent'};
+  color: ${props => props.$active ? '#09090b' : '#a1a1aa'};
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
@@ -104,8 +104,8 @@ export const NavButton = styled.button`
   text-align: left;
 
   &:hover {
-    background-color: ${props => props.$active ? '#27272a' : '#27272a'};
-    color: #fafafa;
+    background-color: ${props => props.$active ? '#f4f4f5' : '#27272a'};
+    color: ${props => props.$active ? '#09090b' : '#fafafa'};
   }
 `;
 
@@ -306,11 +306,12 @@ export const ProjectSectionHeader = styled.div`
   cursor: pointer;
   border-radius: 0.25rem;
   transition: all 0.15s ease;
-  color: #71717a;
+  background: ${props => props.$active ? '#fafafa' : 'transparent'};
+  color: ${props => props.$active ? '#09090b' : '#71717a'};
 
   &:hover {
-    background-color: #27272a;
-    color: #fafafa;
+    background-color: ${props => props.$active ? '#f4f4f5' : '#27272a'};
+    color: ${props => props.$active ? '#09090b' : '#fafafa'};
   }
 `;
 
@@ -343,8 +344,8 @@ export const ProjectButton = styled.button`
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
   transition: all 0.15s ease;
-  background: ${props => props.$active ? '#27272a' : 'transparent'};
-  color: ${props => props.$active ? '#fafafa' : '#a1a1aa'};
+  background: ${props => props.$active ? '#fafafa' : 'transparent'};
+  color: ${props => props.$active ? '#09090b' : '#a1a1aa'};
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
@@ -352,8 +353,8 @@ export const ProjectButton = styled.button`
   text-align: left;
 
   &:hover {
-    background-color: ${props => props.$active ? '#27272a' : '#27272a'};
-    color: #fafafa;
+    background-color: ${props => props.$active ? '#f4f4f5' : '#27272a'};
+    color: ${props => props.$active ? '#09090b' : '#fafafa'};
   }
 `;
 
@@ -390,16 +391,16 @@ export const BoardItem = styled.button`
   padding-left: 1rem;
   border-radius: 0.375rem;
   transition: all 0.15s ease;
-  background: ${props => props.$active ? '#27272a' : 'transparent'};
-  color: ${props => props.$active ? '#fafafa' : '#71717a'};
+  background: ${props => props.$active ? '#fafafa' : 'transparent'};
+  color: ${props => props.$active ? '#09090b' : '#71717a'};
   border: none;
   cursor: pointer;
   font-size: 0.8125rem;
   text-align: left;
 
   &:hover {
-    background-color: ${props => props.$active ? '#27272a' : '#27272a'};
-    color: #fafafa;
+    background-color: ${props => props.$active ? '#f4f4f5' : '#27272a'};
+    color: ${props => props.$active ? '#09090b' : '#fafafa'};
   }
 `;
 
@@ -429,8 +430,8 @@ export const InvitationNavItem = styled.button`
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
   transition: all 0.15s ease;
-  background: ${props => props.$active ? '#27272a' : 'transparent'};
-  color: ${props => props.$active ? '#fafafa' : '#a1a1aa'};
+  background: ${props => props.$active ? '#fafafa' : 'transparent'};
+  color: ${props => props.$active ? '#09090b' : '#a1a1aa'};
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
@@ -439,8 +440,8 @@ export const InvitationNavItem = styled.button`
   text-align: left;
 
   &:hover {
-    background-color: ${props => props.$active ? '#27272a' : '#27272a'};
-    color: #fafafa;
+    background-color: ${props => props.$active ? '#f4f4f5' : '#27272a'};
+    color: ${props => props.$active ? '#09090b' : '#fafafa'};
   }
 `;
 

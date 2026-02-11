@@ -63,10 +63,16 @@ import {
 
 import { apiSlice } from '../../reducers/apiSlice';
 import { useDispatch } from 'react-redux';
+import { setActiveView } from '../../reducers/slices/navigation/navigation.slice';
 
 const Settings = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // Set active view on mount
+  useEffect(() => {
+    dispatch(setActiveView('settings'));
+  }, [dispatch]);
 
   // Modal states
   const [showPasswordModal, setShowPasswordModal] = useState(false);

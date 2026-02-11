@@ -3,11 +3,7 @@ import { LayoutDashboard, Settings, Users, ChevronLeft, ChevronRight, Target, Mo
 import {
   SidebarContainer,
   SidebarHeader,
-  ProjectInfo,
   LogoContainer,
-  ProjectDetails,
-  AppName,
-
   CollapseButton,
   SidebarNav,
   NavList,
@@ -63,7 +59,8 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
   
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'settings', icon: Settings, label: 'Settings' }
+    { id: 'settings', icon: Settings, label: 'Settings' },
+    {id: 'invitations', icon: Bell, label: "Invitations"}
   ];
 
   const invitationsCount = invitationsCountData?.data?.count || 0;
@@ -101,7 +98,7 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
       <SidebarHeader>
         {!collapsed ? (
           <LogoContainer>
-            <Logo size="lg" />
+            <Logo size="lg" color="white"/>
           </LogoContainer>
         ) : (
           <LogoIcon size="lg" />
@@ -118,8 +115,8 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
           {menuItems.map(item => (
             <NavItem key={item.id}>
               <NavButton
-                active={activeView === item.id}
-                onClick={item.id === 'dashboard' ? handleDashboardClick : item.id === 'settings' ? handleSettingsClick : () => setActiveView(item.id)}
+                $active={activeView === item.id}
+                onClick={item.id === 'dashboard' ? handleDashboardClick : item.id === 'settings' ? handleSettingsClick : item.id === "invitations" ? handleInvitationsClick : () => setActiveView(item.id)}
               >
                 <item.icon size={20} />
                 {!collapsed && <span>{item.label}</span>}
@@ -127,20 +124,10 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
             </NavItem>
           ))}
 
-          <NavItem>
-            <InvitationNavItem
-              onClick={handleInvitationsClick}
-            >
-              <Bell size={20} />
-              {!collapsed && <span>Invitations</span>}
-              {invitationsCount > 0 && (
-                <InvitationBadge>{invitationsCount}</InvitationBadge>
-              )}
-            </InvitationNavItem>
-          </NavItem>
+     
 
           <ProjectSection>
-            <ProjectSectionHeader onClick={handleProjectsClick}>
+            <ProjectSectionHeader $active={activeView === 'projects'} onClick={handleProjectsClick}>
               <FolderKanban size={20}/> 
               {!collapsed ? <ProjectSectionTitle>All Projects</ProjectSectionTitle> : undefined} 
             </ProjectSectionHeader>
