@@ -12,7 +12,11 @@ export const SidebarContainer = styled.div`
     display: flex;
   }
 
-  height: 100vh;
+  min-height: 100vh;
+  position: relative;
+  top: 0;
+  left: 0;
+
 `;
 
 export const SidebarHeader = styled.div`

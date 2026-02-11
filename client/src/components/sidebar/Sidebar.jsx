@@ -84,6 +84,10 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
     navigate('/app/invitations');
   };
   
+  const handleSettingsClick = () => {
+    navigate('/app/settings');
+  };
+  
   const handleDashboardClick = () => {
     navigate('/app');
   };
@@ -132,7 +136,7 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
             <NavItem key={item.id}>
               <NavButton
                 active={activeView === item.id}
-                onClick={item.id === 'dashboard' ? handleDashboardClick : () => setActiveView(item.id)}
+                onClick={item.id === 'dashboard' ? handleDashboardClick : item.id === 'settings' ? handleSettingsClick : () => setActiveView(item.id)}
               >
                 <item.icon size={20} />
                 {!collapsed && <span>{item.label}</span>}
@@ -154,13 +158,13 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
               <ProjectList>
                 {projects.map((project) => {
                    
-                  return (
-                    <ProjectItem
-                      key={project.id}
-                      project={project}
-                    />
-                  );
-                })}
+                   return (
+                     <ProjectItem
+                       key={project.id}
+                       project={project}
+                     />
+                   );
+                 })}
               </ProjectList>
             )}
           </ProjectSection>
@@ -193,6 +197,10 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
                     <UserMenuLogout onClick={handleInvitationsClick}>
                       <Bell size={16} />
                       View Invitations ({invitationsCount})
+                    </UserMenuLogout>
+                    <UserMenuLogout onClick={handleSettingsClick}>
+                      <Settings size={16} />
+                      Settings
                     </UserMenuLogout>
                   </UserMenuList>
                   <UserMenuList>
@@ -227,6 +235,10 @@ const Sidebar = ({ collapsed, setCollapsed, activeView, setActiveView, currentUs
                     <UserMenuLogout onClick={handleInvitationsClick}>
                       <Bell size={16} />
                       View Invitations ({invitationsCount})
+                    </UserMenuLogout>
+                    <UserMenuLogout onClick={handleSettingsClick}>
+                      <Settings size={16} />
+                      Settings
                     </UserMenuLogout>
                   </UserMenuList>
                   <UserMenuList>

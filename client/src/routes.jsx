@@ -7,6 +7,7 @@ import LandingPage from "./pages/landing-page/LandingPage"
 import Dashboard from "./pages/dashboard/Dashboard"
 import Projects from "./pages/projects/Projects"
 import InvitationsPage from "./pages/invitations/Invitations"
+import Settings from "./pages/settings/Settings"
 
 
 export const routes = [
@@ -34,6 +35,10 @@ export const routes = [
       {
         path: "invitations",
         element: <InvitationsPage />
+      },
+      {
+        path: "settings",
+        element: <Settings />
       }
     ]
   },
