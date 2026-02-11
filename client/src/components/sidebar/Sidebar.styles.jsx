@@ -1,29 +1,74 @@
 import styled from 'styled-components';
 
 export const SidebarContainer = styled.div`
-  display: none;
   background-color: #09090b;
   color: #fafafa;
   transition: all 0.2s ease;
-  width: ${props => props.$collapsed ? '4rem' : '16rem'};
+  width: 16rem;
   flex-direction: column;
 
   @media (min-width: 1024px) {
     display: flex;
   }
 
+  @media (max-width: 1023px) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    transform: ${props => props.$isOpen ? 'translateX(0)' : 'translateX(-100%)'};
+    transition: transform 0.3s ease;
+  }
+
   min-height: 100vh;
   position: relative;
   top: 0;
   left: 0;
+`;
 
+export const MobileToggleButton = styled.button`
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 40;
+  background-color: #09090b;
+  color: #fafafa;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: #27272a;
+  }
+
+  @media (max-width: 1023px) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+`;
+
+export const MobileOverlay = styled.div`
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 45;
+
+  @media (max-width: 1023px) {
+    display: ${props => props.$isOpen ? 'block' : 'none'};
+  }
 `;
 
 export const SidebarHeader = styled.div`
   padding: 1rem;
   display: flex;
   align-items: center;
-  justify-content: ${props => props.$collapsed ? 'center' : 'space-between'};
+  justify-content: space-between;
   border-bottom: 1px solid #27272a;
 `;
 
@@ -46,28 +91,11 @@ export const LogoContainer = styled.div`
 export const ProjectDetails = styled.div`
   display: flex;
   flex-direction: column;
-  ${props => props.$collapsed && 'display: none;'}
 `;
 
 export const AppName = styled.h2`
   font-weight: 600;
   font-size: 0.875rem;
-`;
-
-export const CollapseButton = styled.button`
-  color: #71717a;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: all 0.15s ease;
-  margin: ${props => props.$collapsed ? 'auto' : ''};
-
-  &:hover {
-    color: #fafafa;
-    background-color: #27272a;
-  }
 `;
 
 export const SidebarNav = styled.nav`
@@ -137,7 +165,6 @@ export const UserInfo = styled.div`
   flex: 1;
   min-width: 0;
   text-align: left;
-  ${props => props.$collapsed && 'display: none;'}
 `;
 
 export const Username = styled.p`
@@ -168,6 +195,12 @@ export const UserMenuDropdown = styled.div`
   border: 1px solid #e4e4e7;
   z-index: 40;
   color: #18181b;
+
+  @media (max-width: 1023px) {
+    left: auto;
+    right: 0;
+    width: 16rem;
+  }
 `;
 
 export const UserMenuHeader = styled.div`
@@ -263,31 +296,8 @@ export const MenuBackdrop = styled.div`
   position: fixed;
   inset: 0;
   z-index: 30;
-`;
 
-export const MobileOverlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 40;
-
-  @media (min-width: 1024px) {
-    display: none;
-  }
-`;
-
-export const MobileSidebarContainer = styled.div`
-  position: fixed;
-  inset-y: 0;
-  left: 0;
-  width: 16rem;
-  background-color: #09090b;
-  color: #fafafa;
-  z-index: 50;
-  transform: translateX(0);
-  transition: transform 0.3s ease;
-
-  @media (min-width: 1024px) {
+  @media (max-width: 1023px) {
     display: none;
   }
 `;

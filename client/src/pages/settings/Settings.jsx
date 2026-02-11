@@ -55,9 +55,6 @@ import {
   useGetUserProfileQuery,
   useUpdateUserProfileMutation,
   useChangePasswordMutation,
-  useGetSessionsQuery,
-  useRevokeSessionMutation,
-  useRevokeAllSessionsMutation,
   useDeleteAccountMutation
 } from '../../reducers/slices/settings/settings.apiSlice';
 
@@ -78,9 +75,7 @@ const Settings = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
-  const [showRevokeModal, setShowRevokeModal] = useState(false);
-  const [revokeSessionId, setRevokeSessionId] = useState(null);
-  const [revokeAll, setRevokeAll] = useState(false);
+
 
   // Profile queries
   const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useGetUserProfileQuery();
@@ -88,9 +83,7 @@ const Settings = () => {
 
   // Security queries
   const [changePassword, { isLoading: changePasswordLoading }] = useChangePasswordMutation();
-  const { data: sessionsData, isLoading: sessionsLoading, refetch: refetchSessions } = useGetSessionsQuery();
-  const [revokeSession, { isLoading: revokeLoading }] = useRevokeSessionMutation();
-  const [revokeAllSessions, { isLoading: revokeAllLoading }] = useRevokeAllSessionsMutation();
+
   const [deleteAccount, { isLoading: deleteLoading }] = useDeleteAccountMutation();
 
   // Form states
@@ -110,12 +103,6 @@ const Settings = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const profileInitialized = useRef(false);
-
-  const handleRevokeClick = (sessionId, isAll = false) => {
-    setRevokeSessionId(sessionId);
-    setRevokeAll(isAll);
-    setShowRevokeModal(true);
-  };
 
   // Initialize form data when profile loads
   useEffect(() => {
@@ -180,22 +167,7 @@ const Settings = () => {
         setPasswordError(err.data?.message || 'Failed to change password');
       }
     }
-  };
 
-  const handleRevokeConfirm = async () => {
-    try {
-      if (revokeAll) {
-        await revokeAllSessions().unwrap();
-        dispatch(apiSlice.util.resetApiState());
-        navigate('/');
-      } else {
-        await revokeSession(revokeSessionId).unwrap();
-        refetchSessions();
-      }
-    } catch (err) {
-      console.error('Failed to revoke session:', err);
-    }
-    setShowRevokeModal(false);
   };
 
   const handleDeleteConfirm = async () => {
@@ -346,102 +318,6 @@ const Settings = () => {
 
             <Divider />
 
-            <FormGroup style={{ marginBottom: '1rem' }}>
-              <Label>Active Sessions</Label>
-              {sessionsLoading ? (
-                <div>
-                  <LoadingSkeleton $height="4rem" />
-                  <div style={{ marginTop: '0.75rem' }} />
-                  <LoadingSkeleton $height="4rem" />
-                </div>
-              ) : sessionsData?.sessions?.length === 0 ? (
-                <p style={{ color: '#71717a', fontSize: '0.875rem' }}>No active sessions</p>
-              ) : (
-                <div style={{ marginTop: '0.75rem' }}>
-                  {sessionsData?.sessions?.map((session) => (
-                    <div
-                      key={session.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0.75rem 1rem',
-                        background: '#fafafa',
-                        borderRadius: '8px',
-                        marginBottom: '0.5rem',
-                        border: '1px solid #f4f4f5'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '8px',
-                          background: '#ffffff',
-                          border: '1px solid #e4e4e7',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#71717a'
-                        }}>
-                          <Shield size={16} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#18181b' }}>
-                            {session.userAgent || 'Unknown device'}
-                            {session.isCurrent && (
-                              <span style={{
-                                fontSize: '0.625rem',
-                                fontWeight: 600,
-                                color: '#16a34a',
-                                background: '#dcfce7',
-                                padding: '0.125rem 0.5rem',
-                                borderRadius: '9999px',
-                                marginLeft: '0.5rem',
-                                textTransform: 'uppercase'
-                              }}>
-                                Current
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#71717a' }}>
-                            {new Date(session.createdAt).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                      {!session.isCurrent && (
-                        <Button
-                          variant="outline"
-                          onClick={() => handleRevokeClick(session.id, false)}
-                          disabled={revokeLoading}
-                          style={{ padding: '0.5rem 0.75rem', fontSize: '0.8125rem' }}
-                        >
-                          Revoke
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </FormGroup>
-
-            {sessionsData?.sessions?.length > 1 && (
-              <Button
-                variant="ghost"
-                onClick={() => handleRevokeClick(null, true)}
-                disabled={revokeAllLoading}
-                style={{ fontSize: '0.8125rem' }}
-              >
-                <LogOut size={14} style={{ marginRight: '0.375rem' }} />
-                Sign out all other sessions
-              </Button>
-            )}
           </Form>
         </SectionContent>
       </Section>
@@ -618,20 +494,7 @@ const Settings = () => {
         isLoading={deleteLoading}
       />
 
-      {/* Revoke Session Confirmation Modal */}
-      <ConfirmModal
-        isOpen={showRevokeModal}
-        onClose={() => setShowRevokeModal(false)}
-        onConfirm={handleRevokeConfirm}
-        title={revokeAll ? "Revoke All Sessions" : "Revoke Session"}
-        message={revokeAll 
-          ? "Are you sure you want to revoke all other sessions? You will be logged out from all devices except this one."
-          : "Are you sure you want to revoke this session?"
-        }
-        confirmText={revokeAll ? "Revoke All" : "Revoke"}
-        variant="danger"
-        isLoading={revokeLoading || revokeAllLoading}
-      />
+      
     </SettingsContainer>
   );
 };

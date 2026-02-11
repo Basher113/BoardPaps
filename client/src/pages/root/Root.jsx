@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { OutletWrapper, Wrapper } from "./root.styles"
 import { Outlet, useNavigate } from "react-router-dom"
 import Sidebar from "../../components/sidebar/Sidebar"
@@ -9,7 +8,6 @@ import { selectActiveView } from "../../reducers/slices/navigation/navigation.se
 
 const Root = () => {
   const navigate = useNavigate();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const activeView = useSelector(selectActiveView);
   
   const {data: currentUser, isLoading: currentUserLoading} = useGetCurrentUserQuery();
@@ -19,13 +17,10 @@ const Root = () => {
   if (!currentUser) {
     navigate("/");
   }
-  console.log(currentUser);
   return (
     
     <Wrapper>
       <Sidebar 
-        collapsed={sidebarCollapsed} 
-        setCollapsed={setSidebarCollapsed}
         currentUser={currentUser}
         activeView={activeView}
       />

@@ -3,6 +3,7 @@ import styled from 'styled-components';
 export const BoardContainer = styled.div`
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
   overflow-x: auto;
   padding: 1rem;
   height: calc(100vh - 65px);
@@ -15,12 +16,11 @@ export const Column = styled.div`
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  min-width: 363px;
+  width: 363px;
   max-width: 363px;
-  min-height: 500px;
-  max-height: 750px;
+  min-height: 600px;
+  max-height: 500px;
   border: 1px solid oklch(0.922 0 0);
-  overflow: auto;
   padding: 1rem;
   padding-bottom: 2rem;
   box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
@@ -67,6 +67,8 @@ export const CardList = styled.div`
   flex-direction: column;
   gap: 0.5rem;
   min-height: 100px;
+  overflow: auto;
+
 `;
 
 export const Card = styled.div`

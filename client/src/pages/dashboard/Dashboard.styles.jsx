@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 export const DashboardContainer = styled.div`
-  padding: 2rem;
+  padding: 3rem 2rem;
   max-width: 1400px;
   margin: 0 auto;
   background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);

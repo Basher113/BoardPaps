@@ -2,8 +2,9 @@ import styled from 'styled-components';
 
 export const Content = styled.div`
   padding: 1.5rem 2rem;
-  min-height: 100vh;
   background-color: #fafafa;
+ 
+  min-height: calc(100vh - 2rem);
 `;
 
 export const Header = styled.div`
