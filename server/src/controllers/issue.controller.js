@@ -1,4 +1,5 @@
 const prisma = require("../lib/prisma");
+const { generateBetween, needsRebalance, rebalanceRanks } = require("../utils/lexorank.utils");
 
 /**
  * Get all issues for a project
@@ -137,19 +138,13 @@ const createIssue = async (req, res) => {
       }
     }
 
-    
-    const issuePosition = column.issues.length;
-    
-    await prisma.issue.updateMany({
-      where: {
-        columnId,
-        position: { gte: issuePosition }
-      },
-      data: {
-        position: { increment: 1 }
-      }
-    });
-    
+    // Calculate new rank using lexorank
+    const existingRanks = column.issues
+      .map(i => i.position)
+      .sort((a, b) => a.localeCompare(b));
+
+    const prevRank = existingRanks.length > 0 ? existingRanks[existingRanks.length - 1] : null;
+    const newRank = generateBetween(prevRank, null);
 
     const issue = await prisma.issue.create({
       data: {
@@ -157,7 +152,7 @@ const createIssue = async (req, res) => {
         description: description?.trim() || null,
         type,
         priority,
-        position: issuePosition,
+        position: newRank,
         projectId,
         columnId,
         reporterId: userId,
@@ -165,7 +160,7 @@ const createIssue = async (req, res) => {
       },
       include: {
         reporter: {
-          select: { id: true, email: true, username: true }
+          select: { id: true, email: true, username: true, }
         },
         assignee: {
           select: { id: true, email: true, username: true }
@@ -410,68 +405,55 @@ const moveIssue = async (req, res) => {
       });
     }
 
-    // Perform the move in a transaction
+    // Perform the move using lexorank
     await prisma.$transaction(async (tx) => {
-
-      // Make the moving issue position = 10000 so that we can move the other issues position safer
-      await tx.issue.update({
-        where: { id: issueId },
-        data: { position: 10000 } // safe placeholder
-      });
-
-      if (isSameColumn) {
-        // Reordering within the same column
-        if (newPosition > oldPosition) {
-          // Moving down: shift issues up
-          await tx.issue.updateMany({
-            where: {
-              columnId,
-              position: {
-                gt: oldPosition,
-                lte: newPosition
-              }
-            },
-            data: {
-              position: { decrement: 1 }
-            }
-          });
-        } else {
-          // Moving up: shift issues down
-          const issuesToShift = await tx.issue.findMany({
-            where: { columnId, position: { gte: newPosition, lt: oldPosition } },
-            orderBy: { position: 'desc' }
-          });
-
-          for (const i of issuesToShift) {
-            await tx.issue.update({
-              where: { id: i.id },
-              data: { position: i.position + 1 }
-            });
+      // Get the target column's issues sorted by position
+      const targetColumn = await tx.column.findUnique({
+        where: { id: columnId },
+        include: {
+          issues: {
+            orderBy: { position: 'asc' },
+            select: { id: true, position: true }
           }
         }
-      } else {
-        // Moving to a different column
-        // Remove from old column
-        await tx.issue.updateMany({
-          where: {
-            columnId: oldColumnId,
-            position: { gt: oldPosition }
-          },
-          data: {
-            position: { decrement: 1 }
+      });
+
+      const issues = targetColumn.issues;
+
+      // Calculate new rank based on target position
+      const prevRank = newPosition === 0 ? null : issues[newPosition - 1]?.position;
+      const nextRank = issues[newPosition]?.position;
+
+      let newRank = generateBetween(prevRank, nextRank);
+
+      // If ranks are too close, rebalance the column
+      if (needsRebalance(prevRank, nextRank)) {
+        const allRanks = issues.map(i => i.position);
+        const newRanks = rebalanceRanks(allRanks);
+
+        // Update all issues with new ranks
+        for (let i = 0; i < issues.length; i++) {
+          await tx.issue.update({
+            where: { id: issues[i].id },
+            data: { position: newRanks[i] }
+          });
+        }
+
+        // Recalculate ranks after rebalance
+        const rebalancedColumn = await tx.column.findUnique({
+          where: { id: columnId },
+          include: {
+            issues: {
+              orderBy: { position: 'asc' },
+              select: { position: true }
+            }
           }
         });
 
-        // Make room in new column
-        await tx.issue.updateMany({
-          where: {
-            columnId,
-            position: { gte: newPosition }
-          },
-          data: {
-            position: { increment: 1 }
-          }
-        });
+        const rebalancedRanks = rebalancedColumn.issues.map(i => i.position);
+        const newPrevRank = newPosition === 0 ? null : rebalancedRanks[newPosition - 1];
+        const newNextRank = rebalancedRanks[newPosition];
+        newRank = generateBetween(newPrevRank, newNextRank);
       }
 
       // Update the issue
@@ -479,7 +461,7 @@ const moveIssue = async (req, res) => {
         where: { id: issueId },
         data: {
           columnId,
-          position: newPosition
+          position: newRank
         }
       });
     });
@@ -542,21 +524,10 @@ const deleteIssue = async (req, res) => {
       });
     }
 
-    // Delete issue and adjust positions
+    // Delete issue (no position adjustment needed with lexorank)
     await prisma.$transaction(async (tx) => {
       await tx.issue.delete({
         where: { id: issueId }
-      });
-
-      // Shift remaining issues in the column
-      await tx.issue.updateMany({
-        where: {
-          columnId: issue.columnId,
-          position: { gt: issue.position }
-        },
-        data: {
-          position: { decrement: 1 }
-        }
       });
     });
 

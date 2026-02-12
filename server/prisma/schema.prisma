@@ -99,7 +99,6 @@ model RefreshToken {
   @@index([userId, revoked, expiresAt])
 }
 
-// UserPreferences model for user settings
 
 
 model Project {
@@ -163,7 +162,7 @@ model Issue {
   type        IssueType
   priority    IssuePriority
 
-  position    Int           // order inside column
+  position    String           // order inside column
 
   projectId   String
   columnId    String
