@@ -22,7 +22,6 @@ app.use(passport.initialize()); // enable passport
 
 const authRoutes = require("./routes/auth.routes");
 const projectRoutes = require("./routes/project.routes");
-const projectMemberRoutes = require("./routes/project-member.routes");
 const usersRouter = require("./routes/users.routes");
 const dashboardRouter = require("./routes/dashboard.routes");
 
@@ -36,7 +35,7 @@ app.use(cors({
 
 // Routes
 app.use("/auth", authRoutes);
-app.use("/projects", passport.authenticate('jwt', { session: false }), projectRoutes);
+app.use("/projects", passport.authenticate('jwt', { session: false }), projectRoutes); // Checkout project.routes to see its nested routes
 app.use("/users", passport.authenticate('jwt', { session: false }), usersRouter);
 app.use("/dashboard", passport.authenticate('jwt', { session: false }), dashboardRouter);
 

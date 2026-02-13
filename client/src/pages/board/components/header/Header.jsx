@@ -1,4 +1,5 @@
-import { Menu, Search, Plus, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Menu, Search, Plus, Users, Settings } from 'lucide-react';
 import {
   HeaderContainer,
   HeaderContent,
@@ -17,13 +18,16 @@ import {
   MembersWrapper,
   MemberAvatarWrapper,
   InviteButton,
-  InviteButtonText
+  InviteButtonText,
+  SettingsButton,
+  SettingsButtonText
 } from './Header.styles';
 import UserAvatar from '../../../../components/ui/user-avatar/UserAvatar';
 
 const Header = ({
   boardName,
   projectName,
+  projectId,
   searchQuery,
   setSearchQuery,
   searchOpen,
@@ -34,9 +38,15 @@ const Header = ({
   canInvite,
   projectMembers
 }) => {
+  const navigate = useNavigate();
+  
   // Show max 5 avatars
   const displayedMembers = projectMembers?.slice(0, 5) || [];
   const remainingCount = (projectMembers?.length || 0) - 5;
+  
+  const handleSettingsClick = () => {
+    navigate(`/app/project/${projectId}/settings`);
+  };
   
   return (
     <HeaderContainer>
@@ -93,6 +103,11 @@ const Header = ({
               <InviteButtonText>Invite</InviteButtonText>
             </InviteButton>
           )}
+          
+          <SettingsButton onClick={handleSettingsClick}>
+            <Settings size={16} />
+            <SettingsButtonText>Settings</SettingsButtonText>
+          </SettingsButton>
         </HeaderRight>
       </HeaderContent>
       

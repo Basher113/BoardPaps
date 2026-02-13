@@ -10,6 +10,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       query: (projectId) => `projects/${projectId}`,
       providesTags: ["Project"],
     }),
+
     createProject: builder.mutation({
       query: (data) => ({
         url: "projects",
@@ -18,12 +19,67 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Project"],
     }),
+    // Project Settings
+    getProjectSettings: builder.query({
+      query: (projectId) => `projects/${projectId}/settings`,
+      providesTags: (result, error, projectId) => [
+        { type: "Project", id: projectId },
+        "ProjectMembers"
+      ],
+    }),
+    updateProject: builder.mutation({
+      query: ({ projectId, ...data }) => ({
+        url: `projects/${projectId}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: "Project", id: projectId }
+      ],
+    }),
     deleteProject: builder.mutation({
       query: (projectId) => ({
         url: `projects/${projectId}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Project"],
+    }),
+    transferProjectOwnership: builder.mutation({
+      query: ({ projectId, newOwnerId }) => ({
+        url: `projects/${projectId}/transfer`,
+        method: "PUT",
+        body: { newOwnerId },
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: "Project", id: projectId },
+        "ProjectMembers"
+      ],
+    }),
+    // Member Management
+    getProjectMembers: builder.query({
+      query: (projectId) => `projects/${projectId}/members`,
+      providesTags: ["ProjectMembers"],
+    }),
+    updateMemberRole: builder.mutation({
+      query: ({ projectId, memberId, role }) => ({
+        url: `projects/${projectId}/members/${memberId}`,
+        method: "PUT",
+        body: { role },
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: "Project", id: projectId },
+        "ProjectMembers"
+      ],
+    }),
+    removeMember: builder.mutation({
+      query: ({ projectId, memberId }) => ({
+        url: `projects/${projectId}/members/${memberId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: "Project", id: projectId },
+        "ProjectMembers"
+      ],
     }),
     createIssue: builder.mutation({
       query: ({ projectId, ...data }) => ({
@@ -195,9 +251,14 @@ export const projectApiSlice = apiSlice.injectEndpoints({
 export const {
   useGetMyProjectsQuery,
   useGetProjectQuery,
-  useVisitProjectMutation,
   useCreateProjectMutation,
   useDeleteProjectMutation,
+  useGetProjectSettingsQuery,
+  useUpdateProjectMutation,
+  useTransferProjectOwnershipMutation,
+  useGetProjectMembersQuery,
+  useUpdateMemberRoleMutation,
+  useRemoveMemberMutation,
   useCreateIssueMutation,
   useMoveIssueMutation,
   useUpdateIssueMutation,

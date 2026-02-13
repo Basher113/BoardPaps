@@ -234,3 +234,26 @@ export const InviteButton = styled.button`
 export const InviteButtonText = styled.span`
   font-weight: 500;
 `;
+
+export const SettingsButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  background-color: #f4f4f5;
+  color: #18181b;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: #e4e4e7;
+  }
+`;
+
+export const SettingsButtonText = styled.span`
+  font-weight: 500;
+`;

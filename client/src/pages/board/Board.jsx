@@ -203,6 +203,7 @@ const Board = () => {
       <Header
         boardName={project.name || "Project Board"}
         projectName={project.name || ""}
+        projectId={activeProjectId}
         onInvite={() => setIsInviteModalOpen(true)}
         canInvite={canInvite}
         projectMembers={project?.members}

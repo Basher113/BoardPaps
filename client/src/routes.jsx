@@ -1,4 +1,5 @@
 import ProjectBoard from "./pages/board/Board"
+import ProjectSettings from "./pages/project-settings/ProjectSettings"
 import Root from "./pages/root/Root"
 import AuthLayout from "./pages/auth/AuthLayout"
 import SignIn from "./pages/auth/SignIn"
@@ -15,8 +16,8 @@ export const routes = [
     path: "/",
     element: <LandingPage />,
     
-  },
-  {
+   },
+   {
     path: "app",
     element: <Root />,
     children: [
@@ -33,6 +34,10 @@ export const routes = [
         element: <ProjectBoard />
       },
       {
+        path: "project/:projectId/settings",
+        element: <ProjectSettings />
+      },
+      {
         path: "invitations",
         element: <InvitationsPage />
       },
@@ -41,9 +46,9 @@ export const routes = [
         element: <Settings />
       }
     ]
-  },
- 
-  {
+   },
+  
+   {
     path: "auth",
     element: <AuthLayout />,
     children: [
@@ -56,5 +61,5 @@ export const routes = [
         element: <SignUp />
       }
     ]
-  },
+   },
 ]

@@ -14,7 +14,6 @@ import {
   ProjectName,
   ProjectDescription,
   ProjectMeta,
-  DeleteButton,
   ModalOverlay,
   ModalContent,
   ModalTitle,
@@ -27,7 +26,6 @@ import { formatDate } from "../../utils/date";
 import {
   useGetMyProjectsQuery,
   useCreateProjectMutation,
-  useDeleteProjectMutation,
 } from "../../reducers/slices/project/project.apiSlice";
 import { setActiveView } from "../../reducers/slices/navigation/navigation.slice";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
@@ -43,12 +41,9 @@ const Projects = () => {
   }, [dispatch]);
   
   const [newProject, setNewProject] = useState({ name: "", key: "", description: "" });
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState(null);
 
   const { data: projects = [], isLoading } = useGetMyProjectsQuery();
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
-  const [deleteProject, { isLoading: isDeleting }] = useDeleteProjectMutation();
 
   if (isLoading) return <div>Loading...</div>;
 
@@ -56,26 +51,8 @@ const Projects = () => {
     navigate(`/app/project/${project.id}`);
   };
 
-  const handleDeleteClick = (e, projectId) => {
-    e.stopPropagation();
-    setProjectToDelete(projectId);
-    setShowDeleteConfirm(true);
-  };
 
-  const handleConfirmDelete = async () => {
-    if (!projectToDelete) return;
 
-    try {
-      await deleteProject(projectToDelete).unwrap();
-      toast.success("Project deleted successfully");
-    } catch (error) {
-      console.error("Failed to delete project:", error);
-      toast.error(error.data?.message || "Failed to delete project");
-    } finally {
-      setShowDeleteConfirm(false);
-      setProjectToDelete(null);
-    }
-  };
 
   const handleCreateProject = async () => {
     if (!newProject.name.trim()) {
@@ -150,14 +127,7 @@ const Projects = () => {
                     </span>
                   </div>
 
-                  <DeleteButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClick(e, project.id);
-                    }}
-                  >
-                    Delete
-                  </DeleteButton>
+
                 </ProjectMeta>
               </ProjectCard>
             ))
@@ -222,20 +192,6 @@ const Projects = () => {
         </ModalOverlay>
       )}
 
-      <ConfirmModal
-        isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setProjectToDelete(null);
-        }}
-        onConfirm={handleConfirmDelete}
-        title="Delete Project"
-        message="Are you sure you want to delete this project? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="danger"
-        isLoading={isDeleting}
-      />
     </>
   );
 };

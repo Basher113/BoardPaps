@@ -2,21 +2,21 @@ import styled, { css } from 'styled-components';
 
 const priorityStyles = {
   LOW: css`
-    background-color: #f4f4f5;
-    color: #52525b;
+    background-color: #dcfce7;
+    color: #166534;
   `,
   MEDIUM: css`
-    background-color: #f4f4f5;
-    color: #52525b;
+    background-color: #fef9c3;
+    color: #854d0e;
   `,
   HIGH: css`
-    background-color: #f4f4f5;
-    color: #18181b;
+    background-color: #ffedd5;
+    color: #9a3412;
   `,
   CRITICAL: css`
-    background-color: #f4f4f5;
-    color: #18181b;
-    border: 1px solid #d4d4d8;
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
   `,
 };
 
@@ -30,16 +30,16 @@ export const Badge = styled.span`
 
 const priorityIconStyles = {
   LOW: css`
-    color: #71717a;
+    color: #22c55e;
   `,
   MEDIUM: css`
-    color: #71717a;
+    color: #eab308;
   `,
   HIGH: css`
-    color: #52525b;
+    color: #f97316;
   `,
   CRITICAL: css`
-    color: #18181b;
+    color: #ef4444;
   `,
 };
 
