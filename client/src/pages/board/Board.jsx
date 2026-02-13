@@ -13,6 +13,7 @@ import {
 } from "./Board.styles";
 import Header from "./components/header/Header";
 import IssueCard from "./components/issue-card/IssueCard";
+import IssueDetailModal from "./components/issue-detail/IssueDetailModal";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
 import InviteModal from "./components/invite-modal/InviteModal";
 import Modal from "../../components/ui/modal/Modal";
@@ -74,6 +75,10 @@ const Board = () => {
   // Edit issue modal state from Redux
   const isEditModalOpen = useSelector(selectIsEditModalOpen);
   const selectedIssueId = useSelector(selectSelectedIssueId);
+
+  // Issue detail modal state
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailIssue, setDetailIssue] = useState(null);
 
   // Find the selected issue from project data
   const selectedIssue = React.useMemo(() => {
@@ -161,6 +166,16 @@ const Board = () => {
     dispatch(closeDeleteModal());
   };
 
+  const handleOpenDetailModal = (issue) => {
+    setDetailIssue(issue);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setDetailIssue(null);
+  };
+
   if (isLoading) {
     return (
       <>
@@ -239,6 +254,7 @@ const Board = () => {
                   columnId={column.id}
                   isDragging={draggedCard?.id === card.id}
                   onDragStart={() => handleDragStart(card, column.id)}
+                  onClick={() => handleOpenDetailModal(card)}
                 />
               ))}
             </CardList>
@@ -317,6 +333,13 @@ const Board = () => {
           />
         )}
       </Modal>
+
+      {/* Issue Detail Modal */}
+      <IssueDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        issue={detailIssue}
+      />
     </>
   );
 };

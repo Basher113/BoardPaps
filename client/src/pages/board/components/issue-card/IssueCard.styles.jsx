@@ -6,7 +6,7 @@ export const CardContainer = styled.div`
   border-radius: 0.375rem;
   border: 1px solid #e4e4e7;
   transition: all 0.15s ease;
-  cursor: ${props => props.$canEdit ? 'grab' : 'default'};
+  cursor: pointer;
   margin-bottom: 0.5rem;
   position: relative;
   opacity: ${props => props.$canEdit ? 1 : 0.5};
@@ -53,6 +53,11 @@ export const CardDescription = styled.p`
   color: #71717a;
   margin: 0 0 0.75rem 0;
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const CardFooter = styled.div`

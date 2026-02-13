@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react';
 import {
   CardContainer,
   CardHeader,
@@ -29,7 +29,8 @@ const IssueCard = ({
   isDragging,
   onDragStart,
   onDragOverIssue,
-  onDropOnIssue
+  onDropOnIssue,
+  onClick
 }) => {
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
@@ -104,12 +105,19 @@ const IssueCard = ({
     setShowMenu(false);
   }, [dispatch, issue.id, canEdit]);
 
+  const handleViewDetails = useCallback((e) => {
+    e.stopPropagation();
+    onClick?.(issue);
+    setShowMenu(false);
+  }, [issue, onClick]);
+
   const handleDelete = useCallback((e) => {
     e.stopPropagation();
     if (!canEdit) return;
     dispatch(openDeleteModal(issue.id));
     setShowMenu(false);
   }, [dispatch, issue.id, canEdit]);
+
   console.log(issue.assignee);
   return (
     <CardContainer
@@ -150,6 +158,13 @@ const IssueCard = ({
                   </MenuItem>
                 ) : (
                   <>
+                    <MenuItem 
+                      onClick={handleViewDetails}
+                      role="menuitem"
+                    >
+                      <Eye size={16} />
+                      <span>View Details</span>
+                    </MenuItem>
                     <MenuItem 
                       onClick={handleEdit}
                       role="menuitem"
