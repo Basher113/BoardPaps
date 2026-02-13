@@ -47,16 +47,37 @@ const getMyProjects = async (req, res) => {
         ],
       },
       include: {
+        owner: {
+          select: { id: true, username: true, avatar: true }
+        },
+        members: {
+          include: {
+            user: {
+              select: { id: true, username: true, avatar: true }
+            }
+          }
+        },
         _count: {
           select: {
-            columns: true
+            columns: true,
+            issues: true
           }
         }
       },
       orderBy: { lastVisitedAt: 'desc' },
     });
 
-    res.json(projects);
+    // Add user's role to each project
+    const projectsWithRole = projects.map(project => {
+      const isOwner = project.ownerId === userId;
+      const membership = project.members.find(m => m.userId === userId);
+      return {
+        ...project,
+        userRole: isOwner ? 'OWNER' : membership?.role === 'MEMBER' ? 'MEMBER' : 'ADMIN'
+      };
+    });
+
+    res.json(projectsWithRole);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to fetch projects" });
