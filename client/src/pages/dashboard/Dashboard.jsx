@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setActiveView } from '../../reducers/slices/navigation/navigation.slice';
 import { useGetDashboardIssuesQuery } from '../../reducers/slices/dashboard/dashboard.apiSlice';
+import { useGetMyProjectsQuery } from '../../reducers/slices/project/project.apiSlice';
 import PriorityBadge from '../board/components/priority-badge/PriorityBadge';
 import IssueTypeIcon from '../board/components/issue-type-icon/IssueTypeIcon';
 import Badge from '../../components/ui/badge/Badge';
@@ -44,7 +45,10 @@ import {
   ErrorTitle,
   ErrorDescription,
   QuickActions,
-  QuickActionButton
+  QuickActionButton,
+  FilterContainer,
+  ProjectFilter,
+  FilterInfo
 } from './Dashboard.styles';
 import { FolderKanban, CheckCircle, Clock, AlertCircle, List, ChevronRight } from 'lucide-react';
 
@@ -92,6 +96,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [selectedStatus, setSelectedStatus] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(null);
   
   // Set active view on mount
   useEffect(() => {
@@ -99,21 +104,26 @@ const Dashboard = () => {
   }, [dispatch]);
   
   const { data, isLoading, error } = useGetDashboardIssuesQuery();
+  const { data: projectsData } = useGetMyProjectsQuery();
 
   const issues = data?.issues || [];
   const statusCounts = data?.statusCounts || [];
+  const projects = projectsData || [];
 
-  const filteredIssues = selectedStatus
-    ? issues.filter(issue => issue.columnId === selectedStatus)
-    : issues;
+  // Filter by both status (column name) and project
+  const filteredIssues = issues.filter(issue => {
+    const matchesStatus = !selectedStatus || issue.column?.name === selectedStatus;
+    const matchesProject = !selectedProject || issue.project?.id === selectedProject;
+    return matchesStatus && matchesProject;
+  });
 
   const totalCount = statusCounts.reduce((sum, item) => sum + item.count, 0);
 
-  const handleStatusClick = (columnId) => {
-    if (selectedStatus === columnId) {
+  const handleStatusClick = (columnName) => {
+    if (selectedStatus === columnName) {
       setSelectedStatus(null);
     } else {
-      setSelectedStatus(columnId);
+      setSelectedStatus(columnName);
     }
   };
 
@@ -130,6 +140,12 @@ const Dashboard = () => {
 
   const handleClearFilter = () => {
     setSelectedStatus(null);
+    setSelectedProject(null);
+  };
+
+  const handleProjectChange = (e) => {
+    const value = e.target.value;
+    setSelectedProject(value || null);
   };
 
   if (isLoading) {
@@ -162,7 +178,7 @@ const Dashboard = () => {
     );
   }
 
-  const selectedStatusData = statusCounts.find(s => s.columnId === selectedStatus);
+  const selectedStatusData = statusCounts.find(s => s.columnName === selectedStatus);
   const activeColor = getStatusColor(selectedStatusData?.columnName);
 
   return (
@@ -171,7 +187,7 @@ const Dashboard = () => {
         <Title>My Dashboard</Title>
         <Subtitle>
           {totalCount > 0
-            ? `You have ${totalCount} issue${totalCount !== 1 ? 's' : ''} assigned across ${data?.statusCounts?.length || 0} project${data?.statusCounts?.length !== 1 ? 's' : ''}`
+            ? `You have ${totalCount} issue${totalCount !== 1 ? 's' : ''} assigned`
             : 'No issues assigned to you'}
         </Subtitle>
       </Header>
@@ -181,10 +197,10 @@ const Dashboard = () => {
         <StatusCardsContainer>
           {statusCounts.map((status) => (
             <StatusCard
-              key={status.columnId}
+              key={status.columnName}
               $color={getStatusColor(status.columnName)}
-              $isActive={selectedStatus === status.columnId}
-              onClick={() => handleStatusClick(status.columnId)}
+              $isActive={selectedStatus === status.columnName}
+              onClick={() => handleStatusClick(status.columnName)}
             >
               <StatusCardHeader>
                 <StatusIndicator $color={getStatusColor(status.columnName)} />
@@ -199,6 +215,25 @@ const Dashboard = () => {
         </StatusCardsContainer>
       )}
 
+      {/* Project Filter */}
+      {projects.length > 0 && (
+        <FilterContainer>
+          <ProjectFilter value={selectedProject || ''} onChange={handleProjectChange}>
+            <option value="">All Projects</option>
+            {projects.map(project => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </ProjectFilter>
+          {(selectedStatus || selectedProject) && (
+            <FilterInfo>
+              Showing {filteredIssues.length} of {issues.length} issues
+            </FilterInfo>
+          )}
+        </FilterContainer>
+      )}
+
       {/* Issues Section */}
       {issues.length === 0 ? (
         <EmptyState />
@@ -206,10 +241,19 @@ const Dashboard = () => {
         <IssuesSection>
           <IssuesHeader>
             <IssuesTitle>
-              {selectedStatus ? (
+              {selectedStatus || selectedProject ? (
                 <>
-                  {getStatusIcon(selectedStatusData?.columnName)}
-                  <span>{selectedStatusData?.columnName || 'Unknown'}</span>
+                  {selectedStatus && (
+                    <>
+                      {getStatusIcon(selectedStatusData?.columnName)}
+                      <span>{selectedStatusData?.columnName || 'Unknown'}</span>
+                    </>
+                  )}
+                  {selectedProject && (
+                    <span style={{ marginLeft: selectedStatus ? '0.5rem' : '0' }}>
+                      in {projects.find(p => p.id === selectedProject)?.name || 'Unknown Project'}
+                    </span>
+                  )}
                   <FilterBadge $color={activeColor}>{filteredIssues.length}</FilterBadge>
                 </>
               ) : (
@@ -221,7 +265,7 @@ const Dashboard = () => {
               )}
             </IssuesTitle>
             <QuickActions>
-              {selectedStatus && (
+              {(selectedStatus || selectedProject) && (
                 <QuickActionButton onClick={handleClearFilter}>
                   Clear Filter
                   <ChevronRight size={14} />
