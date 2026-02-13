@@ -5,26 +5,19 @@ export const SidebarContainer = styled.div`
   color: #fafafa;
   transition: all 0.2s ease;
   width: 16rem;
+  display: flex;
   flex-direction: column;
-
-  @media (min-width: 1024px) {
-    display: flex;
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+  min-height: 100vh;
 
   @media (max-width: 1023px) {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: 50;
     transform: ${props => props.$isOpen ? 'translateX(0)' : 'translateX(-100%)'};
     transition: transform 0.3s ease;
   }
-
-  min-height: 100vh;
-  position: relative;
-  top: 0;
-  left: 0;
 `;
 
 export const MobileToggleButton = styled.button`
@@ -140,6 +133,7 @@ export const NavButton = styled.button`
 export const SidebarFooter = styled.div`
   padding: 0.75rem;
   border-top: 1px solid #27272a;
+  margin-top: auto;
 `;
 
 export const UserProfileButton = styled.button`

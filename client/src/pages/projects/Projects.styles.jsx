@@ -12,7 +12,7 @@ const fadeIn = keyframes`
 `;
 
 export const Content = styled.div`
-  padding: 2rem;
+  padding: 3rem 2rem;
   background-color: #fafafa;
   min-height: calc(100vh - 2rem);
 

@@ -5,7 +5,7 @@ export const BoardContainer = styled.div`
   gap: 1rem;
   flex-wrap: wrap;
   overflow-x: auto;
-  padding: 1rem;
+  padding: 2rem;
   height: calc(100vh - 65px);
 `;
 
@@ -65,7 +65,7 @@ export const CardList = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
   min-height: 100px;
   overflow: auto;
 

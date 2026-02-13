@@ -59,7 +59,7 @@ const Projects = () => {
   const [showNewProject, setShowNewProject] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeMenu, setActiveMenu] = useState(null);
-  const menuRef = useRef(null);
+  const menuRefs = useRef({});
   
   useEffect(() => {
     dispatch(setActiveView('projects'));
@@ -68,13 +68,13 @@ const Projects = () => {
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      if (activeMenu && menuRefs.current[activeMenu] && !menuRefs.current[activeMenu].contains(event.target)) {
         setActiveMenu(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [activeMenu]);
   
   const [newProject, setNewProject] = useState({ name: "", key: "", description: "" });
 
@@ -206,22 +206,22 @@ const Projects = () => {
                     <ProjectKey>{project.key}</ProjectKey>
                     <RoleIndicator $role={project.userRole}>{project.userRole}</RoleIndicator>
                   </div>
-                  <div ref={menuRef} style={{ position: 'relative' }}>
+                  <div ref={(el) => (menuRefs.current[project.id] = el)} style={{ position: 'relative' }}>
                     <QuickActionsButton onClick={(e) => toggleMenu(project.id, e)}>
                       <MoreVertical size={16} />
                     </QuickActionsButton>
                     {activeMenu === project.id && (
-                      <QuickActionsMenu>
-                        <MenuItem onClick={() => handleMenuAction('view', project)}>
+                      <QuickActionsMenu onClick={(e) => e.stopPropagation()}>
+                        <MenuItem onClick={(e) => { e.stopPropagation(); handleMenuAction('view', project); }}>
                           <FileText size={14} style={{ marginRight: '8px' }} />
                           View
                         </MenuItem>
-                        <MenuItem onClick={() => handleMenuAction('settings', project)}>
+                        <MenuItem onClick={(e) => { e.stopPropagation(); handleMenuAction('settings', project); }}>
                           <Settings size={14} style={{ marginRight: '8px' }} />
                           Settings
                         </MenuItem>
                         {project.userRole !== 'OWNER' && (
-                          <MenuItem onClick={() => handleMenuAction('leave', project)}>
+                          <MenuItem onClick={(e) => { e.stopPropagation(); handleMenuAction('leave', project); }}>
                             <LogOut size={14} style={{ marginRight: '8px' }} />
                             Leave
                           </MenuItem>

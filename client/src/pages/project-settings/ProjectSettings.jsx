@@ -96,7 +96,6 @@ const ProjectSettings = () => {
       toast.success('Member role updated successfully');
       refetchProject();
     } catch (err) {
-      console.log(err.data?.message);
       console.error('Failed to update role:', err);
       toast.error(err.data?.message || 'Failed to update member role');
     }

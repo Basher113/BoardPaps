@@ -14,9 +14,10 @@ const shimmer = keyframes`
 export const SettingsContainer = styled.div`
   width: 100%;
   max-width: 1440px;
-  padding: 3rem 2rem;
+  padding: 3rem 3rem;
   animation: ${fadeIn} 0.4s ease-out;
   margin: 0 auto;
+  
 `;
 
 export const SettingsHeader = styled.div`
@@ -24,10 +25,9 @@ export const SettingsHeader = styled.div`
 `;
 
 export const SettingsTitle = styled.h1`
-  font-size: 1.75rem;
+  font-size: 1.80rem;
   font-weight: 700;
   color: #18181b;
-  margin: 0 0 0.5rem 0;
 `;
 
 export const SettingsSubtitle = styled.p`

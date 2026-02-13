@@ -7,6 +7,8 @@ export const OutletWrapper = styled.div`
   width: 100vw;
   max-width: 1920px;
   flex-grow: 1;
+  padding-left: 16rem;
+  min-height: 100vh;
   
   @media (max-width: 1023px) {
     padding-left: 0;
