@@ -59,9 +59,8 @@ const getUserIssues = async (req, res) => {
     // Get total count for pagination
     const totalCount = await prisma.issue.count({ where });
 
-    // Get status counts grouped by column
-    const statusCounts = await prisma.issue.groupBy({
-      by: ['columnId'],
+    // Get status counts grouped by column name (combined across all projects)
+    const issuesWithColumns = await prisma.issue.findMany({
       where: {
         assigneeId: userId,
         project: {
@@ -71,39 +70,34 @@ const getUserIssues = async (req, res) => {
           ]
         }
       },
-      _count: true
-    });
-
-    // Get all columns with their positions for proper ordering
-    const columns = await prisma.column.findMany({
-      where: {
-        project: {
-          OR: [
-            { ownerId: userId },
-            { members: { some: { userId } } }
-          ]
+      include: {
+        column: {
+          select: { id: true, name: true, position: true }
         }
-      },
-      select: { id: true, name: true, position: true, projectId: true },
-      orderBy: { position: 'asc' }
+      }
     });
 
-    // Format status counts with column names
-    const formattedStatusCounts = statusCounts.map(count => {
-      const column = columns.find(c => c.id === count.columnId);
-      return {
-        columnId: count.columnId,
-        columnName: column?.name || 'Unknown',
-        count: count._count
-      };
+    // Group by column NAME and combine counts across projects
+    // Normalize the key by trimming and converting to lowercase to handle whitespace differences
+    const statusCountsMap = {};
+    issuesWithColumns.forEach(issue => {
+      const name = issue.column.name;
+      const normalizedKey = name?.trim().toLowerCase() || '';
+      
+      if (!statusCountsMap[normalizedKey]) {
+        statusCountsMap[normalizedKey] = {
+          columnName: name?.trim() || 'Unknown',
+          count: 0,
+          position: issue.column.position
+        };
+      }
+      statusCountsMap[normalizedKey].count++;
     });
 
-    // Sort by column position
-    formattedStatusCounts.sort((a, b) => {
-      const colA = columns.find(c => c.id === a.columnId);
-      const colB = columns.find(c => c.id === b.columnId);
-      return (colA?.position || 0) - (colB?.position || 0);
-    });
+    const formattedStatusCounts = Object.values(statusCountsMap);
+
+    // Sort by column position (using first occurrence for ordering)
+    formattedStatusCounts.sort((a, b) => a.position - b.position);
 
     return res.status(200).json({
       success: true,
