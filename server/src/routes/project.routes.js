@@ -5,6 +5,7 @@ const {requireProjectMember, requireProjectRole} = require("../middlewares/proje
 const columnRouter = require("./column.routes");
 const issueRouter = require("./issue.routes");
 const invitationRouter = require("./invitation.routes");
+const projectMemberRouter = require("./project-member.routes");
 
 const projectRouter = Router();
 
@@ -12,9 +13,6 @@ projectRouter.get("/", projectController.getMyProjects);
 projectRouter.post("/", projectController.createProject);
 projectRouter.get("/:projectId", requireProjectMember,
   projectController.getProject
-);
-projectRouter.patch("/:projectId", requireProjectMember, requireProjectRole(["ADMIN", "OWNER"]), 
-  projectController.updateProject
 );
 projectRouter.patch("/:projectId/visit", requireProjectMember, 
   projectController.visitProject
@@ -26,9 +24,20 @@ projectRouter.delete("/:projectId", requireProjectMember, requireProjectRole(["O
   projectController.deleteProject
 );
 
+// Project Settings endpoint
+projectRouter.get("/:projectId/settings", requireProjectMember,
+  projectController.getProjectSettings
+);
+
+// Transfer ownership
+projectRouter.put("/:projectId/transfer", requireProjectMember, requireProjectRole(["OWNER"]),
+  projectController.transferOwnership
+);
+
 // Nested routes
 projectRouter.use("/:projectId/columns", columnRouter);
 projectRouter.use("/:projectId/issues", issueRouter);
 projectRouter.use("/:projectId/invitations", invitationRouter);
+projectRouter.use("/:projectId/members", projectMemberRouter);
 
 module.exports = projectRouter;
