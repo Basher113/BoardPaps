@@ -51,19 +51,16 @@ enum InvitationStatus {
 
 model User {
   id        String   @id @default(uuid())
+  
+  // Clerk ID - primary identifier for authentication
+  clerkId   String   @unique
+  
+  // Keep email for application data (Clerk manages auth)
   email     String   @unique
   username  String   @unique
-  password  String
-
-  // For login future google login.
-  provider   String   @default("local")
-  googleId   String?  @unique
-
-  // Avatar URL from Cloudinary
-  avatar     String?
   
-  // Storing active refresh tokens of users.
-  refreshTokens RefreshToken[]
+  // Keep avatar - can sync from Clerk
+  avatar    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -81,24 +78,6 @@ model User {
   // Invitations sent by this user
   invitationsSent Invitation[] @relation("InvitedByUser")
 }
-
-// RefreshToken model 
-model RefreshToken {
-  id String  @id @default(cuid())
-  token String @unique
-  revoked Boolean @default(false)
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-  
-  // Session info for session management
-  userAgent String?
-  ipAddress String?
-  
-  @@index([userId, revoked, expiresAt])
-}
-
 
 
 model Project {
@@ -201,5 +180,3 @@ model Invitation {
   @@index([email])
   @@index([projectId])
 }
-
-

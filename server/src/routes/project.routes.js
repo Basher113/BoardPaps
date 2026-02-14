@@ -1,5 +1,6 @@
 const {Router} = require("express");
 const projectController = require("../controllers/project.controller");
+const {requireAuth} = require('@clerk/express');
 
 const {requireProjectMember, requireProjectRole} = require("../middlewares/projectMember.middleware")
 const columnRouter = require("./column.routes");
@@ -9,28 +10,29 @@ const projectMemberRouter = require("./project-member.routes");
 
 const projectRouter = Router();
 
-projectRouter.get("/", projectController.getMyProjects);
-projectRouter.post("/", projectController.createProject);
-projectRouter.get("/:projectId", requireProjectMember,
+// All project routes require authentication
+projectRouter.get("/", requireAuth(), projectController.getMyProjects);
+projectRouter.post("/", requireAuth(), projectController.createProject);
+projectRouter.get("/:projectId", requireAuth(), requireProjectMember,
   projectController.getProject
 );
-projectRouter.patch("/:projectId/visit", requireProjectMember, 
+projectRouter.patch("/:projectId/visit", requireAuth(), requireProjectMember, 
   projectController.visitProject
 );
-projectRouter.put("/:projectId", requireProjectMember, requireProjectRole(["ADMIN", "OWNER"]),
+projectRouter.put("/:projectId", requireAuth(), requireProjectMember, requireProjectRole(["ADMIN", "OWNER"]),
   projectController.updateProject
 );
-projectRouter.delete("/:projectId", requireProjectMember, requireProjectRole(["OWNER"]), 
+projectRouter.delete("/:projectId", requireAuth(), requireProjectMember, requireProjectRole(["OWNER"]), 
   projectController.deleteProject
 );
 
 // Project Settings endpoint
-projectRouter.get("/:projectId/settings", requireProjectMember,
+projectRouter.get("/:projectId/settings", requireAuth(), requireProjectMember,
   projectController.getProjectSettings
 );
 
 // Transfer ownership
-projectRouter.put("/:projectId/transfer", requireProjectMember, requireProjectRole(["OWNER"]),
+projectRouter.put("/:projectId/transfer", requireAuth(), requireProjectMember, requireProjectRole(["OWNER"]),
   projectController.transferOwnership
 );
 

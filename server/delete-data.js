@@ -5,10 +5,8 @@ async function main() {
 
   await prisma.issue.deleteMany({});
   await prisma.column.deleteMany({});
-  await prisma.board.deleteMany({});
   await prisma.projectMember.deleteMany({});
   await prisma.project.deleteMany({});
-  await prisma.refreshToken.deleteMany({})
   await prisma.user.deleteMany({});
 
   console.log("✅ All data deleted successfully!");
