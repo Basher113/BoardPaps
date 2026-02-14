@@ -15,11 +15,11 @@ import {
   Subtitle,
   StatusCardsContainer,
   StatusCard,
-  StatusCardHeader,
-  StatusIndicator,
-  StatusName,
   StatusCount,
   StatusCountLabel,
+  StatLabel,
+  StatNumber,
+  StatSublabel,
   IssuesSection,
   IssuesHeader,
   IssuesTitle,
@@ -195,23 +195,35 @@ const Dashboard = () => {
       {/* Status Summary Cards */}
       {statusCounts.length > 0 && (
         <StatusCardsContainer>
-          {statusCounts.map((status) => (
-            <StatusCard
-              key={status.columnName}
-              $color={getStatusColor(status.columnName)}
-              $isActive={selectedStatus === status.columnName}
-              onClick={() => handleStatusClick(status.columnName)}
-            >
-              <StatusCardHeader>
-                <StatusIndicator $color={getStatusColor(status.columnName)} />
-                <StatusName>{status.columnName}</StatusName>
-              </StatusCardHeader>
-              <StatusCount>
-                {status.count}
-                <StatusCountLabel> / {totalCount}</StatusCountLabel>
-              </StatusCount>
-            </StatusCard>
-          ))}
+          {statusCounts.map((status) => {
+            const getSublabel = (columnName) => {
+              const normalized = columnName?.toLowerCase();
+              if (normalized?.includes('to do') || normalized?.includes('backlog')) {
+                return 'tasks pending';
+              }
+              if (normalized?.includes('progress')) {
+                return 'actively working';
+              }
+              if (normalized?.includes('review') || normalized?.includes('testing')) {
+                return 'in review';
+              }
+              if (normalized?.includes('done') || normalized?.includes('complete')) {
+                return 'tasks completed';
+              }
+              return 'issues';
+            };
+            return (
+              <StatusCard
+                key={status.columnName}
+                $isActive={selectedStatus === status.columnName}
+                onClick={() => handleStatusClick(status.columnName)}
+              >
+                <StatLabel>{status.columnName}</StatLabel>
+                <StatNumber>{status.count}</StatNumber>
+                <StatSublabel>{getSublabel(status.columnName)}</StatSublabel>
+              </StatusCard>
+            );
+          })}
         </StatusCardsContainer>
       )}
 

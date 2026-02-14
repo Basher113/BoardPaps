@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 import { Plus } from "lucide-react";
 import {
   BoardContainer,
@@ -156,9 +157,11 @@ const Board = () => {
     
     try {
       await deleteIssue({ projectId: activeProjectId, issueId: deleteIssueId });
+      toast.success("Issue deleted successfully");
       dispatch(closeDeleteModal());
     } catch (err) {
       console.error("Failed to delete issue:", err);
+      toast.error("Failed to delete issue");
     }
   };
 
@@ -297,9 +300,11 @@ const Board = () => {
                 projectId: activeProjectId,
                 ...formData
               });
+              toast.success("Issue created successfully");
               dispatch(closeCreateModal());
             } catch (err) {
               console.error("Failed to create issue:", err);
+              toast.error("Failed to create issue");
             }
           }}
           onCancel={() => dispatch(closeCreateModal())}
@@ -324,9 +329,11 @@ const Board = () => {
                   issueId: selectedIssue.id,
                   ...formData
                 });
+                toast.success("Issue updated successfully");
                 dispatch(closeEditModal());
               } catch (err) {
                 console.error("Failed to update issue:", err);
+                toast.error("Failed to update issue");
               }
             }}
             onCancel={() => dispatch(closeEditModal())}

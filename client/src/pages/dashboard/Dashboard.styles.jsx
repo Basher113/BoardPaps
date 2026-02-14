@@ -30,53 +30,32 @@ export const Subtitle = styled.p`
 
 export const StatusCardsContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
   margin-bottom: 2rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
 `;
 
 export const StatusCard = styled.div`
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  padding: 1.25rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: ${props => props.$color || '#3b82f6'};
-    border-radius: 0.75rem 0 0 0.75rem;
-    transform: scaleY(0);
-    transition: transform 0.2s ease;
-  }
 
   &:hover {
-    border-color: ${props => props.$color || '#3b82f6'};
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
-
-    &::before {
-      transform: scaleY(1);
-    }
+    border-color: #a1a1aa;
   }
 
   ${props => props.$isActive && `
-    border-color: ${props.$color || '#3b82f6'};
-    background-color: ${props.$color}08;
-    box-shadow: 0 4px 12px ${props.$color}20;
-
-    &::before {
-      transform: scaleY(1);
-    }
+    border-color: #18181b;
+    background-color: #fafafa;
   `}
 `;
 
@@ -114,6 +93,28 @@ export const StatusCountLabel = styled.span`
   font-size: 0.75rem;
   color: #94a3b8;
   font-weight: 400;
+`;
+
+export const StatLabel = styled.div`
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a1a1aa;
+  margin-bottom: 0.5rem;
+`;
+
+export const StatNumber = styled.div`
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  color: #18181b;
+  line-height: 1;
+  margin-bottom: 0.375rem;
+`;
+
+export const StatSublabel = styled.div`
+  font-size: 0.8125rem;
+  color: #71717a;
 `;
 
 export const IssuesSection = styled.div`

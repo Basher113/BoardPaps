@@ -32,7 +32,6 @@ const Header = ({
   setSearchQuery,
   searchOpen,
   setSearchOpen,
-  onCreateIssue,
   onMenuToggle,
   onInvite,
   canInvite,
@@ -91,11 +90,6 @@ const Header = ({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </SearchWrapper>
-          
-          <CreateButton onClick={onCreateIssue}>
-            <Plus size={16} />
-            <div>Create</div>
-          </CreateButton>
           
           {canInvite && (
             <InviteButton onClick={onInvite}>
