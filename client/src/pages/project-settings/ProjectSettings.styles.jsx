@@ -474,3 +474,16 @@ export const CancelButton = styled.button`
     color: #fff;
   }
 `;
+
+export const ModalFormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+`;
+
+export const ModalLabel = styled.label`
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+`;

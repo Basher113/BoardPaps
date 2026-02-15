@@ -38,13 +38,12 @@ const Header = ({
   projectMembers
 }) => {
   const navigate = useNavigate();
-  
   // Show max 5 avatars
   const displayedMembers = projectMembers?.slice(0, 5) || [];
   const remainingCount = (projectMembers?.length || 0) - 5;
   
   const handleSettingsClick = () => {
-    navigate(`/app/project/${projectId}/settings`);
+    navigate(`/project/${projectId}/settings`);
   };
   
   return (

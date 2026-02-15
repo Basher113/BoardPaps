@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useClerk } from '@clerk/clerk-react';
 import { LayoutDashboard, Settings, MoreHorizontal, FolderKanban, LogOut, Bell, Menu, X } from 'lucide-react';
 import {
   SidebarContainer,
@@ -39,13 +40,12 @@ import {
 } from './Sidebar.styles';
 import UserAvatar from '../ui/user-avatar/UserAvatar';
 import { Logo } from '../ui/logo/Logo';
-import { useGetMyProjectsQuery, } from '../../reducers/slices/project/project.apiSlice';
+import { useGetMyProjectsQuery } from '../../reducers/slices/project/project.apiSlice';
+import { useGetMyInvitationsCountQuery } from '../../reducers/slices/invitation/invitation.apiSlice';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch,  } from 'react-redux';
 import ProjectItem from './ProjectItem';
 import { apiSlice } from '../../reducers/apiSlice';
-import { useLogoutUserMutation } from '../../reducers/slices/user/user.slice';
-import { useGetMyInvitationsCountQuery } from '../../reducers/slices/invitation/invitation.apiSlice';
 
 const Sidebar = ({ activeView, setActiveView, currentUser }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -57,7 +57,7 @@ const Sidebar = ({ activeView, setActiveView, currentUser }) => {
   
   const { data: projects = [], isLoading: projectsLoading } = useGetMyProjectsQuery();
   const { data: invitationsCountData } = useGetMyInvitationsCountQuery();
-  const [logoutUser] = useLogoutUserMutation();
+  const { signOut } = useClerk();
   
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -69,7 +69,7 @@ const Sidebar = ({ activeView, setActiveView, currentUser }) => {
   
   const handleLogout = async () => {
     try {
-      await logoutUser().unwrap();
+      await signOut();
       dispatch(apiSlice.util.resetApiState());
       navigate('/');
     } catch (error) {
@@ -79,22 +79,22 @@ const Sidebar = ({ activeView, setActiveView, currentUser }) => {
   
   const handleInvitationsClick = () => {
     setIsMobileOpen(false);
-    navigate('/app/invitations');
+    navigate('/invitations');
   };
   
   const handleSettingsClick = () => {
     setIsMobileOpen(false);
-    navigate('/app/settings');
+    navigate('/settings');
   };
   
   const handleDashboardClick = () => {
     setIsMobileOpen(false);
-    navigate('/app');
+    navigate('/dashboard');
   };
   
   const handleProjectsClick = () => {
     setIsMobileOpen(false);
-    navigate('/app/projects');
+    navigate('/projects');
   };
   
   return (
@@ -161,7 +161,7 @@ const Sidebar = ({ activeView, setActiveView, currentUser }) => {
         <SidebarFooter>
           <div style={{ position: 'relative' }}>
             <UserProfileButton onClick={() => setShowUserMenu(!showUserMenu)}>
-              <UserAvatar userId={currentUser.id} size="md" />
+              <UserAvatar size="md" />
               <UserInfo>
                 <Username>{currentUser.username}</Username>
                 <UserEmail>{currentUser.email}</UserEmail>

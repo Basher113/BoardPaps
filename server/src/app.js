@@ -1,42 +1,40 @@
 require('dotenv').config()
 const express = require("express");
 const cors = require("cors");
-const cookieParser = require("cookie-parser");
 const appConfig = require("./config/app.config")
-
 
 const app = express();
 
-// parser
+// Webhook routes - MUST be before express.json() for raw body signature verification
+const webhookRoutes = require("./routes/webhook.routes");
+app.use("/webhooks", webhookRoutes);
+
+// Parser
 app.use(express.json());
-app.use(cookieParser());
 app.use(express.urlencoded({extended: true}));
 
-
-
-// Passport Section
-const passport = require("passport");
-const {configPassportJwt} = require("./services/passport.service");
-configPassportJwt(passport); // Use the configured jwt strategy
-app.use(passport.initialize()); // enable passport
-
-const authRoutes = require("./routes/auth.routes");
-const projectRoutes = require("./routes/project.routes");
-const usersRouter = require("./routes/users.routes");
-const dashboardRouter = require("./routes/dashboard.routes");
-
-// Middleware
+// CORS
 app.use(cors({
   origin: appConfig.CLIENT_URL,
   credentials: true,
 }));
 
-
+// Add Clerk middleware - verifies tokens and populates req.auth
+// then withUser syncs to database and populates req.user
+const { clerkMiddleware } = require("@clerk/express");
+const { withUser } = require("./middlewares/auth.middleware");
+app.use(clerkMiddleware());
+app.use(withUser);
 
 // Routes
+const authRoutes = require("./routes/auth.routes");
+const projectRoutes = require("./routes/project.routes");
+const usersRouter = require("./routes/users.routes");
+const dashboardRouter = require("./routes/dashboard.routes");
+
 app.use("/auth", authRoutes);
-app.use("/projects", passport.authenticate('jwt', { session: false }), projectRoutes); // Checkout project.routes to see its nested routes
-app.use("/users", passport.authenticate('jwt', { session: false }), usersRouter);
-app.use("/dashboard", passport.authenticate('jwt', { session: false }), dashboardRouter);
+app.use("/projects", projectRoutes);
+app.use("/users", usersRouter);
+app.use("/dashboard", dashboardRouter);
 
 module.exports = app;

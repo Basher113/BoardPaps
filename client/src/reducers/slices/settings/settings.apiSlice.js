@@ -34,31 +34,8 @@ export const settingsApiSlice = apiSlice.injectEndpoints({
     }),
     
     // Security
-    changePassword: builder.mutation({
-      query: (data) => ({
-        url: "users/me/change-password",
-        method: "PUT",
-        body: data,
-      }),
-    }),
-    getSessions: builder.query({
-      query: () => "users/me/sessions",
-      providesTags: ["Sessions"],
-    }),
-    revokeSession: builder.mutation({
-      query: (sessionId) => ({
-        url: `users/me/sessions/${sessionId}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Sessions"],
-    }),
-    revokeAllSessions: builder.mutation({
-      query: () => ({
-        url: "users/me/sessions",
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Sessions"],
-    }),
+    // Password change is handled client-side via Clerk's user.updatePassword()
+   
     deleteAccount: builder.mutation({
       query: (data) => ({
         url: "users/me",
@@ -74,9 +51,6 @@ export const {
   useUpdateUserProfileMutation,
   useUploadUserAvatarMutation,
   useDeleteUserAvatarMutation,
-  useChangePasswordMutation,
-  useGetSessionsQuery,
-  useRevokeSessionMutation,
-  useRevokeAllSessionsMutation,
+
   useDeleteAccountMutation,
 } = settingsApiSlice;

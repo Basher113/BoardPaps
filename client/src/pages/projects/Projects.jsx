@@ -87,7 +87,7 @@ const Projects = () => {
   );
 
   const openProject = (project) => {
-    navigate(`/app/project/${project.id}`);
+    navigate(`/project/${project.id}`);
   };
 
   const handleCreateProject = async () => {
@@ -111,7 +111,7 @@ const Projects = () => {
       toast.success("Project created successfully");
       setShowNewProject(false);
       setNewProject({ name: "", key: "", description: "" });
-      navigate(`/app/project/${result.id}`);
+      navigate(`/project/${result.id}`);
     } catch (error) {
       console.error("Failed to create project:", error);
       toast.error(error.data?.message || "Failed to create project");
@@ -130,7 +130,7 @@ const Projects = () => {
         openProject(project);
         break;
       case 'settings':
-        navigate(`/app/project/${project.id}/settings`);
+        navigate(`/project/${project.id}/settings`);
         break;
       case 'leave':
         // TODO: Implement leave project

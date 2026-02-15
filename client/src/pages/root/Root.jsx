@@ -1,24 +1,37 @@
-import { OutletWrapper, Wrapper } from "./root.styles"
-import { Outlet, useNavigate } from "react-router-dom"
+import { useAuth } from "@clerk/clerk-react";
+import { Outlet } from "react-router-dom"
 import Sidebar from "../../components/sidebar/Sidebar"
-
 import { useGetCurrentUserQuery } from "../../reducers/slices/user/user.slice"
 import { useSelector } from "react-redux"
 import { selectActiveView } from "../../reducers/slices/navigation/navigation.selector"
+import LandingPage from "../landing-page/LandingPage"
+
+import {Wrapper, OutletWrapper} from "./root.styles";
 
 const Root = () => {
-  const navigate = useNavigate();
   const activeView = useSelector(selectActiveView);
+  const { userId, isLoaded, isSignedIn } = useAuth();
   
-  const {data: currentUser, isLoading: currentUserLoading} = useGetCurrentUserQuery();
+  // Use Clerk's userId for quick check
+  const { data: currentUser, isLoading } = useGetCurrentUserQuery(undefined, {
+    skip: !userId,
+  });
 
+  // Wait for Clerk to load
+  if (!isLoaded) {
+    return null;
+  }
   
-  if (currentUserLoading) return;
-  if (!currentUser) {
-    navigate("/");
+  // If not signed in and not a verification route, show landing page
+  if (!isSignedIn) {
+    return <LandingPage />;
+  }
+  
+  // Show loading while fetching user data (only for signed in users)
+  if (isLoading && isSignedIn) {
+    return null;
   }
   return (
-    
     <Wrapper>
       <Sidebar 
         currentUser={currentUser}

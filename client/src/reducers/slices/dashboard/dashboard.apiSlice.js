@@ -8,7 +8,7 @@ export const dashboardApiSlice = apiSlice.injectEndpoints({
         method: "GET",
         params
       }),
-      providesTags: ["DashboardIssues"],
+      providesTags: ["Dashboard"],
       transformResponse: (response) => {
         if (response.success) {
           return response.data;

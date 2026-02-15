@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/server.js",
+    "dev-with-ngrok": "concurrently \"npm run dev\" \"ngrok http 8001\" --kill-others --success first",
     "start": "node src/server.js",
     "test": "jest --detectOpenHandles --setupFiles dotenv/config "
   },
@@ -13,6 +14,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@clerk/express": "^1.7.70",
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
     "bcryptjs": "^3.0.3",
@@ -32,6 +34,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.10",
+    "concurrently": "^9.2.1",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",
     "supertest": "^7.2.2"

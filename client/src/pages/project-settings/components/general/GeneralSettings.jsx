@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import { toast } from 'react-toastify';
 import {
   Section,
   SectionHeader,
@@ -17,105 +18,95 @@ import {
   MetaItem,
   MetaLabel,
   MetaValue,
-  LoadingSkeleton,
 } from '../../ProjectSettings.styles';
 import Modal from '../../../../components/ui/modal/Modal';
+import { useUpdateProjectMutation } from '../../../../reducers/slices/project/project.apiSlice';
 
-const GeneralSettings = ({
-  project,
-  canManageSettings,
-  onEdit
-}) => {
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  if (!project) {
-    return <LoadingSkeleton $height="200px" />;
-  }
+const GeneralSettings = ({ project, canManageSettings, refetchProject }) => {
+  const [showEditModal, setShowEditModal] = useState(false);
 
   return (
-    <Section>
-      <SectionHeader>
-        <SectionTitle>General Information</SectionTitle>
-        <SectionDescription>View and edit your project details</SectionDescription>
-      </SectionHeader>
-      <SectionContent>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-          {canManageSettings && (
-            <Button type="button" onClick={onEdit}>
-              Edit Project
-            </Button>
-          )}
-        </div>
+    <>
+      <Section>
+        <SectionHeader>
+          <SectionTitle>General Information</SectionTitle>
+          <SectionDescription>View and edit your project details</SectionDescription>
+        </SectionHeader>
+        <SectionContent>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+            {canManageSettings && (
+              <Button type="button" onClick={() => setShowEditModal(true)}>
+                Edit Project
+              </Button>
+            )}
+          </div>
 
-        <MetaInfo>
-          <MetaItem>
-            <MetaLabel>Project Name</MetaLabel>
-            <MetaValue>{project.name}</MetaValue>
-          </MetaItem>
-          <MetaItem>
-            <MetaLabel>Project Key</MetaLabel>
-            <MetaValue>{project.key}</MetaValue>
-          </MetaItem>
-          <MetaItem>
-            <MetaLabel>Description</MetaLabel>
-            <MetaValue>{project.description || 'No description'}</MetaValue>
-          </MetaItem>
-          <MetaItem>
-            <MetaLabel>Created</MetaLabel>
-            <MetaValue>{formatDate(project.createdAt)}</MetaValue>
-          </MetaItem>
-          <MetaItem>
-            <MetaLabel>Owner</MetaLabel>
-            <MetaValue>{project.owner?.username}</MetaValue>
-          </MetaItem>
-          <MetaItem>
-            <MetaLabel>Members</MetaLabel>
-            <MetaValue>{project.members?.length || 0}</MetaValue>
-          </MetaItem>
-        </MetaInfo>
-      </SectionContent>
-    </Section>
+          <MetaInfo>
+            <MetaItem>
+              <MetaLabel>Project Name</MetaLabel>
+              <MetaValue>{project?.name}</MetaValue>
+            </MetaItem>
+            <MetaItem>
+              <MetaLabel>Project Key</MetaLabel>
+              <MetaValue>{project?.key}</MetaValue>
+            </MetaItem>
+            <MetaItem>
+              <MetaLabel>Description</MetaLabel>
+              <MetaValue>{project?.description || 'No description'}</MetaValue>
+            </MetaItem>
+            <MetaItem>
+              <MetaLabel>Created</MetaLabel>
+              <MetaValue>{formatDate(project?.createdAt)}</MetaValue>
+            </MetaItem>
+            <MetaItem>
+              <MetaLabel>Owner</MetaLabel>
+              <MetaValue>{project?.owner?.username}</MetaValue>
+            </MetaItem>
+            <MetaItem>
+              <MetaLabel>Members</MetaLabel>
+              <MetaValue>{project?.members?.length || 0}</MetaValue>
+            </MetaItem>
+          </MetaInfo>
+        </SectionContent>
+      </Section>
+
+      {/* Edit Modal */}
+      <GeneralSettingsEditModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        project={project}
+        refetchProject={refetchProject}
+      />
+    </>
   );
 };
 
 // Edit Modal Component
-export const GeneralSettingsEditModal = ({
+const GeneralSettingsEditModal = ({
   isOpen,
   onClose,
   project,
-  onSave,
-  isLoading
+  refetchProject
 }) => {
-  const [form, setForm] = useState({
-    name: '',
-    key: '',
-    description: ''
-  });
+  // Use useMemo to derive initial form values from project
+  const initialFormValues = useMemo(() => ({
+    name: project?.name || '',
+    key: project?.key || '',
+    description: project?.description || ''
+  }), [project]);
+
+  const [form, setForm] = useState(initialFormValues);
   const [error, setError] = useState('');
 
-  // Initialize form when modal opens
-  useEffect(() => {
-    const setFormEffect = () => {
-       if (isOpen && project) {
-        setForm({
-          name: project.name || '',
-          key: project.key || '',
-          description: project.description || ''
-        });
-        setError('');
-      }
-    }
-    setFormEffect();
-  }, [isOpen, project]);
+  const [updateProject, { isLoading }] = useUpdateProjectMutation();
 
-  const handleSubmit = (e) => {
+  // Reset form when modal opens
+  const handleOpen = () => {
+    setForm(initialFormValues);
+    setError('');
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -129,13 +120,25 @@ export const GeneralSettingsEditModal = ({
       return;
     }
 
-    onSave(form);
+    try {
+      await updateProject({
+        projectId: project.id,
+        ...form
+      }).unwrap();
+      toast.success('Project updated successfully');
+      onClose();
+      refetchProject();
+    } catch (err) {
+      console.error('Failed to update project:', err);
+      setError(err.data?.message || 'Failed to update project');
+    }
   };
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      onOpen={handleOpen}
       title="Edit Project"
     >
       <Form onSubmit={handleSubmit}>
@@ -199,6 +202,15 @@ export const GeneralSettingsEditModal = ({
       </Form>
     </Modal>
   );
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 };
 
 export default GeneralSettings;
