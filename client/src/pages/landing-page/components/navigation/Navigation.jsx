@@ -173,7 +173,7 @@ export function Navigation() {
             </Link>
 
             <Link
-              to="/auth/sign-up"
+              to="/auth/sign-in"
               style={{ textDecoration: "none" }}
             >
               <Button size="sm">Get Started</Button>
@@ -201,7 +201,7 @@ export function Navigation() {
             </MobileNavLink>
           ))}
           <Link
-            to="/auth/sign-up"
+            to="/auth/sign-in"
             onClick={handleLinkClick}
             style={{ textDecoration: "none" }}
           >

@@ -1,6 +1,3 @@
-import { useNavigate } from "react-router-dom";
-import { useGetCurrentUserQuery } from "../../reducers/slices/user/user.slice";
-
 import { Navigation } from "./components/navigation/Navigation";
 import HeroSection from "./components/HeroSection/HeroSection";
 import ProductPreview from "./components/ProductPreview/ProductPreview";
@@ -18,19 +15,6 @@ const DashboardSection = DashboardSectionComponent;
 const CTASection = CTASectionComponent;
 
 export default function LandingPage() {
-  const navigate = useNavigate();
-  const { data: currentUser, isLoading: currentUserLoading } =
-    useGetCurrentUserQuery();
-
-  if (currentUserLoading) {
-    return null;
-  }
-
-  if (currentUser) {
-    navigate("/app");
-    return null;
-  }
-
   return (
     <Page>
       <Navigation />

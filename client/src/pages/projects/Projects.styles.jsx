@@ -430,7 +430,8 @@ export const EmptyButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
-
+  display: flex;
+  align-items: center;
   &:hover {
     background-color: #27272a;
   }

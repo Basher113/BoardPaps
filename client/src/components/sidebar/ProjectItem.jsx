@@ -22,7 +22,7 @@ const ProjectItem = ({ project }) => {
 
   const onProjectClick = () => {
     console.log("Project clicked", project.id);
-    navigate(`/app/project/${project.id}`)
+    navigate(`/project/${project.id}`)
     dispatch(setActiveProject({ projectId: project.id }));
   };
   return (

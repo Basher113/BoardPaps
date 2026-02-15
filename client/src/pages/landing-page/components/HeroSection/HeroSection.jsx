@@ -30,7 +30,7 @@ export default function HeroSection() {
           </HeroText>
 
           <HeroActions>
-            <Link to="/auth/sign-up" style={{ textDecoration: "none" }}>
+            <Link to="/auth/sign-in" style={{ textDecoration: "none" }}>
               <PrimaryButton>
                 Start Free
                 <ArrowRight size={18} />

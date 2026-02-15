@@ -128,14 +128,14 @@ const Dashboard = () => {
   };
 
   const handleIssueClick = (issue) => {
-    navigate(`/app/project/${issue.projectId}`, {
+    navigate(`/project/${issue.projectId}`, {
       state: { highlightIssueId: issue.id }
     });
   };
 
   const handleProjectClick = (e, projectId) => {
     e.stopPropagation();
-    navigate(`/app/project/${projectId}`);
+    navigate(`/project/${projectId}`);
   };
 
   const handleClearFilter = () => {
@@ -355,11 +355,11 @@ const EmptyState = () => {
           Looks like you've completed everything on your plate!
         </EmptyStateDescription>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <Button onClick={() => navigate('/app/projects')}>
+          <Button onClick={() => navigate('/projects')}>
             <FolderKanban size={16} />
             Browse Projects
           </Button>
-          <Button variant="outline" onClick={() => navigate('/app/invitations')}>
+          <Button variant="outline" onClick={() => navigate('/invitations')}>
             View Invitations
           </Button>
         </div>

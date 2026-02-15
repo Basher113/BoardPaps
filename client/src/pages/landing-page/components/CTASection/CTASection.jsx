@@ -18,7 +18,7 @@ export default function CTASection() {
           Start organizing your work with focus and structure today.
         </CTAText>
 
-        <Link to="/auth/sign-up" style={{ textDecoration: "none" }}>
+        <Link to="/auth/sign-in" style={{ textDecoration: "none" }}>
           <CTAButton>
             Start Free
             <ArrowRight size={20} />

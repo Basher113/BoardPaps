@@ -1,3 +1,4 @@
+import { toast } from 'react-toastify';
 import {
   Section,
   SectionHeader,
@@ -15,7 +16,17 @@ import {
 } from '../../ProjectSettings.styles';
 import { RefreshCw } from 'lucide-react';
 
-const InvitationsList = ({ project, onResend, onCancel }) => {
+const InvitationsList = ({ project }) => {
+  const handleResend = () => {
+    // TODO: Implement resend invitation API
+    toast.info('Resend invitation feature coming soon');
+  };
+
+  const handleCancel = () => {
+    // TODO: Implement cancel invitation API
+    toast.info('Cancel invitation feature coming soon');
+  };
+
   return (
     <Section>
       <SectionHeader>
@@ -34,10 +45,10 @@ const InvitationsList = ({ project, onResend, onCancel }) => {
                   </PendingRole>
                 </PendingInfo>
                 <PendingActions>
-                  <ResendButton onClick={() => onResend(invitation)}>
+                  <ResendButton onClick={() => handleResend(invitation)}>
                     <RefreshCw size={14} />
                   </ResendButton>
-                  <CancelButton onClick={() => onCancel(invitation)}>
+                  <CancelButton onClick={() => handleCancel(invitation)}>
                     Cancel
                   </CancelButton>
                 </PendingActions>
