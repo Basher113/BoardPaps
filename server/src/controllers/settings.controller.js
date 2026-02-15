@@ -160,6 +160,7 @@ const deleteAvatar = async (req, res) => {
 };
 
 
+
 // DELETE /api/users/me
 const deleteAccount = async (req, res) => {
   const { password } = req.body;
@@ -197,12 +198,16 @@ const deleteAccount = async (req, res) => {
     
     // Use a transaction to delete all related records
     await prisma.$transaction([
- 
+      // Delete all refresh tokens
+      prisma.refreshToken.deleteMany({
+        where: { userId }
+      }),
+
       // Delete invitations sent by this user
       prisma.invitation.deleteMany({
         where: { invitedById: userId }
       }),
-      // Delete issues reported by this user 
+      // Delete issues reported by this user (will cascade through comments if any)
       prisma.issue.deleteMany({
         where: { reporterId: userId }
       }),
