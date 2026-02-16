@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styled from "styled-components";
-import { Mail, UserPlus, X, Users, Clock, AlertCircle, CheckCircle, Copy } from "lucide-react";
+import { Mail, UserPlus, X, Users, Clock, AlertCircle, CheckCircle, Copy, RefreshCw, MessageSquare } from "lucide-react";
 import { toast } from "react-toastify";
 import Modal from "../../../../components/ui/modal/Modal";
 import Button from "../../../../components/ui/button/Button";
@@ -9,6 +9,7 @@ import {
   useSendInvitationMutation,
   useGetProjectInvitationsQuery,
   useCancelInvitationMutation,
+  useResendInvitationMutation,
 } from "../../../../reducers/slices/invitation/invitation.apiSlice";
 import { formatDistanceToNow } from "../../../../utils/date";
 
@@ -176,6 +177,68 @@ const CancelButton = styled.button`
   }
 `;
 
+const ResendButton = styled.button`
+  background: none;
+  border: none;
+  color: #6366f1;
+  cursor: pointer;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  &:hover {
+    background-color: #eef2ff;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 0.25rem;
+`;
+
+const TextArea = styled.textarea`
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+
+  &:disabled {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+`;
+
+const CharCount = styled.span`
+  font-size: 0.75rem;
+  color: ${props => props.isNearLimit ? '#f59e0b' : '#9ca3af'};
+  text-align: right;
+  margin-top: 0.25rem;
+`;
+
 const ErrorMessage = styled.p`
   color: #ef4444;
   font-size: 0.875rem;
@@ -218,16 +281,19 @@ const isExpiringSoon = (expiresAt) => {
 const InviteModal = ({ isOpen, onClose, projectId }) => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("MEMBER");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [invitationToCancel, setInvitationToCancel] = useState(null);
   const [cancellingId, setCancellingId] = useState(null);
+  const [resendingId, setResendingId] = useState(null);
 
   const { data: invitationsData } =
     useGetProjectInvitationsQuery(projectId, { skip: !projectId });
   const [sendInvitation, { isLoading: isSending }] = useSendInvitationMutation();
   const [cancelInvitation] = useCancelInvitationMutation();
+  const [resendInvitation] = useResendInvitationMutation();
 
   const pendingInvitations = invitationsData?.data || [];
 
@@ -249,8 +315,14 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
     }
 
     try {
-      await sendInvitation({ projectId, email: email.trim(), role }).unwrap();
+      await sendInvitation({ 
+        projectId, 
+        email: email.trim(), 
+        role,
+        message: message.trim() || undefined 
+      }).unwrap();
       setEmail("");
+      setMessage("");
       setSuccess(`Invitation sent to ${email.trim()}`);
       toast.success(
         <ToastMessage>
@@ -269,6 +341,28 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
           {errorMessage}
         </ToastMessage>
       );
+    }
+  };
+
+  const handleResend = async (invitation) => {
+    setResendingId(invitation.id);
+    try {
+      await resendInvitation({ projectId, invitationId: invitation.id }).unwrap();
+      toast.success(
+        <ToastMessage>
+          <CheckCircle size={18} />
+          Invitation resent to {invitation.email}
+        </ToastMessage>
+      );
+    } catch (err) {
+      toast.error(
+        <ToastMessage>
+          <AlertCircle size={18} />
+          {err?.data?.message || "Failed to resend invitation"}
+        </ToastMessage>
+      );
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -311,6 +405,7 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
   const handleModalClose = () => {
     setEmail("");
     setRole("MEMBER");
+    setMessage("");
     setError("");
     setSuccess("");
     onClose();
@@ -348,6 +443,24 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
           </Select>
         </FormGroup>
 
+        <FormGroup>
+          <Label htmlFor="message">
+            <MessageSquare size={14} style={{ marginRight: "0.5rem" }} />
+            Personal Message (optional)
+          </Label>
+          <TextArea
+            id="message"
+            placeholder="Add a personal note to include in the invitation email..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            disabled={isSending}
+            maxLength={250}
+          />
+          <CharCount isNearLimit={message.length > 200}>
+            {message.length}/250
+          </CharCount>
+        </FormGroup>
+
         {error && (
           <ErrorMessage>
             <AlertCircle size={16} />
@@ -382,6 +495,7 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
             {pendingInvitations.map((invitation) => {
               const expiringSoon = isExpiringSoon(invitation.expiresAt);
               const isCancelling = cancellingId === invitation.id;
+              const isResending = resendingId === invitation.id;
               
               return (
                 <PendingItem key={invitation.id}>
@@ -397,12 +511,22 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
                       </ExpiryTag>
                     </PendingMeta>
                   </PendingInfo>
-                  <CancelButton
-                    onClick={() => handleCancelClick(invitation)}
-                    disabled={isCancelling}
-                  >
-                    {isCancelling ? "Cancelling..." : "Cancel"}
-                  </CancelButton>
+                  <ActionButtons>
+                    <ResendButton
+                      onClick={() => handleResend(invitation)}
+                      disabled={isResending || isCancelling}
+                      title="Resend invitation"
+                    >
+                      <RefreshCw size={12} />
+                      {isResending ? "Sending..." : "Resend"}
+                    </ResendButton>
+                    <CancelButton
+                      onClick={() => handleCancelClick(invitation)}
+                      disabled={isCancelling || isResending}
+                    >
+                      {isCancelling ? "Cancelling..." : "Cancel"}
+                    </CancelButton>
+                  </ActionButtons>
                 </PendingItem>
               );
             })}

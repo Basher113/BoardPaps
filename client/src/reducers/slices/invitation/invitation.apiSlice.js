@@ -22,10 +22,19 @@ export const invitationApiSlice = apiSlice.injectEndpoints({
 
     // Send an invitation to a project (admin/owner only)
     sendInvitation: builder.mutation({
-      query: ({ projectId, email, role }) => ({
+      query: ({ projectId, email, role, message }) => ({
         url: `projects/${projectId}/invitations`,
         method: "POST",
-        body: { email, role },
+        body: { email, role, message },
+      }),
+      invalidatesTags: ["Invitation"],
+    }),
+
+    // Resend an invitation (reset expiration and send new email)
+    resendInvitation: builder.mutation({
+      query: ({ projectId, invitationId }) => ({
+        url: `projects/${projectId}/invitations/${invitationId}/resend`,
+        method: "POST",
       }),
       invalidatesTags: ["Invitation"],
     }),
@@ -64,6 +73,7 @@ export const {
   useGetMyInvitationsCountQuery,
   useGetProjectInvitationsQuery,
   useSendInvitationMutation,
+  useResendInvitationMutation,
   useAcceptInvitationMutation,
   useDeclineInvitationMutation,
   useCancelInvitationMutation,
