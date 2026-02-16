@@ -1,3 +1,4 @@
+import styled from "styled-components";
 import {
   PanelOverlay,
   PanelContainer,
@@ -29,7 +30,7 @@ import {
   ErrorIcon,
   RetryButton,
 } from "./InvitationsPanel.styles";
-import { X, Check, Bell, Clock, User } from "lucide-react";
+import { X, Check, Bell, Clock, User, CheckCircle, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
@@ -39,6 +40,25 @@ import {
   useDeclineInvitationMutation,
 } from "../../reducers/slices/invitation/invitation.apiSlice";
 import { formatDistanceToNow } from "../../utils/date";
+
+const ToastMessage = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+// Helper function to check if invitation is expiring soon (within 24 hours)
+const isExpiringSoon = (expiresAt) => {
+  const now = new Date();
+  const expiry = new Date(expiresAt);
+  const hoursUntilExpiry = (expiry - now) / (1000 * 60 * 60);
+  return hoursUntilExpiry < 24 && hoursUntilExpiry > 0;
+};
+
+// Helper function to check if invitation is expired
+const isExpired = (expiresAt) => {
+  return new Date(expiresAt) < new Date();
+};
 
 const InvitationsPanel = ({ onClose }) => {
   const {
@@ -50,17 +70,33 @@ const InvitationsPanel = ({ onClose }) => {
   const [acceptInvitation, { isLoading: isAccepting }] = useAcceptInvitationMutation();
   const [declineInvitation, { isLoading: isDeclining }] = useDeclineInvitationMutation();
 
-  const invitations = data?.data || [];
+  const allInvitations = data?.data || [];
+  // Filter out expired invitations
+  const invitations = allInvitations.filter(inv => !isExpired(inv.expiresAt));
   const isProcessing = isAccepting || isDeclining;
   const [showDeclineConfirm, setShowDeclineConfirm] = useState(false);
   const [invitationToDecline, setInvitationToDecline] = useState(null);
+  const [processingId, setProcessingId] = useState(null);
 
   const handleAccept = async (invitation) => {
+    setProcessingId(invitation.id);
     try {
-      await acceptInvitation(invitation.id).unwrap();
-      toast.success(`You have joined ${invitation.project.name} as ${invitation.role}`);
+      const result = await acceptInvitation(invitation.id).unwrap();
+      toast.success(
+        <ToastMessage>
+          <CheckCircle size={18} />
+          {result.message || `You have joined ${invitation.project.name} as ${invitation.role}`}
+        </ToastMessage>
+      );
     } catch (err) {
-      toast.error(err?.data?.message || "Failed to accept invitation");
+      toast.error(
+        <ToastMessage>
+          <AlertCircle size={18} />
+          {err?.data?.message || "Failed to accept invitation"}
+        </ToastMessage>
+      );
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -72,14 +108,26 @@ const InvitationsPanel = ({ onClose }) => {
   const handleConfirmDecline = async () => {
     if (!invitationToDecline) return;
 
+    setProcessingId(invitationToDecline.id);
     try {
-      await declineInvitation(invitationToDecline.id).unwrap();
-      toast.success(`Invitation to ${invitationToDecline.project.name} declined`);
+      const result = await declineInvitation(invitationToDecline.id).unwrap();
+      toast.success(
+        <ToastMessage>
+          <CheckCircle size={18} />
+          {result.message || "Invitation declined"}
+        </ToastMessage>
+      );
     } catch (err) {
-      toast.error(err?.data?.message || "Failed to decline invitation");
+      toast.error(
+        <ToastMessage>
+          <AlertCircle size={18} />
+          {err?.data?.message || "Failed to decline invitation"}
+        </ToastMessage>
+      );
     } finally {
       setShowDeclineConfirm(false);
       setInvitationToDecline(null);
+      setProcessingId(null);
     }
   };
 
@@ -149,7 +197,7 @@ const InvitationsPanel = ({ onClose }) => {
               </EmptyIcon>
               <EmptyTitle>No pending invitations</EmptyTitle>
               <EmptyDescription>
-                When someone invites you to join their project, you'll see.
+                When someone invites you to join their project, you'll see it here.
               </EmptyDescription>
             </EmptyState>
           ) : (
@@ -157,6 +205,8 @@ const InvitationsPanel = ({ onClose }) => {
               const { text: timeRemaining, expired } = getTimeRemaining(
                 invitation.expiresAt
               );
+              const expiringSoon = isExpiringSoon(invitation.expiresAt);
+              const isThisProcessing = processingId === invitation.id;
 
               return (
                 <InvitationCard key={invitation.id}>
@@ -169,15 +219,17 @@ const InvitationsPanel = ({ onClose }) => {
                       <ProjectKey>{invitation.project.key}</ProjectKey>
 
                       <InvitationMeta>
-                        <RoleBadge>{invitation.role}</RoleBadge>
+                        <RoleBadge role={invitation.role}>
+                          {invitation.role}
+                        </RoleBadge>
                         <ExpiryBadge
                           style={{
-                            background: expired ? "#fee2e2" : "#fef3c7",
-                            color: expired ? "#dc2626" : "#b45309",
+                            background: expired ? "#fee2e2" : expiringSoon ? "#fef3c7" : "#f3f4f6",
+                            color: expired ? "#dc2626" : expiringSoon ? "#b45309" : "#6b7280",
                           }}
                         >
                           <Clock size={12} />
-                          {expired ? "Expired" : timeRemaining}
+                          {expired ? "Expired" : expiringSoon ? `Soon: ${timeRemaining}` : timeRemaining}
                         </ExpiryBadge>
                       </InvitationMeta>
 
@@ -194,6 +246,7 @@ const InvitationsPanel = ({ onClose }) => {
                       variant="accept"
                       onClick={() => handleAccept(invitation)}
                       disabled={isProcessing || expired}
+                      isLoading={isThisProcessing && isAccepting}
                     >
                       <Check size={16} />
                       Accept
@@ -202,6 +255,7 @@ const InvitationsPanel = ({ onClose }) => {
                       variant="decline"
                       onClick={() => handleDeclineClick(invitation)}
                       disabled={isProcessing}
+                      isLoading={isThisProcessing && isDeclining}
                     >
                       <X size={16} />
                       Decline
@@ -218,7 +272,7 @@ const InvitationsPanel = ({ onClose }) => {
         onClose={handleDeclineCancel}
         onConfirm={handleConfirmDecline}
         title="Decline Invitation"
-        message="Are you sure you want to decline this invitation? This action cannot be undone."
+        message={`Are you sure you want to decline the invitation to join ${invitationToDecline?.project?.name || 'this project'}? This action cannot be undone.`}
         confirmText="Decline"
         cancelText="Cancel"
         variant="danger"

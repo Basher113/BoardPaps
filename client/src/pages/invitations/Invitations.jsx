@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
-import { Mail, Check, X, Bell, Briefcase, ArrowLeft } from "lucide-react";
+import { Mail, Check, X, Bell, Briefcase, ArrowLeft, Clock, Copy, CheckCircle, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { toast } from "react-toastify";
 import { setActiveView } from "../../reducers/slices/navigation/navigation.slice";
 import Button from "../../components/ui/button/Button";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
@@ -180,6 +181,31 @@ const DetailValue = styled.span`
   font-weight: 500;
 `;
 
+const RoleBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background-color: ${props => props.role === 'ADMIN' ? '#fef3c7' : '#e0e7ff'};
+  color: ${props => props.role === 'ADMIN' ? '#92400e' : '#3730a3'};
+`;
+
+const ExpiryWarning = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: ${props => props.isExpiringSoon ? '#dc2626' : '#6b7280'};
+  font-size: 0.875rem;
+  
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+`;
+
 const InvitedBy = styled.div`
   font-size: 0.875rem;
   color: #6b7280;
@@ -245,6 +271,25 @@ const LoadingState = styled.div`
   color: #6b7280;
 `;
 
+const ToastMessage = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+// Helper function to check if invitation is expiring soon (within 24 hours)
+const isExpiringSoon = (expiresAt) => {
+  const now = new Date();
+  const expiry = new Date(expiresAt);
+  const hoursUntilExpiry = (expiry - now) / (1000 * 60 * 60);
+  return hoursUntilExpiry < 24 && hoursUntilExpiry > 0;
+};
+
+// Helper function to check if invitation is expired
+const isExpired = (expiresAt) => {
+  return new Date(expiresAt) < new Date();
+};
+
 const InvitationsPage = () => {
   const dispatch = useDispatch();
   
@@ -261,12 +306,27 @@ const InvitationsPage = () => {
   const isProcessing = isAccepting || isDeclining;
   const [showDeclineConfirm, setShowDeclineConfirm] = useState(false);
   const [invitationToDecline, setInvitationToDecline] = useState(null);
+  const [processingId, setProcessingId] = useState(null);
 
-  const handleAccept = async (invitationId) => {
+  const handleAccept = async (invitation) => {
+    setProcessingId(invitation.id);
     try {
-      await acceptInvitation(invitationId).unwrap();
+      const result = await acceptInvitation(invitation.id).unwrap();
+      toast.success(
+        <ToastMessage>
+          <CheckCircle size={18} />
+          {result.message || `You have joined ${invitation.project.name} as ${invitation.role}`}
+        </ToastMessage>
+      );
     } catch (error) {
-      console.error("Failed to accept invitation:", error);
+      toast.error(
+        <ToastMessage>
+          <AlertCircle size={18} />
+          {error?.data?.message || "Failed to accept invitation"}
+        </ToastMessage>
+      );
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -278,13 +338,26 @@ const InvitationsPage = () => {
   const handleConfirmDecline = async () => {
     if (!invitationToDecline) return;
 
+    setProcessingId(invitationToDecline.id);
     try {
-      await declineInvitation(invitationToDecline.id).unwrap();
+      const result = await declineInvitation(invitationToDecline.id).unwrap();
+      toast.success(
+        <ToastMessage>
+          <CheckCircle size={18} />
+          {result.message || "Invitation declined"}
+        </ToastMessage>
+      );
     } catch (error) {
-      console.error("Failed to decline invitation:", error);
+      toast.error(
+        <ToastMessage>
+          <AlertCircle size={18} />
+          {error?.data?.message || "Failed to decline invitation"}
+        </ToastMessage>
+      );
     } finally {
       setShowDeclineConfirm(false);
       setInvitationToDecline(null);
+      setProcessingId(null);
     }
   };
 
@@ -292,6 +365,21 @@ const InvitationsPage = () => {
     setShowDeclineConfirm(false);
     setInvitationToDecline(null);
   };
+
+  // Filter out expired invitations and show warning
+  const validInvitations = invitations.filter(inv => !isExpired(inv.expiresAt));
+  const expiredCount = invitations.length - validInvitations.length;
+
+  useEffect(() => {
+    if (expiredCount > 0) {
+      toast.info(
+        <ToastMessage>
+          <AlertCircle size={18} />
+          {expiredCount} invitation(s) have expired and been removed
+        </ToastMessage>
+      );
+    }
+  }, [expiredCount]);
 
   return (
     <PageContainer>
@@ -303,8 +391,8 @@ const InvitationsPage = () => {
           <HeaderTitle>
             <Bell size={24} />
             Invitations
-            {invitations.length > 0 && (
-              <InvitationCount>{invitations.length}</InvitationCount>
+            {validInvitations.length > 0 && (
+              <InvitationCount>{validInvitations.length}</InvitationCount>
             )}
           </HeaderTitle>
         </HeaderContent>
@@ -312,8 +400,10 @@ const InvitationsPage = () => {
 
       <Content>
         {isLoading ? (
-          <LoadingState>Loading invitations...</LoadingState>
-        ) : invitations.length === 0 ? (
+          <Section>
+            <LoadingState>Loading invitations...</LoadingState>
+          </Section>
+        ) : validInvitations.length === 0 ? (
           <Section>
             <EmptyState>
               <EmptyIcon>
@@ -339,54 +429,65 @@ const InvitationsPage = () => {
             </SectionHeader>
 
             <InvitationsList>
-              {invitations.map((invitation) => (
-                <InvitationCard key={invitation.id}>
-                  <CardContent>
-                    <ProjectIcon>
-                      {invitation.project.key.substring(0, 2).toUpperCase()}
-                    </ProjectIcon>
-                    <CardBody>
-                      <ProjectName>{invitation.project.name}</ProjectName>
-                      <ProjectKey>{invitation.project.key}</ProjectKey>
+              {validInvitations.map((invitation) => {
+                const expiringSoon = isExpiringSoon(invitation.expiresAt);
+                const isThisProcessing = processingId === invitation.id;
+                
+                return (
+                  <InvitationCard key={invitation.id}>
+                    <CardContent>
+                      <ProjectIcon>
+                        {invitation.project.key.substring(0, 2).toUpperCase()}
+                      </ProjectIcon>
+                      <CardBody>
+                        <ProjectName>{invitation.project.name}</ProjectName>
+                        <ProjectKey>{invitation.project.key}</ProjectKey>
 
-                      <InvitationDetails>
-                        <DetailItem>
-                          <DetailLabel>Role:</DetailLabel>
-                          <DetailValue>{invitation.role}</DetailValue>
-                        </DetailItem>
-                        <DetailItem>
-                          <DetailLabel>Expires:</DetailLabel>
-                          <DetailValue>
-                            {formatDistanceToNow(new Date(invitation.expiresAt))}
-                          </DetailValue>
-                        </DetailItem>
-                      </InvitationDetails>
+                        <InvitationDetails>
+                          <DetailItem>
+                            <DetailLabel>Role:</DetailLabel>
+                            <RoleBadge role={invitation.role}>
+                              {invitation.role}
+                            </RoleBadge>
+                          </DetailItem>
+                          <DetailItem>
+                            <DetailLabel>Expires:</DetailLabel>
+                            <ExpiryWarning isExpiringSoon={expiringSoon}>
+                              <Clock size={14} />
+                              {expiringSoon ? "Expires soon - " : ""}
+                              {formatDistanceToNow(new Date(invitation.expiresAt))}
+                            </ExpiryWarning>
+                          </DetailItem>
+                        </InvitationDetails>
 
-                      <InvitedBy>
-                        Invited by <strong>{invitation.invitedBy?.username}</strong>
-                      </InvitedBy>
-                    </CardBody>
-                  </CardContent>
+                        <InvitedBy>
+                          Invited by <strong>{invitation.invitedBy?.username}</strong>
+                        </InvitedBy>
+                      </CardBody>
+                    </CardContent>
 
-                  <CardActions>
-                    <AcceptButton
-                      onClick={() => handleAccept(invitation.id)}
-                      disabled={isProcessing}
-                    >
-                      <Check size={18} style={{ marginRight: "0.5rem" }} />
-                      Accept
-                    </AcceptButton>
-                    <DeclineButton
-                      variant="secondary"
-                      onClick={() => handleDeclineClick(invitation)}
-                      disabled={isProcessing}
-                    >
-                      <X size={18} style={{ marginRight: "0.5rem" }} />
-                      Decline
-                    </DeclineButton>
-                  </CardActions>
-                </InvitationCard>
-              ))}
+                    <CardActions>
+                      <AcceptButton
+                        onClick={() => handleAccept(invitation)}
+                        disabled={isProcessing}
+                        isLoading={isThisProcessing && isAccepting}
+                      >
+                        <Check size={18} style={{ marginRight: "0.5rem" }} />
+                        Accept
+                      </AcceptButton>
+                      <DeclineButton
+                        variant="secondary"
+                        onClick={() => handleDeclineClick(invitation)}
+                        disabled={isProcessing}
+                        isLoading={isThisProcessing && isDeclining}
+                      >
+                        <X size={18} style={{ marginRight: "0.5rem" }} />
+                        Decline
+                      </DeclineButton>
+                    </CardActions>
+                  </InvitationCard>
+                );
+              })}
             </InvitationsList>
           </Section>
         )}
@@ -396,7 +497,7 @@ const InvitationsPage = () => {
         onClose={handleDeclineCancel}
         onConfirm={handleConfirmDecline}
         title="Decline Invitation"
-        message="Are you sure you want to decline this invitation? This action cannot be undone."
+        message={`Are you sure you want to decline the invitation to join ${invitationToDecline?.project?.name || 'this project'}? This action cannot be undone.`}
         confirmText="Decline"
         cancelText="Cancel"
         variant="danger"

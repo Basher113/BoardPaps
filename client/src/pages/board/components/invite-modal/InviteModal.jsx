@@ -1,6 +1,7 @@
 import { useState } from "react";
 import styled from "styled-components";
-import { Mail, UserPlus, X, Users } from "lucide-react";
+import { Mail, UserPlus, X, Users, Clock, AlertCircle, CheckCircle, Copy } from "lucide-react";
+import { toast } from "react-toastify";
 import Modal from "../../../../components/ui/modal/Modal";
 import Button from "../../../../components/ui/button/Button";
 import ConfirmModal from "../../../../components/ui/confirm-modal/ConfirmModal";
@@ -9,6 +10,7 @@ import {
   useGetProjectInvitationsQuery,
   useCancelInvitationMutation,
 } from "../../../../reducers/slices/invitation/invitation.apiSlice";
+import { formatDistanceToNow } from "../../../../utils/date";
 
 const Form = styled.form`
   display: flex;
@@ -40,6 +42,11 @@ const Input = styled.input`
     border-color: #6366f1;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   }
+
+  &:disabled {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+  }
 `;
 
 const Select = styled.select`
@@ -56,6 +63,11 @@ const Select = styled.select`
     border-color: #6366f1;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   }
+
+  &:disabled {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+  }
 `;
 
 const ButtonGroup = styled.div`
@@ -66,7 +78,9 @@ const ButtonGroup = styled.div`
 `;
 
 const Section = styled.div`
-  margin-bottom: 1.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
 `;
 
 const SectionTitle = styled.h4`
@@ -83,7 +97,7 @@ const PendingList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: 200px;
+  max-height: 240px;
   overflow-y: auto;
 `;
 
@@ -93,24 +107,52 @@ const PendingItem = styled.div`
   justify-content: space-between;
   padding: 0.75rem;
   background: #f9fafb;
-  border-radius: 0.375rem;
+  border-radius: 0.5rem;
   font-size: 0.875rem;
+  border: 1px solid #e5e7eb;
 `;
 
 const PendingInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
 `;
 
 const PendingEmail = styled.span`
   font-weight: 500;
   color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
-const PendingRole = styled.span`
+const PendingMeta = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   font-size: 0.75rem;
   color: #6b7280;
+`;
+
+const RoleTag = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background-color: ${props => props.role === 'ADMIN' ? '#fef3c7' : '#e0e7ff'};
+  color: ${props => props.role === 'ADMIN' ? '#92400e' : '#3730a3'};
+`;
+
+const ExpiryTag = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: ${props => props.isExpiringSoon ? '#dc2626' : '#6b7280'};
 `;
 
 const CancelButton = styled.button`
@@ -118,11 +160,19 @@ const CancelButton = styled.button`
   border: none;
   color: #ef4444;
   cursor: pointer;
-  padding: 0.25rem;
+  padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
 
   &:hover {
-    text-decoration: underline;
+    background-color: #fef2f2;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 
@@ -130,14 +180,49 @@ const ErrorMessage = styled.p`
   color: #ef4444;
   font-size: 0.875rem;
   margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 `;
+
+const SuccessMessage = styled.p`
+  color: #059669;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const ToastMessage = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const EmptyPending = styled.div`
+  text-align: center;
+  padding: 1.5rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+`;
+
+// Helper function to check if invitation is expiring soon (within 24 hours)
+const isExpiringSoon = (expiresAt) => {
+  const now = new Date();
+  const expiry = new Date(expiresAt);
+  const hoursUntilExpiry = (expiry - now) / (1000 * 60 * 60);
+  return hoursUntilExpiry < 24 && hoursUntilExpiry > 0;
+};
 
 const InviteModal = ({ isOpen, onClose, projectId }) => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("MEMBER");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [invitationToCancel, setInvitationToCancel] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
 
   const { data: invitationsData } =
     useGetProjectInvitationsQuery(projectId, { skip: !projectId });
@@ -149,19 +234,41 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     if (!email.trim()) {
       setError("Email is required");
       return;
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
     try {
-      await sendInvitation({ projectId, email: email.trim(), role });
+      await sendInvitation({ projectId, email: email.trim(), role }).unwrap();
       setEmail("");
-      // Invitations will be refetched automatically
+      setSuccess(`Invitation sent to ${email.trim()}`);
+      toast.success(
+        <ToastMessage>
+          <CheckCircle size={18} />
+          Invitation sent successfully
+        </ToastMessage>
+      );
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      console.log(err);
-      setError(err?.data?.message || "Failed to send invitation");
+      const errorMessage = err?.data?.message || "Failed to send invitation";
+      setError(errorMessage);
+      toast.error(
+        <ToastMessage>
+          <AlertCircle size={18} />
+          {errorMessage}
+        </ToastMessage>
+      );
     }
   };
 
@@ -173,13 +280,26 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
   const handleConfirmCancel = async () => {
     if (!invitationToCancel) return;
 
+    setCancellingId(invitationToCancel.id);
     try {
-      await cancelInvitation({ projectId, invitationId: invitationToCancel.id });
+      await cancelInvitation({ projectId, invitationId: invitationToCancel.id }).unwrap();
+      toast.success(
+        <ToastMessage>
+          <CheckCircle size={18} />
+          Invitation cancelled
+        </ToastMessage>
+      );
     } catch (err) {
-      console.error("Failed to cancel invitation:", err);
+      toast.error(
+        <ToastMessage>
+          <AlertCircle size={18} />
+          {err?.data?.message || "Failed to cancel invitation"}
+        </ToastMessage>
+      );
     } finally {
       setShowCancelConfirm(false);
       setInvitationToCancel(null);
+      setCancellingId(null);
     }
   };
 
@@ -188,8 +308,16 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
     setInvitationToCancel(null);
   };
 
+  const handleModalClose = () => {
+    setEmail("");
+    setRole("MEMBER");
+    setError("");
+    setSuccess("");
+    onClose();
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Invite Team Members">
+    <Modal isOpen={isOpen} onClose={handleModalClose} title="Invite Team Members">
       <Form onSubmit={handleSubmit}>
         <FormGroup>
           <Label htmlFor="email">Email Address</Label>
@@ -198,7 +326,11 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
             type="email"
             placeholder="colleague@company.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError("");
+              setSuccess("");
+            }}
             disabled={isSending}
           />
         </FormGroup>
@@ -216,13 +348,25 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
           </Select>
         </FormGroup>
 
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+        {error && (
+          <ErrorMessage>
+            <AlertCircle size={16} />
+            {error}
+          </ErrorMessage>
+        )}
+
+        {success && (
+          <SuccessMessage>
+            <CheckCircle size={16} />
+            {success}
+          </SuccessMessage>
+        )}
 
         <ButtonGroup>
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button type="button" variant="secondary" onClick={handleModalClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSending}>
+          <Button type="submit" disabled={isSending || !email.trim()}>
             {isSending ? "Sending..." : "Send Invitation"}
           </Button>
         </ButtonGroup>
@@ -235,30 +379,55 @@ const InviteModal = ({ isOpen, onClose, projectId }) => {
             Pending Invitations ({pendingInvitations.length})
           </SectionTitle>
           <PendingList>
-            {pendingInvitations.map((invitation) => (
-              <PendingItem key={invitation.id}>
-                <PendingInfo>
-                  <PendingEmail>{invitation.email}</PendingEmail>
-                  <PendingRole>
-                    Invited as {invitation.role} by {invitation.invitedBy?.username}
-                  </PendingRole>
-                </PendingInfo>
-                <CancelButton
-                  onClick={() => handleCancelClick(invitation)}
-                >
-                  Cancel
-                </CancelButton>
-              </PendingItem>
-            ))}
+            {pendingInvitations.map((invitation) => {
+              const expiringSoon = isExpiringSoon(invitation.expiresAt);
+              const isCancelling = cancellingId === invitation.id;
+              
+              return (
+                <PendingItem key={invitation.id}>
+                  <PendingInfo>
+                    <PendingEmail>{invitation.email}</PendingEmail>
+                    <PendingMeta>
+                      <RoleTag role={invitation.role}>
+                        {invitation.role}
+                      </RoleTag>
+                      <ExpiryTag isExpiringSoon={expiringSoon}>
+                        <Clock size={12} />
+                        {expiringSoon ? "Expires soon" : formatDistanceToNow(new Date(invitation.expiresAt))}
+                      </ExpiryTag>
+                    </PendingMeta>
+                  </PendingInfo>
+                  <CancelButton
+                    onClick={() => handleCancelClick(invitation)}
+                    disabled={isCancelling}
+                  >
+                    {isCancelling ? "Cancelling..." : "Cancel"}
+                  </CancelButton>
+                </PendingItem>
+              );
+            })}
           </PendingList>
         </Section>
       )}
+
+      {pendingInvitations.length === 0 && (
+        <Section>
+          <SectionTitle>
+            <Users size={16} />
+            Pending Invitations
+          </SectionTitle>
+          <EmptyPending>
+            No pending invitations. Invite team members to collaborate!
+          </EmptyPending>
+        </Section>
+      )}
+
       <ConfirmModal
         isOpen={showCancelConfirm}
         onClose={handleCancelModal}
         onConfirm={handleConfirmCancel}
         title="Cancel Invitation"
-        message="Are you sure you want to cancel this invitation? The user will not be able to join the project."
+        message={`Are you sure you want to cancel the invitation for ${invitationToCancel?.email}? They will not be able to join the project.`}
         confirmText="Cancel Invitation"
         cancelText="Keep Invitation"
         variant="danger"
