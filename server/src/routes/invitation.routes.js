@@ -3,8 +3,16 @@ const invitationController = require("../controllers/invitation.controller");
 const { requireProjectMember, requireProjectRole } = require("../middlewares/projectMember.middleware");
 const { validateBody } = require("../middlewares/validation.middleware");
 const { invitationSchema } = require("../validations/invitation.schema");
+const { invitationLimiter } = require("../middlewares/rateLimiter.middleware");
 
 const invitationRouter = Router({mergeParams: true});
+
+// Public route - invitation preview by token (no auth required)
+// Must be before /:invitationId routes to avoid conflict
+invitationRouter.get(
+  "/preview/:token",
+  invitationController.getInvitationPreview
+);
 
 // Project-scoped routes (require membership)
 invitationRouter.get(
@@ -16,6 +24,7 @@ invitationRouter.get(
 
 invitationRouter.post(
   "/",
+  invitationLimiter,
   requireProjectMember,
   requireProjectRole(["OWNER", "ADMIN"]),
   validateBody(invitationSchema),

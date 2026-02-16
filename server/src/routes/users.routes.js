@@ -5,6 +5,7 @@ const { validateBody } = require("../middlewares/validation.middleware");
 const { profileSchema } = require("../validations/settings.schema");
 const { uploadAvatar } = require("../middlewares/upload.middleware");
 const {requireAuth} = require('@clerk/express');
+const { invitationActionLimiter } = require("../middlewares/rateLimiter.middleware");
 
 const usersRouter = Router();
 
@@ -25,12 +26,14 @@ usersRouter.get(
 
 usersRouter.post(
   "/me/invitations/:invitationId/accept",
+  invitationActionLimiter,
   requireAuth(),
   invitationController.acceptInvitation
 );
 
 usersRouter.post(
   "/me/invitations/:invitationId/decline",
+  invitationActionLimiter,
   requireAuth(),
   invitationController.declineInvitation
 );

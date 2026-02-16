@@ -11,5 +11,4 @@ const profileSchema = z.object({
 
 module.exports = {
   profileSchema,
-  changePasswordSchema
 };

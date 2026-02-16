@@ -162,7 +162,8 @@ model Issue {
 
 model Invitation {
   id          String          @id @default(uuid())
-  email       String          // Email of invited user
+  token       String          @unique @default(cuid()) // Secure token for invitation links
+  email       String          
   projectId   String
   role        ProjectRole     // Role to assign upon acceptance
   status      InvitationStatus @default(PENDING)
@@ -179,4 +180,5 @@ model Invitation {
   @@unique([email, projectId, status]) // Only one pending invite per user per project
   @@index([email])
   @@index([projectId])
+  @@index([token])
 }
