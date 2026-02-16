@@ -164,6 +164,7 @@ model Invitation {
   id          String          @id @default(uuid())
   token       String          @unique @default(cuid()) // Secure token for invitation links
   email       String          
+  message     String?         @db.VarChar(250) // Optional personal message from inviter
   projectId   String
   role        ProjectRole     // Role to assign upon acceptance
   status      InvitationStatus @default(PENDING)

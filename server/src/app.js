@@ -1,7 +1,9 @@
 require('dotenv').config()
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const appConfig = require("./config/app.config")
+const { globalApiLimiter } = require("./middlewares/rateLimiter.middleware");
 
 const app = express();
 
@@ -9,9 +11,14 @@ const app = express();
 const webhookRoutes = require("./routes/webhook.routes");
 app.use("/webhooks", webhookRoutes);
 
+// For security headers - HELMET
+app.use(helmet());
+
 // Parser
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+
+
 
 // CORS
 app.use(cors({
@@ -19,12 +26,14 @@ app.use(cors({
   credentials: true,
 }));
 
-// Add Clerk middleware - verifies tokens and populates req.auth
-// then withUser syncs to database and populates req.user
+// CLERK
 const { clerkMiddleware } = require("@clerk/express");
 const { withUser } = require("./middlewares/auth.middleware");
 app.use(clerkMiddleware());
 app.use(withUser);
+
+// Global rate limiter 
+app.use(globalApiLimiter);
 
 // Routes
 const authRoutes = require("./routes/auth.routes");

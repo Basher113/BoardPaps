@@ -31,6 +31,14 @@ invitationRouter.post(
   invitationController.sendInvitation
 );
 
+// Resend invitation endpoint
+invitationRouter.post(
+  "/:invitationId/resend",
+  invitationLimiter,
+  requireProjectMember,
+  invitationController.resendInvitation
+);
+
 invitationRouter.delete(
   "/:invitationId",
   requireProjectMember,

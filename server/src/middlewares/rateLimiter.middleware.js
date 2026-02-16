@@ -49,20 +49,29 @@ const invitationActionLimiter = rateLimit({
 /**
  * General API rate limiter
  * Applied globally to all routes
+ * Increased limit for kanban board usage (drag/drop operations)
  */
-const apiLimiter = rateLimit({
+const globalApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per 15 minutes
+  max: parseInt(process.env.GLOBAL_RATE_LIMIT || '500'), // 500 requests per 15 minutes (default)
   message: {
     success: false,
     message: 'Too many requests. Please try again later.',
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Use user ID as key if authenticated for more accurate limiting
+  keyGenerator: (req) => {
+    if (req.user?.id) {
+      return `user_${req.user.id}`;
+    }
+    // Fall back to IP-based key for unauthenticated requests
+    return ipKeyGenerator(req.ip);
+  },
 });
 
 module.exports = {
   invitationLimiter,
   invitationActionLimiter,
-  apiLimiter,
+  globalApiLimiter,
 };

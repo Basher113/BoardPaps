@@ -1,7 +1,13 @@
 const prisma = require("../lib/prisma");
-const { logInfo, logError } = require("../lib/logger");
+const { logInfo, logError, logWarn } = require("../lib/logger");
+const {
+  sendInvitationEmail,
+  sendInvitationAcceptedEmail,
+  sendInvitationDeclinedEmail,
+} = require("../services/email.service");
 
-const INVITATION_EXPIRY_DAYS = parseInt(process.env.INVITATION_EXPIRY_DAYS || '7');
+const INVITATION_EXPIRY_DAYS = parseInt(process.env.INVITATION_EXPIRY_DAYS || '6');
+const EMAIL_ENABLED = process.env.RESEND_API_KEY ? true : false;
 
 /**
  * Normalize email address to lowercase and trim whitespace
@@ -17,11 +23,11 @@ const normalizeEmail = (email) => {
  * Only OWNER or ADMIN can invite users
  */
 const sendInvitation = async (req, res) => {
+  const { projectId } = req.params;
+  const { email, role, message } = req.body;
+  const invitedById = req.user.id;
   try {
-    const { projectId } = req.params;
-    const { email, role } = req.body;
-    const invitedById = req.user.id;
-    
+
     // Normalize email address
     const normalizedEmail = normalizeEmail(email);
 
@@ -85,6 +91,7 @@ const sendInvitation = async (req, res) => {
     const invitation = await prisma.invitation.create({
       data: {
         email: normalizedEmail,
+        message: message?.trim()?.substring(0, 250) || null, // Limit message to 250 chars
         projectId,
         role,
         invitedById,
@@ -100,6 +107,24 @@ const sendInvitation = async (req, res) => {
       },
     });
 
+    // Send email notification (non-blocking)
+    if (EMAIL_ENABLED) {
+      sendInvitationEmail(invitation, invitation.project, invitation.invitedBy)
+        .then((result) => {
+          if (!result.success) {
+            logWarn('Failed to send invitation email', { 
+              invitationId: invitation.id, 
+              error: result.error 
+            });
+          }
+        })
+        .catch((err) => {
+          logError('Exception sending invitation email', err, { 
+            invitationId: invitation.id 
+          });
+        });
+    }
+
     res.status(201).json({
       success: true,
       data: invitation,
@@ -109,7 +134,8 @@ const sendInvitation = async (req, res) => {
       invitationId: invitation.id, 
       email: normalizedEmail, 
       projectId,
-      invitedBy: invitedById 
+      invitedBy: invitedById,
+      emailSent: EMAIL_ENABLED
     });
   } catch (error) {
     logError('Error sending invitation', error, { projectId, email });
@@ -306,6 +332,22 @@ const acceptInvitation = async (req, res) => {
         message: `You have joined ${invitation.project.name} as ${invitation.role}`,
       });
       
+      // Send email notification to inviter (non-blocking)
+      if (EMAIL_ENABLED && invitation.invitedById) {
+        const inviter = await prisma.user.findUnique({
+          where: { id: invitation.invitedById },
+        });
+        
+        if (inviter) {
+          sendInvitationAcceptedEmail(invitation, invitation.project, inviter, req.user)
+            .catch((err) => {
+              logError('Exception sending invitation accepted email', err, { 
+                invitationId 
+              });
+            });
+        }
+      }
+      
       logInfo('Invitation accepted', { 
         invitationId, 
         projectId: invitation.projectId, 
@@ -375,6 +417,22 @@ const declineInvitation = async (req, res) => {
       success: true,
       message: `You have declined the invitation to join ${invitation.project.name}`,
     });
+    
+    // Send email notification to inviter (non-blocking)
+    if (EMAIL_ENABLED && invitation.invitedById) {
+      const inviter = await prisma.user.findUnique({
+        where: { id: invitation.invitedById },
+      });
+      
+      if (inviter) {
+        sendInvitationDeclinedEmail(invitation, invitation.project, inviter)
+          .catch((err) => {
+            logError('Exception sending invitation declined email', err, { 
+              invitationId 
+            });
+          });
+      }
+    }
     
     logInfo('Invitation declined', { invitationId, projectId: invitation.projectId });
   } catch (error) {
@@ -515,6 +573,112 @@ const getInvitationPreview = async (req, res) => {
   }
 };
 
+/**
+ * Resend an invitation (reset expiration and send new email)
+ * Only OWNER, ADMIN, or the original inviter can resend
+ */
+const resendInvitation = async (req, res) => {
+  try {
+    const { projectId, invitationId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.projectMember?.role;
+
+    const invitation = await prisma.invitation.findUnique({
+      where: { id: invitationId },
+      include: {
+        project: {
+          select: { id: true, name: true, key: true },
+        },
+        invitedBy: {
+          select: { id: true, username: true, email: true },
+        },
+      },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({
+        success: false,
+        message: "Invitation not found",
+      });
+    }
+
+    if (invitation.projectId !== projectId) {
+      return res.status(400).json({
+        success: false,
+        message: "Invitation does not belong to this project",
+      });
+    }
+
+    if (invitation.status !== "PENDING") {
+      return res.status(400).json({
+        success: false,
+        message: "Can only resend pending invitations",
+      });
+    }
+
+    // Authorization check: must be OWNER, ADMIN, or the original inviter
+    const isOwner = userRole === "OWNER";
+    const isAdmin = userRole === "ADMIN";
+    const isInviter = invitation.invitedById === userId;
+
+    if (!isOwner && !isAdmin && !isInviter) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only resend invitations you sent, or you must be a project owner/admin",
+      });
+    }
+
+    // Reset expiration date
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + INVITATION_EXPIRY_DAYS);
+
+    const updatedInvitation = await prisma.invitation.update({
+      where: { id: invitationId },
+      data: { expiresAt },
+      include: {
+        project: {
+          select: { id: true, name: true, key: true },
+        },
+        invitedBy: {
+          select: { id: true, username: true, email: true },
+        },
+      },
+    });
+
+    // Send email notification (non-blocking)
+    if (EMAIL_ENABLED) {
+      sendInvitationEmail(updatedInvitation, updatedInvitation.project, updatedInvitation.invitedBy)
+        .then((result) => {
+          if (!result.success) {
+            logWarn('Failed to resend invitation email', { 
+              invitationId, 
+              error: result.error 
+            });
+          }
+        })
+        .catch((err) => {
+          logError('Exception resending invitation email', err, { 
+            invitationId 
+          });
+        });
+    }
+
+    res.json({
+      success: true,
+      data: updatedInvitation,
+      message: "Invitation resent successfully",
+    });
+    
+    logInfo('Invitation resent', { invitationId, projectId, resentBy: userId });
+  } catch (error) {
+    logError('Error resending invitation', error, { projectId, invitationId });
+    res.status(500).json({
+      success: false,
+      message: "Failed to resend invitation",
+    });
+  }
+};
+
 module.exports = {
   sendInvitation,
   getProjectInvitations,
@@ -524,4 +688,5 @@ module.exports = {
   declineInvitation,
   cancelInvitation,
   getInvitationPreview,
+  resendInvitation,
 };

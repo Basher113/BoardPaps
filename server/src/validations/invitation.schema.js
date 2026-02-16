@@ -3,7 +3,8 @@ const { z } = require("zod");
 /**
  * Transform email to lowercase and trim whitespace
  */
-const emailTransform = z.email("Invalid email address")
+const emailTransform = z.string()
+  .email("Invalid email address")
   .transform((val) => val.toLowerCase().trim());
 
 const invitationSchema = z.object({
@@ -11,21 +12,10 @@ const invitationSchema = z.object({
   role: z.enum(["ADMIN", "MEMBER"], {
     errorMap: () => ({ message: "Role must be ADMIN or MEMBER" }),
   }),
+  message: z.string()
+    .max(250, "Message must be 250 characters or less")
+    .optional()
+    .transform((val) => val?.trim() || undefined),
 });
 
-/**
- * Schema for bulk invitations
- * Limited to 5 invitations per request for security
- */
-const bulkInvitationSchema = z.object({
-  invitations: z.array(
-    z.object({
-      email: emailTransform,
-      role: z.enum(["ADMIN", "MEMBER"], {
-        errorMap: () => ({ message: "Role must be ADMIN or MEMBER" }),
-      }),
-    })
-  ).min(1, "At least one invitation is required").max(5, "Maximum 5 invitations per request"),
-});
-
-module.exports = { invitationSchema, bulkInvitationSchema };
+module.exports = { invitationSchema };
