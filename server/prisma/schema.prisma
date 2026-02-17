@@ -45,6 +45,28 @@ enum InvitationStatus {
   EXPIRED
 }
 
+enum AuditAction {
+  // Project actions
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_DELETED
+  PROJECT_ARCHIVED
+  PROJECT_RESTORED
+  OWNERSHIP_TRANSFERRED
+  
+  // Member actions
+  MEMBER_ROLE_CHANGED
+  MEMBER_REMOVED
+  MEMBER_LEFT
+  
+  // Invitation actions
+  INVITATION_CREATED
+  INVITATION_ACCEPTED
+  INVITATION_DECLINED
+  INVITATION_CANCELLED
+  INVITATION_RESENT
+}
+
 /////////////////////////
 // MODELS
 /////////////////////////
@@ -77,21 +99,26 @@ model User {
 
   // Invitations sent by this user
   invitationsSent Invitation[] @relation("InvitedByUser")
+  
+  // Audit logs created by this user
+  auditLogs AuditLog[]
 }
 
 
 model Project {
-  id        String   @id @default(uuid())
-  name      String
-  key       String   @unique // e.g. "PROJ"
-  ownerId   String
+  id          String   @id @default(uuid())
+  name        String
+  key         String   @unique // e.g. "PROJ"
+  description String?  // Optional project description
+  ownerId     String
+  isArchived  Boolean  @default(false) // Soft delete for archiving
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   lastVisitedAt DateTime @default(now())
 
   // Owner relation
-  owner     User            @relation("ProjectOwner", fields: [ownerId], references: [id])
+  owner       User            @relation("ProjectOwner", fields: [ownerId], references: [id])
 
   // Members of this project
   members   ProjectMember[]
@@ -104,6 +131,9 @@ model Project {
 
   // Invitations for this project
   invitations Invitation[]
+  
+  // Audit logs for this project
+  auditLogs AuditLog[]
 }
 
 model ProjectMember {
@@ -149,7 +179,7 @@ model Issue {
   assigneeId  String?
 
   createdAt   DateTime      @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 
   project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   column      Column        @relation(fields: [columnId], references: [id], onDelete: Cascade)
@@ -182,4 +212,25 @@ model Invitation {
   @@index([email])
   @@index([projectId])
   @@index([token])
+}
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  action      AuditAction
+  userId      String
+  projectId   String?
+  targetType  String      // PROJECT, PROJECT_MEMBER, INVITATION, etc.
+  targetId    String?
+  metadata    Json?       // Additional context-specific data
+  
+  createdAt   DateTime    @default(now())
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id])
+  project     Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([action])
+  @@index([createdAt])
 }

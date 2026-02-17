@@ -1,4 +1,6 @@
 const prisma = require("../lib/prisma");
+const { logInfo, logError } = require("../lib/logger");
+const { auditLog, AUDIT_ACTIONS } = require("../services/audit.service");
 
 
 const getProjectMembers = async (req, res) => {
@@ -18,6 +20,7 @@ const getProjectMembers = async (req, res) => {
 
     if (!requester) {
       return res.status(403).json({
+        success: false,
         message: "Forbidden",
       });
     }
@@ -39,36 +42,19 @@ const getProjectMembers = async (req, res) => {
       },
     });
 
-    res.json(members);
+    res.json({ success: true, data: members });
   } catch (error) {
-    console.error(error);
+    logError("Get project members error", error);
     res.status(500).json({
+      success: false,
       message: "Failed to fetch project members",
     });
   }
 };
 
-const addProjectMember = async (req, res) => {
-  try {
-    const { userId, projectId, role } = req.body;
-    const member = await prisma.projectMember.create({
-      data: { userId, projectId, role },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            avatar: true,
-          }
-        }
-      }
-    });
-    res.status(201).json(member);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-}
+// NOTE: addProjectMember has been removed.
+// All member additions must go through the invitation system for security,
+// audit trail, and proper email notifications.
 
 const updateMemberRole = async (req, res) => {
   try {
@@ -84,11 +70,17 @@ const updateMemberRole = async (req, res) => {
     });
 
     if (!currentUserMembership || currentUserMembership.role !== "OWNER") {
-      return res.status(403).json({ message: "Only the project owner can change member roles" });
+      return res.status(403).json({ 
+        success: false, 
+        message: "Only the project owner can change member roles" 
+      });
     }
 
     if (!["OWNER", "ADMIN", "MEMBER"].includes(role)) {
-      return res.status(400).json({ message: "Invalid role" });
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid role. Must be OWNER, ADMIN, or MEMBER" 
+      });
     }
 
     // Prevent changing own role
@@ -97,12 +89,20 @@ const updateMemberRole = async (req, res) => {
     });
 
     if (!targetMember) {
-      return res.status(404).json({ message: "Member not found" });
+      return res.status(404).json({ 
+        success: false, 
+        message: "Member not found" 
+      });
     }
 
     if (targetMember.userId === userId) {
-      return res.status(400).json({ message: "You cannot change your own role" });
+      return res.status(400).json({ 
+        success: false, 
+        message: "You cannot change your own role" 
+      });
     }
+
+    const previousRole = targetMember.role;
 
     const updatedMember = await prisma.projectMember.update({
       where: { id: memberId },
@@ -114,10 +114,34 @@ const updateMemberRole = async (req, res) => {
       }
     });
 
-    res.json(updatedMember);
+    // Audit log for role change
+    await auditLog(AUDIT_ACTIONS.MEMBER_ROLE_CHANGED, {
+      userId,
+      projectId,
+      targetType: 'PROJECT_MEMBER',
+      targetId: memberId,
+      metadata: {
+        targetUserId: targetMember.userId,
+        previousRole,
+        newRole: role
+      }
+    });
+
+    logInfo(`Member role changed`, {
+      projectId,
+      memberId,
+      previousRole,
+      newRole: role,
+      changedBy: userId
+    });
+
+    res.json({ success: true, data: updatedMember });
   } catch (error) {
-    console.error("Update Member Role Error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logError("Update member role error", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to update member role" 
+    });
   }
 };
 
@@ -140,7 +164,10 @@ const removeProjectMember = async (req, res) => {
     });
 
     if (!requester) {
-      return res.status(403).json({ message: "You are not a member of this project" });
+      return res.status(403).json({ 
+        success: false, 
+        message: "You are not a member of this project" 
+      });
     }
 
     // Get target member
@@ -149,12 +176,18 @@ const removeProjectMember = async (req, res) => {
     });
 
     if (!targetMember) {
-      return res.status(404).json({ message: "Member not found" });
+      return res.status(404).json({ 
+        success: false, 
+        message: "Member not found" 
+      });
     }
 
     // Cannot remove OWNER
     if (targetMember.role === "OWNER") {
-      return res.status(400).json({ message: "Cannot remove the project owner" });
+      return res.status(400).json({ 
+        success: false, 
+        message: "Cannot remove the project owner" 
+      });
     }
 
     // Check permissions
@@ -167,24 +200,57 @@ const removeProjectMember = async (req, res) => {
     // Admin can remove members or themselves
     // Member can only remove themselves
     if (!isOwner && !isAdmin && !isRemovingSelf) {
-      return res.status(403).json({ message: "You do not have permission to remove this member" });
+      return res.status(403).json({ 
+        success: false, 
+        message: "You do not have permission to remove this member" 
+      });
     }
 
     // Admin cannot remove other admins
     if (isAdmin && isTargetAdmin && !isRemovingSelf) {
-      return res.status(403).json({ message: "Admins cannot remove other admins" });
+      return res.status(403).json({ 
+        success: false, 
+        message: "Admins cannot remove other admins" 
+      });
     }
 
     await prisma.projectMember.delete({
       where: { id: memberId }
     });
 
-    res.json({ message: "Member removed successfully" });
+    // Audit log for member removal
+    const action = isRemovingSelf ? AUDIT_ACTIONS.MEMBER_LEFT : AUDIT_ACTIONS.MEMBER_REMOVED;
+    await auditLog(action, {
+      userId: requesterId,
+      projectId,
+      targetType: 'PROJECT_MEMBER',
+      targetId: memberId,
+      metadata: {
+        removedUserId: targetMember.userId,
+        removedRole: targetMember.role,
+        removedBy: isRemovingSelf ? 'self' : requesterId
+      }
+    });
+
+    logInfo(`Member ${isRemovingSelf ? 'left' : 'removed from'} project`, {
+      projectId,
+      memberId,
+      removedUserId: targetMember.userId,
+      removedBy: isRemovingSelf ? 'self' : requesterId
+    });
+
+    res.json({ 
+      success: true, 
+      message: "Member removed successfully" 
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
+    logError("Remove project member error", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to remove member from project" 
+    });
   }
-}
+};
 
 
-module.exports = {getProjectMembers, addProjectMember, updateMemberRole, removeProjectMember}
+module.exports = { getProjectMembers, updateMemberRole, removeProjectMember }

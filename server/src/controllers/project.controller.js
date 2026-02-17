@@ -1,14 +1,25 @@
 const prisma = require("../lib/prisma");
+const { logInfo, logError } = require("../lib/logger");
+const { auditLog, getProjectAuditLogs: fetchProjectAuditLogs, AUDIT_ACTIONS } = require("../services/audit.service");
+const {
+  successResponse,
+  createdResponse,
+  errorResponse,
+  notFoundResponse,
+  forbiddenResponse,
+  paginatedResponse
+} = require("../utils/apiResponse");
 
 const createProject = async (req, res) => {
   try {
-    const { name, key } = req.body;
+    const { name, key, description } = req.body;
     const ownerId = req.user.id;
 
     const project = await prisma.project.create({
       data: {
         name,
         key,
+        description: description || null,
         ownerId,
         members: {
           create: { userId: ownerId, role: "OWNER" },
@@ -28,10 +39,21 @@ const createProject = async (req, res) => {
       }
     });
 
-    res.status(201).json(project);
+    // Audit log for project creation
+    await auditLog(AUDIT_ACTIONS.PROJECT_CREATED, {
+      userId: ownerId,
+      projectId: project.id,
+      targetType: 'PROJECT',
+      targetId: project.id,
+      metadata: { name, key }
+    });
+
+    logInfo(`Project created: ${key}`, { projectId: project.id, ownerId });
+
+    return createdResponse(res, project, 'Project created successfully');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to create project" });
+    logError("Create project error", error);
+    return errorResponse(res, "Failed to create project");
   }
 };
 
@@ -41,6 +63,7 @@ const getMyProjects = async (req, res) => {
 
     const projects = await prisma.project.findMany({
       where: {
+        isArchived: false, // Exclude archived projects by default
         OR: [
           { ownerId: userId },
           { members: { some: { userId } } },
@@ -77,10 +100,10 @@ const getMyProjects = async (req, res) => {
       };
     });
 
-    res.json(projectsWithRole);
+    return successResponse(res, projectsWithRole, 'Projects fetched successfully');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to fetch projects" });
+    logError("Get my projects error", error);
+    return errorResponse(res, "Failed to fetch projects");
   }
 };
 
@@ -124,22 +147,13 @@ const getProject = async (req, res) => {
     });
 
     if (!project) {
-      return res.status(404).json({
-        success: false,
-        error: 'Project not found'
-      });
+      return notFoundResponse(res, 'Project');
     }
 
-    return res.status(200).json({
-      success: true,
-      data: project
-    });
+    return successResponse(res, project, 'Project fetched successfully');
   } catch (error) {
-    console.error('Error fetching project:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to fetch project'
-    });
+    logError('Error fetching project', error);
+    return errorResponse(res, 'Failed to fetch project');
   }
 };
 
@@ -157,7 +171,7 @@ const getProjectSettings = async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({ message: "You are not a member of this project" });
+      return forbiddenResponse(res, "You are not a member of this project");
     }
 
     const project = await prisma.project.findUnique({
@@ -192,13 +206,13 @@ const getProjectSettings = async (req, res) => {
     });
 
     if (!project) {
-      return res.status(404).json({ message: "Project not found" });
+      return notFoundResponse(res, 'Project');
     }
 
-    res.json(project);
+    return successResponse(res, project, 'Project settings fetched successfully');
   } catch (error) {
-    console.error("Get Project Settings Error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logError("Get project settings error", error);
+    return errorResponse(res, "Failed to fetch project settings");
   }
 };
 
@@ -217,16 +231,16 @@ const updateProject = async (req, res) => {
     });
 
     if (!membership || (membership.role !== "OWNER" && membership.role !== "ADMIN")) {
-      return res.status(403).json({ message: "You do not have permission to update this project" });
-    }
-
-    if (!name || !key) {
-      return res.status(400).json({ message: "Name and key are required" });
+      return forbiddenResponse(res, "You do not have permission to update this project");
     }
 
     const project = await prisma.project.update({
       where: { id: projectId },
-      data: { name, key: key.toUpperCase(), description },
+      data: { 
+        name, 
+        key: key?.toUpperCase(), 
+        description: description || null 
+      },
       include: {
         owner: {
           select: { id: true, username: true, email: true }
@@ -234,10 +248,21 @@ const updateProject = async (req, res) => {
       }
     });
 
-    res.json(project);
+    // Audit log for project update
+    await auditLog(AUDIT_ACTIONS.PROJECT_UPDATED, {
+      userId,
+      projectId,
+      targetType: 'PROJECT',
+      targetId: projectId,
+      metadata: { name, key, description }
+    });
+
+    logInfo(`Project updated: ${key}`, { projectId, userId });
+
+    return successResponse(res, project, 'Project updated successfully');
   } catch (error) {
-    console.error("Update Project Error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logError("Update project error", error);
+    return errorResponse(res, "Failed to update project");
   }
 };
 
@@ -256,11 +281,11 @@ const updateMemberRole = async (req, res) => {
     });
 
     if (!currentUserMembership || currentUserMembership.role !== "OWNER") {
-      return res.status(403).json({ message: "Only the project owner can change member roles" });
+      return forbiddenResponse(res, "Only the project owner can change member roles");
     }
 
     if (!["OWNER", "ADMIN", "MEMBER"].includes(role)) {
-      return res.status(400).json({ message: "Invalid role" });
+      return errorResponse(res, "Invalid role. Must be OWNER, ADMIN, or MEMBER", 400);
     }
 
     // Prevent changing own role
@@ -269,12 +294,14 @@ const updateMemberRole = async (req, res) => {
     });
 
     if (!targetMember) {
-      return res.status(404).json({ message: "Member not found" });
+      return notFoundResponse(res, 'Member');
     }
 
     if (targetMember.userId === userId) {
-      return res.status(400).json({ message: "You cannot change your own role" });
+      return errorResponse(res, "You cannot change your own role", 400);
     }
+
+    const previousRole = targetMember.role;
 
     const updatedMember = await prisma.projectMember.update({
       where: { id: memberId },
@@ -286,10 +313,31 @@ const updateMemberRole = async (req, res) => {
       }
     });
 
-    res.json(updatedMember);
+    // Audit log for role change
+    await auditLog(AUDIT_ACTIONS.MEMBER_ROLE_CHANGED, {
+      userId,
+      projectId,
+      targetType: 'PROJECT_MEMBER',
+      targetId: memberId,
+      metadata: {
+        targetUserId: targetMember.userId,
+        previousRole,
+        newRole: role
+      }
+    });
+
+    logInfo(`Member role changed in project`, { 
+      projectId, 
+      memberId, 
+      previousRole, 
+      newRole: role, 
+      changedBy: userId 
+    });
+
+    return successResponse(res, updatedMember, 'Member role updated successfully');
   } catch (error) {
-    console.error("Update Member Role Error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logError("Update member role error", error);
+    return errorResponse(res, "Failed to update member role");
   }
 };
 
@@ -306,7 +354,7 @@ const removeMember = async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({ message: "You are not a member of this project" });
+      return forbiddenResponse(res, "You are not a member of this project");
     }
 
     const targetMember = await prisma.projectMember.findUnique({
@@ -314,12 +362,12 @@ const removeMember = async (req, res) => {
     });
 
     if (!targetMember) {
-      return res.status(404).json({ message: "Member not found" });
+      return notFoundResponse(res, 'Member');
     }
 
     // Cannot remove OWNER
     if (targetMember.role === "OWNER") {
-      return res.status(400).json({ message: "Cannot remove the project owner" });
+      return errorResponse(res, "Cannot remove the project owner", 400);
     }
 
     // Check permissions
@@ -332,22 +380,43 @@ const removeMember = async (req, res) => {
     // Admin can remove members or themselves
     // Member can only remove themselves
     if (!isOwner && !isAdmin && !isRemovingSelf) {
-      return res.status(403).json({ message: "You do not have permission to remove this member" });
+      return forbiddenResponse(res, "You do not have permission to remove this member");
     }
 
     // Admin cannot remove other admins
     if (isAdmin && isTargetAdmin && !isRemovingSelf) {
-      return res.status(403).json({ message: "Admins cannot remove other admins" });
+      return forbiddenResponse(res, "Admins cannot remove other admins");
     }
 
     await prisma.projectMember.delete({
       where: { id: memberId }
     });
 
-    res.json({ message: "Member removed successfully" });
+    // Audit log for member removal
+    const action = isRemovingSelf ? AUDIT_ACTIONS.MEMBER_LEFT : AUDIT_ACTIONS.MEMBER_REMOVED;
+    await auditLog(action, {
+      userId,
+      projectId,
+      targetType: 'PROJECT_MEMBER',
+      targetId: memberId,
+      metadata: {
+        removedUserId: targetMember.userId,
+        removedRole: targetMember.role,
+        removedBy: isRemovingSelf ? 'self' : userId
+      }
+    });
+
+    logInfo(`Member ${isRemovingSelf ? 'left' : 'removed from'} project`, {
+      projectId,
+      memberId,
+      removedUserId: targetMember.userId,
+      removedBy: isRemovingSelf ? 'self' : userId
+    });
+
+    return successResponse(res, null, "Member removed successfully");
   } catch (error) {
-    console.error("Remove Member Error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logError("Remove member error", error);
+    return errorResponse(res, "Failed to remove member");
   }
 };
 
@@ -366,7 +435,7 @@ const transferOwnership = async (req, res) => {
     });
 
     if (!membership || membership.role !== "OWNER") {
-      return res.status(403).json({ message: "Only the project owner can transfer ownership" });
+      return forbiddenResponse(res, "Only the project owner can transfer ownership");
     }
 
     // Check if new owner is a member of the project
@@ -377,7 +446,7 @@ const transferOwnership = async (req, res) => {
     });
 
     if (!newOwnerMembership) {
-      return res.status(400).json({ message: "New owner must be a project member" });
+      return errorResponse(res, "New owner must be a project member", 400);
     }
 
     // Use transaction to update both memberships
@@ -396,10 +465,28 @@ const transferOwnership = async (req, res) => {
       })
     ]);
 
-    res.json({ message: "Project ownership transferred successfully" });
+    // Audit log for ownership transfer
+    await auditLog(AUDIT_ACTIONS.OWNERSHIP_TRANSFERRED, {
+      userId,
+      projectId,
+      targetType: 'PROJECT',
+      targetId: projectId,
+      metadata: {
+        previousOwnerId: userId,
+        newOwnerId
+      }
+    });
+
+    logInfo(`Project ownership transferred`, {
+      projectId,
+      previousOwner: userId,
+      newOwner: newOwnerId
+    });
+
+    return successResponse(res, null, "Project ownership transferred successfully");
   } catch (error) {
-    console.error("Transfer Ownership Error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logError("Transfer ownership error", error);
+    return errorResponse(res, "Failed to transfer ownership");
   }
 };
 
@@ -411,25 +498,36 @@ const deleteProject = async (req, res) => {
     // Check if user is OWNER
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      select: { ownerId: true }
+      select: { ownerId: true, key: true, name: true }
     });
 
     if (!project) {
-      return res.status(404).json({ message: "Project not found" });
+      return notFoundResponse(res, 'Project');
     }
 
     if (project.ownerId !== userId) {
-      return res.status(403).json({ message: "Only the project owner can delete this project" });
+      return forbiddenResponse(res, "Only the project owner can delete this project");
     }
 
     await prisma.project.delete({
       where: { id: projectId }
     });
 
-    res.json({ message: "Project deleted successfully" });
+    // Audit log for project deletion
+    await auditLog(AUDIT_ACTIONS.PROJECT_DELETED, {
+      userId,
+      projectId,
+      targetType: 'PROJECT',
+      targetId: projectId,
+      metadata: { key: project.key, name: project.name }
+    });
+
+    logInfo(`Project deleted: ${project.key}`, { projectId, userId });
+
+    return successResponse(res, null, "Project deleted successfully");
   } catch (error) {
-    console.error("Delete Project Error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logError("Delete project error", error);
+    return errorResponse(res, "Failed to delete project");
   }
 };
 
@@ -442,10 +540,178 @@ const visitProject = async (req, res) => {
       data: { lastVisitedAt: new Date() }
     });
 
-    res.json({ success: true });
+    return successResponse(res, null, 'Last visited updated');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to update last visited" });
+    logError("Visit project error", error);
+    return errorResponse(res, "Failed to update last visited");
+  }
+};
+
+// Archive a project (soft delete)
+const archiveProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.user.id;
+
+    // Check if user is OWNER or ADMIN
+    const membership = await prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: { userId, projectId }
+      }
+    });
+
+    if (!membership || (membership.role !== "OWNER" && membership.role !== "ADMIN")) {
+      return forbiddenResponse(res, "You do not have permission to archive this project");
+    }
+
+    const project = await prisma.project.update({
+      where: { id: projectId },
+      data: { isArchived: true }
+    });
+
+    // Audit log for project archiving
+    await auditLog(AUDIT_ACTIONS.PROJECT_ARCHIVED, {
+      userId,
+      projectId,
+      targetType: 'PROJECT',
+      targetId: projectId,
+      metadata: { key: project.key, name: project.name }
+    });
+
+    logInfo(`Project archived: ${project.key}`, { projectId, userId });
+
+    return successResponse(res, project, "Project archived successfully");
+  } catch (error) {
+    logError("Archive project error", error);
+    return errorResponse(res, "Failed to archive project");
+  }
+};
+
+// Restore an archived project
+const restoreProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.user.id;
+
+    // Check if user is OWNER or ADMIN
+    const membership = await prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: { userId, projectId }
+      }
+    });
+
+    if (!membership || (membership.role !== "OWNER" && membership.role !== "ADMIN")) {
+      return forbiddenResponse(res, "You do not have permission to restore this project");
+    }
+
+    const project = await prisma.project.update({
+      where: { id: projectId },
+      data: { isArchived: false }
+    });
+
+    // Audit log for project restoration
+    await auditLog(AUDIT_ACTIONS.PROJECT_RESTORED, {
+      userId,
+      projectId,
+      targetType: 'PROJECT',
+      targetId: projectId,
+      metadata: { key: project.key, name: project.name }
+    });
+
+    logInfo(`Project restored: ${project.key}`, { projectId, userId });
+
+    return successResponse(res, project, "Project restored successfully");
+  } catch (error) {
+    logError("Restore project error", error);
+    return errorResponse(res, "Failed to restore project");
+  }
+};
+
+// Get archived projects for the current user
+const getArchivedProjects = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const projects = await prisma.project.findMany({
+      where: {
+        isArchived: true,
+        OR: [
+          { ownerId: userId },
+          { members: { some: { userId } } },
+        ],
+      },
+      include: {
+        owner: {
+          select: { id: true, username: true, avatar: true }
+        },
+        members: {
+          include: {
+            user: {
+              select: { id: true, username: true, avatar: true }
+            }
+          }
+        },
+        _count: {
+          select: {
+            columns: true,
+            issues: true
+          }
+        }
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    // Add user's role to each project
+    const projectsWithRole = projects.map(project => {
+      const isOwner = project.ownerId === userId;
+      const membership = project.members.find(m => m.userId === userId);
+      return {
+        ...project,
+        userRole: isOwner ? 'OWNER' : membership?.role === 'MEMBER' ? 'MEMBER' : 'ADMIN'
+      };
+    });
+
+    return successResponse(res, projectsWithRole, 'Archived projects fetched successfully');
+  } catch (error) {
+    logError("Get archived projects error", error);
+    return errorResponse(res, "Failed to fetch archived projects");
+  }
+};
+
+// Get audit logs for a project
+const getProjectAuditLogs = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { limit = 50, offset = 0, action, userId } = req.query;
+    const currentUserId = req.user.id;
+
+    // Check if user is a member of the project
+    const membership = await prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: { userId: currentUserId, projectId }
+      }
+    });
+
+    if (!membership) {
+      return forbiddenResponse(res, "You are not a member of this project");
+    }
+
+    // Only OWNER and ADMIN can view audit logs
+    if (membership.role !== "OWNER" && membership.role !== "ADMIN") {
+      return forbiddenResponse(res, "Only project owners and admins can view audit logs");
+    }
+
+    const { logs, total } = await fetchProjectAuditLogs(projectId, {
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      action,
+      userId
+    });
+
+    return paginatedResponse(res, logs, parseInt(offset) / parseInt(limit) + 1, parseInt(limit), total, 'Audit logs fetched successfully');
+  } catch (error) {
+    logError("Get project audit logs error", error);
+    return errorResponse(res, "Failed to fetch audit logs");
   }
 };
 
@@ -459,5 +725,9 @@ module.exports = {
   getProjectSettings,
   updateMemberRole,
   removeMember,
-  transferOwnership
+  transferOwnership,
+  archiveProject,
+  restoreProject,
+  getArchivedProjects,
+  getProjectAuditLogs
 };

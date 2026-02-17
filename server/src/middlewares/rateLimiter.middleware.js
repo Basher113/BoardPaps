@@ -47,6 +47,48 @@ const invitationActionLimiter = rateLimit({
 });
 
 /**
+ * Rate limiter for project creation
+ * Limits the number of projects a user can create per hour
+ */
+const projectCreateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: parseInt(process.env.PROJECT_CREATE_RATE_LIMIT || '10'),
+  message: {
+    success: false,
+    message: 'Too many projects created. Please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    if (req.user?.id) {
+      return `user_${req.user.id}`;
+    }
+    return ipKeyGenerator(req.ip);
+  },
+});
+
+/**
+ * Rate limiter for project actions (update/delete)
+ * Limits the number of project modifications per hour
+ */
+const projectActionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: parseInt(process.env.PROJECT_ACTION_RATE_LIMIT || '30'),
+  message: {
+    success: false,
+    message: 'Too many actions. Please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    if (req.user?.id) {
+      return `user_${req.user.id}`;
+    }
+    return ipKeyGenerator(req.ip);
+  },
+});
+
+/**
  * General API rate limiter
  * Applied globally to all routes
  * Increased limit for kanban board usage (drag/drop operations)
@@ -73,5 +115,7 @@ const globalApiLimiter = rateLimit({
 module.exports = {
   invitationLimiter,
   invitationActionLimiter,
+  projectCreateLimiter,
+  projectActionLimiter,
   globalApiLimiter,
 };
