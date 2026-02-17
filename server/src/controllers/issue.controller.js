@@ -1,5 +1,6 @@
 const prisma = require("../lib/prisma");
 const { generateBetween, needsRebalance, rebalanceRanks } = require("../utils/lexorank.utils");
+const { auditLog, AUDIT_ACTIONS } = require("../services/audit.service");
 
 /**
  * Get all issues for a project
@@ -169,6 +170,21 @@ const createIssue = async (req, res) => {
       }
     });
 
+    // Audit log for issue creation
+    await auditLog(AUDIT_ACTIONS.ISSUE_CREATED, {
+      userId,
+      projectId,
+      targetType: 'ISSUE',
+      targetId: issue.id,
+      metadata: {
+        issueTitle: issue.title,
+        issueType: issue.type,
+        issuePriority: issue.priority,
+        columnId,
+        assigneeId: assigneeId || null
+      }
+    });
+
     return res.status(201).json({
       success: true,
       data: issue
@@ -262,9 +278,16 @@ const updateIssue = async (req, res) => {
       });
     }
 
-    // Check if user is the assignee or reporter (can edit)
+    // Check user's role in the project for authorization
     const userId = req.user.id;
-    const canEdit = existingIssue.assigneeId === userId || existingIssue.reporterId === userId;
+    const userMembership = existingIssue.project.members.find(m => m.userId === userId);
+    const isOwner = existingIssue.project.ownerId === userId;
+    const isAdmin = userMembership?.role === 'ADMIN';
+    const isAssignee = existingIssue.assigneeId === userId;
+    const isReporter = existingIssue.reporterId === userId;
+    
+    // Authorization: Owner/Admin can edit any issue, others can only edit their own assigned/reported issues
+    const canEdit = isOwner || isAdmin || isAssignee || isReporter;
     
     if (!canEdit) {
       return res.status(403).json({
@@ -321,6 +344,30 @@ const updateIssue = async (req, res) => {
       }
     });
 
+    // Audit log for issue update - only for significant changes
+    const significantFields = ['priority', 'assigneeId', 'type'];
+    const hasSignificantChanges = significantFields.some(field => 
+      updateData[field] !== undefined && updateData[field] !== existingIssue[field]
+    );
+    
+    if (hasSignificantChanges) {
+      await auditLog(AUDIT_ACTIONS.ISSUE_UPDATED, {
+        userId,
+        projectId: existingIssue.projectId,
+        targetType: 'ISSUE',
+        targetId: issueId,
+        metadata: {
+          issueTitle: issue.title,
+          changes: Object.keys(updateData).filter(f => significantFields.includes(f)),
+          previousValues: {
+            priority: existingIssue.priority,
+            assigneeId: existingIssue.assigneeId,
+            type: existingIssue.type
+          }
+        }
+      });
+    }
+
     return res.status(200).json({
       success: true,
       data: issue
@@ -342,10 +389,17 @@ const moveIssue = async (req, res) => {
   try {
     const { issueId } = req.params;
     const { columnId, newPosition } = req.body;
-    console.log("Move")
-    // Check if issue exists
+    
+    // Check if issue exists and get project info for authorization
     const issue = await prisma.issue.findUnique({
-      where: { id: issueId }
+      where: { id: issueId },
+      include: {
+        project: {
+          include: {
+            members: true
+          }
+        }
+      }
     });
 
     if (!issue) {
@@ -355,14 +409,21 @@ const moveIssue = async (req, res) => {
       });
     }
 
-    // Check if user is the assignee (can only move if assigned)
+    // Check user's role in the project for authorization
     const userId = req.user.id;
-    const canMove = issue.assigneeId === userId;
+    const userMembership = issue.project.members.find(m => m.userId === userId);
+    const isOwner = issue.project.ownerId === userId;
+    const isAdmin = userMembership?.role === 'ADMIN';
+    const isAssignee = issue.assigneeId === userId;
+    const isReporter = issue.reporterId === userId;
+    
+    // Authorization: Owner/Admin can move any issue, others can only move their own assigned/reported issues
+    const canMove = isOwner || isAdmin || isAssignee || isReporter;
     
     if (!canMove) {
       return res.status(403).json({
         success: false,
-        error: 'Only the assignee can move this issue'
+        error: 'You do not have permission to move this issue'
       });
     }
 
@@ -501,9 +562,16 @@ const deleteIssue = async (req, res) => {
   try {
     const { issueId } = req.params;
 
-    // Check if issue exists
+    // Check if issue exists and get project info for authorization
     const issue = await prisma.issue.findUnique({
-      where: { id: issueId }
+      where: { id: issueId },
+      include: {
+        project: {
+          include: {
+            members: true
+          }
+        }
+      }
     });
 
     if (!issue) {
@@ -513,9 +581,16 @@ const deleteIssue = async (req, res) => {
       });
     }
 
-    // Check if user is the assignee or reporter (can delete)
+    // Check user's role in the project for authorization
     const userId = req.user.id;
-    const canDelete = issue.assigneeId === userId || issue.reporterId === userId;
+    const userMembership = issue.project.members.find(m => m.userId === userId);
+    const isOwner = issue.project.ownerId === userId;
+    const isAdmin = userMembership?.role === 'ADMIN';
+    const isAssignee = issue.assigneeId === userId;
+    const isReporter = issue.reporterId === userId;
+    
+    // Authorization: Owner/Admin can delete any issue, others can only delete their own assigned/reported issues
+    const canDelete = isOwner || isAdmin || isAssignee || isReporter;
     
     if (!canDelete) {
       return res.status(403).json({
@@ -529,6 +604,20 @@ const deleteIssue = async (req, res) => {
       await tx.issue.delete({
         where: { id: issueId }
       });
+    });
+
+    // Audit log for issue deletion
+    await auditLog(AUDIT_ACTIONS.ISSUE_DELETED, {
+      userId,
+      projectId: issue.projectId,
+      targetType: 'ISSUE',
+      targetId: issueId,
+      metadata: {
+        issueTitle: issue.title,
+        issueType: issue.type,
+        issuePriority: issue.priority,
+        columnId: issue.columnId
+      }
     });
 
     return res.status(200).json({

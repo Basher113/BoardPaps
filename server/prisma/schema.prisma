@@ -63,6 +63,16 @@ enum AuditAction {
   INVITATION_DECLINED
   INVITATION_CANCELLED
   INVITATION_RESENT
+  
+  // Issue actions
+  ISSUE_CREATED
+  ISSUE_UPDATED
+  ISSUE_DELETED
+  
+  // Column actions
+  COLUMN_CREATED
+  COLUMN_UPDATED
+  COLUMN_DELETED
 }
 
 /////////////////////////
