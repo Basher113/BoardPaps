@@ -55,10 +55,10 @@ const Sidebar = ({ activeView, setActiveView, currentUser }) => {
   const dispatch = useDispatch();
   
   
-  const { data: projects = [], isLoading: projectsLoading } = useGetMyProjectsQuery();
+  const { data: projectsData, isLoading: projectsLoading } = useGetMyProjectsQuery();
   const { data: invitationsCountData } = useGetMyInvitationsCountQuery();
   const { signOut } = useClerk();
-  
+  const projects = projectsData?.data || [];
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'settings', icon: Settings, label: 'Settings' },

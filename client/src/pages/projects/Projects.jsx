@@ -78,10 +78,11 @@ const Projects = () => {
   
   const [newProject, setNewProject] = useState({ name: "", key: "", description: "" });
 
-  const { data: projects = [], isLoading } = useGetMyProjectsQuery();
+  const { data: projectsData, isLoading } = useGetMyProjectsQuery();
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
 
   // Filter projects by search
+  const projects = projectsData?.data || [];
   const filteredProjects = projects.filter(project => 
     project.name.toLowerCase().includes(searchQuery.toLowerCase())
   );

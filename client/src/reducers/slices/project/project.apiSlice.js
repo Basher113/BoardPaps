@@ -245,6 +245,21 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       },
       invalidatesTags: ["Project"],
     }),
+    // Audit Logs
+    getProjectAuditLogs: builder.query({
+      query: ({ projectId, limit = 50, offset = 0, action, userId }) => {
+        const params = new URLSearchParams();
+        params.append('limit', limit);
+        params.append('offset', offset);
+        if (action) params.append('action', action);
+        if (userId) params.append('userId', userId);
+        
+        return `projects/${projectId}/audit-logs?${params.toString()}`;
+      },
+      providesTags: (result, error, { projectId }) => [
+        { type: 'AuditLog', id: projectId }
+      ],
+    }),
   }),
 });
 
@@ -263,4 +278,5 @@ export const {
   useMoveIssueMutation,
   useUpdateIssueMutation,
   useDeleteIssueMutation,
+  useGetProjectAuditLogsQuery,
 } = projectApiSlice;

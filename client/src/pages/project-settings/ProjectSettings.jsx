@@ -22,6 +22,7 @@ import GeneralSettings from './components/general/GeneralSettings';
 import MembersList from './components/members/MembersList';
 import InvitationsList from './components/invitations/InvitationsList';
 import DangerZone from './components/danger-zone/DangerZone';
+import ActivityList from './components/activity/ActivityList';
 
 const ProjectSettings = () => {
   const { projectId } = useParams();
@@ -40,16 +41,8 @@ const ProjectSettings = () => {
   const currentUserId = currentUserData?.id;
 
   // Queries
-  const { data: project, isLoading: projectLoading, refetch: refetchProject } = useGetProjectSettingsQuery(projectId);
-
-  // Determine if user is owner
-  const isOwner = project?.owner?.id === currentUserId || 
-    project?.members?.some(m => m.user.id === currentUserId && m.role === 'OWNER');
+  const { data: projectData, isLoading: projectLoading, refetch: refetchProject } = useGetProjectSettingsQuery(projectId);
   
-  // Determine if user can manage settings
-  const canManageSettings = project?.members?.some(m => 
-    m.user.id === currentUserId && (m.role === 'OWNER' || m.role === 'ADMIN')
-  );
 
   if (projectLoading) {
     return (
@@ -64,6 +57,16 @@ const ProjectSettings = () => {
       </SettingsContainer>
     );
   }
+
+  const project = projectData.data;
+  // Determine if user is owner
+  const isOwner = project?.owner?.id === currentUserId || 
+    project?.members?.some(m => m.user.id === currentUserId && m.role === 'OWNER');
+  
+  // Determine if user can manage settings
+  const canManageSettings = project?.members?.some(m => 
+    m.user.id === currentUserId && (m.role === 'OWNER' || m.role === 'ADMIN')
+  );
 
   if (!project) {
     return (
@@ -93,6 +96,11 @@ const ProjectSettings = () => {
         <Tab $active={activeTab === 'invitations'} onClick={() => setActiveTab('invitations')}>
           Invitations ({project.invitations?.length || 0})
         </Tab>
+        {canManageSettings && (
+          <Tab $active={activeTab === 'activity'} onClick={() => setActiveTab('activity')}>
+            Activity
+          </Tab>
+        )}
         {isOwner && (
           <Tab $active={activeTab === 'danger'} onClick={() => setActiveTab('danger')}>
             Danger Zone
@@ -121,6 +129,13 @@ const ProjectSettings = () => {
         {activeTab === 'invitations' && (
           <InvitationsList
             project={project}
+          />
+        )}
+
+        {activeTab === 'activity' && canManageSettings && (
+          <ActivityList
+            projectId={project.id}
+            members={project.members}
           />
         )}
 

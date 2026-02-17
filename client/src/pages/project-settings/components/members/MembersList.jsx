@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   Section,
@@ -23,8 +24,10 @@ import UserAvatar from '../../../../components/ui/user-avatar/UserAvatar';
 import { useUpdateMemberRoleMutation, useRemoveMemberMutation } from '../../../../reducers/slices/project/project.apiSlice';
 
 const MembersList = ({ project, currentUserId, canManageSettings, refetchProject }) => {
+  const navigate = useNavigate();
   const [selectedMember, setSelectedMember] = useState(null);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const [updateMemberRole, { isLoading: roleLoading }] = useUpdateMemberRoleMutation();
   const [removeMember, { isLoading: removeLoading }] = useRemoveMemberMutation();
@@ -67,12 +70,46 @@ const MembersList = ({ project, currentUserId, canManageSettings, refetchProject
     setShowRemoveModal(true);
   };
 
+  // Find current user's membership
+  const currentMember = project.members?.find(m => m.user.id === currentUserId);
+  const isOwner = currentMember?.role === 'OWNER';
+
+  // Handle leave project
+  const handleLeaveProject = async () => {
+    if (!currentMember) return;
+
+    try {
+      await removeMember({ 
+        projectId: project.id, 
+        memberId: currentMember.id 
+      }).unwrap();
+      toast.success('You have left the project successfully');
+      setShowLeaveModal(false);
+      // Navigate to dashboard after leaving
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Failed to leave project:', err);
+      toast.error(err.data?.message || 'Failed to leave project');
+    }
+  };
+
   return (
     <>
       <Section>
-        <SectionHeader>
-          <SectionTitle>Team Members</SectionTitle>
-          <SectionDescription>Manage project members and their roles</SectionDescription>
+        <SectionHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <SectionTitle>Team Members</SectionTitle>
+            <SectionDescription>Manage project members and their roles</SectionDescription>
+          </div>
+          {!isOwner && (
+            <ActionButton
+              variant="destructive"
+              onClick={() => setShowLeaveModal(true)}
+              style={{ marginTop: '0.25rem' }}
+            >
+              Leave Project
+            </ActionButton>
+          )}
         </SectionHeader>
         <SectionContent>
           <Table>
@@ -142,6 +179,19 @@ const MembersList = ({ project, currentUserId, canManageSettings, refetchProject
         title="Remove Member"
         message={`Are you sure you want to remove ${selectedMember?.user?.username} from this project?`}
         confirmText="Remove"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={removeLoading}
+      />
+
+      {/* Leave Project Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLeaveModal}
+        onClose={() => setShowLeaveModal(false)}
+        onConfirm={handleLeaveProject}
+        title="Leave Project"
+        message="Are you sure you want to leave this project? You will lose access to all project resources."
+        confirmText="Leave Project"
         cancelText="Cancel"
         variant="danger"
         isLoading={removeLoading}
