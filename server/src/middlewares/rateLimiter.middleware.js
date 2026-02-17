@@ -112,10 +112,111 @@ const globalApiLimiter = rateLimit({
   },
 });
 
+/**
+ * Rate limiter for issue creation
+ * Limits the number of issues a user can create per hour
+ */
+const issueCreateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: parseInt(process.env.ISSUE_CREATE_RATE_LIMIT || '50'),
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'Too many issues created. Please try again later.'
+    }
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    if (req.user?.id) {
+      return `user_${req.user.id}`;
+    }
+    return ipKeyGenerator(req.ip);
+  },
+});
+
+/**
+ * Rate limiter for issue updates
+ * Limits the number of issue content updates (title, description, type, priority, assignee) per hour
+ * Note: For drag/drop operations, see issueMoveLimiter
+ */
+const issueUpdateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: parseInt(process.env.ISSUE_UPDATE_RATE_LIMIT || '100'),
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'Too many updates. Please try again later.'
+    }
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    if (req.user?.id) {
+      return `user_${req.user.id}`;
+    }
+    return ipKeyGenerator(req.ip);
+  },
+});
+
+/**
+ * Rate limiter for issue move operations
+ * Higher limit for kanban board drag/drop operations
+ */
+const issueMoveLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: parseInt(process.env.ISSUE_MOVE_RATE_LIMIT || '200'),
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'Too many move operations. Please try again later.'
+    }
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    if (req.user?.id) {
+      return `user_${req.user.id}`;
+    }
+    return ipKeyGenerator(req.ip);
+  },
+});
+
+/**
+ * Rate limiter for issue deletion
+ * Lower limit for destructive operations
+ */
+const issueDeleteLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: parseInt(process.env.ISSUE_DELETE_RATE_LIMIT || '20'),
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'Too many delete operations. Please try again later.'
+    }
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    if (req.user?.id) {
+      return `user_${req.user.id}`;
+    }
+    return ipKeyGenerator(req.ip);
+  },
+});
+
 module.exports = {
   invitationLimiter,
   invitationActionLimiter,
   projectCreateLimiter,
   projectActionLimiter,
   globalApiLimiter,
+  issueCreateLimiter,
+  issueUpdateLimiter,
+  issueMoveLimiter,
+  issueDeleteLimiter,
 };

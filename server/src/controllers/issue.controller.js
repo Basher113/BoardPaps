@@ -1,15 +1,50 @@
 const prisma = require("../lib/prisma");
 const { generateBetween, needsRebalance, rebalanceRanks } = require("../utils/lexorank.utils");
 const { auditLog, AUDIT_ACTIONS } = require("../services/audit.service");
+const { logError, logInfo } = require("../lib/logger");
 
 /**
- * Get all issues for a project
+ * Error codes for issue operations
+ */
+const ERROR_CODES = {
+  ISSUE_NOT_FOUND: 'ISSUE_NOT_FOUND',
+  COLUMN_NOT_FOUND: 'COLUMN_NOT_FOUND',
+  INVALID_COLUMN: 'INVALID_COLUMN',
+  INVALID_ASSIGNEE: 'INVALID_ASSIGNEE',
+  INVALID_POSITION: 'INVALID_POSITION',
+  DATABASE_ERROR: 'DATABASE_ERROR'
+};
+
+/**
+ * Standard error response helper
+ * @param {string} code - Error code
+ * @param {string} message - Human readable message
+ * @param {number} status - HTTP status code
+ */
+const errorResponse = (code, message, status = 400) => ({
+  success: false,
+  error: { code, message }
+});
+
+/**
+ * Select fields for user relations (consistent across all queries)
+ */
+const userSelect = {
+  id: true,
+  email: true,
+  username: true,
+  avatar: true
+};
+
+/**
+ * Get all issues for a project with pagination and filtering
  * @route GET /api/projects/:projectId/issues
  */
 const getIssues = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { columnId, assigneeId, reporterId, type, priority } = req.query;
+    const { columnId, assigneeId, reporterId, type, priority, page, limit, sortBy, sortOrder } = req.query;
+    const userId = req.user.id;
 
     // Build filter
     const where = { projectId };
@@ -19,35 +54,59 @@ const getIssues = async (req, res) => {
     if (type) where.type = type;
     if (priority) where.priority = priority;
 
-    const issues = await prisma.issue.findMany({
-      where,
-      include: {
-        reporter: {
-          select: { id: true, email: true, username: true }
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Get total count and issues in parallel
+    const [issues, total] = await Promise.all([
+      prisma.issue.findMany({
+        where,
+        include: {
+          reporter: { select: userSelect },
+          assignee: { select: userSelect },
+          column: {
+            select: { id: true, name: true, position: true }
+          }
         },
-        assignee: {
-          select: { id: true, email: true, username: true }
-        },
-        column: {
-          select: { id: true, name: true, position: true }
-        }
-      },
-      orderBy: [
-        { columnId: 'asc' },
-        { position: 'asc' }
-      ]
+        orderBy: [
+          { columnId: 'asc' },
+          { position: 'asc' }
+        ],
+        skip,
+        take: limit
+      }),
+      prisma.issue.count({ where })
+    ]);
+
+    logInfo('Issues fetched successfully', {
+      projectId,
+      userId,
+      count: issues.length,
+      total,
+      page,
+      limit
     });
 
     return res.status(200).json({
       success: true,
-      data: issues
+      data: issues,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
     });
   } catch (error) {
-    console.error('Error fetching issues:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to fetch issues'
+    logError('Error fetching issues', error, {
+      projectId: req.params.projectId,
+      userId: req.user?.id
     });
+    return res.status(500).json(errorResponse(
+      ERROR_CODES.DATABASE_ERROR,
+      'Failed to fetch issues',
+      500
+    ));
   }
 };
 
@@ -59,25 +118,27 @@ const getIssue = async (req, res) => {
   try {
     const { issueId } = req.params;
 
-    const issue = await prisma.issue.findUnique({
+    // Issue is already attached by authorization middleware
+    const issue = req.issue || await prisma.issue.findUnique({
       where: { id: issueId },
       include: {
-        project: true,
-        column: true,
-        reporter: {
-          select: { id: true, email: true, username: true }
+        project: {
+          select: { id: true, name: true, key: true, ownerId: true }
         },
-        assignee: {
-          select: { id: true, email: true, username: true }
-        }
+        column: {
+          select: { id: true, name: true, position: true }
+        },
+        reporter: { select: userSelect },
+        assignee: { select: userSelect }
       }
     });
 
     if (!issue) {
-      return res.status(404).json({
-        success: false,
-        error: 'Issue not found'
-      });
+      return res.status(404).json(errorResponse(
+        ERROR_CODES.ISSUE_NOT_FOUND,
+        'Issue not found',
+        404
+      ));
     }
 
     return res.status(200).json({
@@ -85,11 +146,15 @@ const getIssue = async (req, res) => {
       data: issue
     });
   } catch (error) {
-    console.error('Error fetching issue:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to fetch issue'
+    logError('Error fetching issue', error, {
+      issueId: req.params.issueId,
+      userId: req.user?.id
     });
+    return res.status(500).json(errorResponse(
+      ERROR_CODES.DATABASE_ERROR,
+      'Failed to fetch issue',
+      500
+    ));
   }
 };
 
@@ -100,74 +165,74 @@ const getIssue = async (req, res) => {
 const createIssue = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { title, description, type, priority, columnId, assigneeId, } = req.body;
+    const { title, description, type, priority, columnId, assigneeId } = req.body;
     const userId = req.user.id;
 
-    // Verify column belongs to the project
-    const column = await prisma.column.findUnique({
-      where: { id: columnId },
-      include: {
-        issues: true
-      }
-    });
-
-
-    if (!column || column.projectId !== projectId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid column for this project'
-      });
-    }
-
-    // If assigneeId provided, verify they're a member
-    if (assigneeId) {
-      const project = await prisma.project.findUnique({
-        where: { id: projectId },
+    // Use transaction for data consistency
+    const issue = await prisma.$transaction(async (tx) => {
+      // Verify column belongs to the project and get existing issues
+      const column = await tx.column.findUnique({
+        where: { id: columnId },
         include: {
-          members: true
+          issues: {
+            select: { position: true },
+            orderBy: { position: 'asc' }
+          }
         }
       });
 
-      const isMember = project.ownerId === assigneeId ||
-        project.members.some(member => member.userId === assigneeId);
-
-      if (!isMember) {
-        return res.status(400).json({
-          success: false,
-          error: 'Assignee must be a project member'
-        });
+      if (!column || column.projectId !== projectId) {
+        throw new Error(ERROR_CODES.INVALID_COLUMN);
       }
-    }
 
-    // Calculate new rank using lexorank
-    const existingRanks = column.issues
-      .map(i => i.position)
-      .sort((a, b) => a.localeCompare(b));
+      // If assigneeId provided, verify they're a member
+      if (assigneeId) {
+        const [project, member] = await Promise.all([
+          tx.project.findUnique({
+            where: { id: projectId },
+            select: { ownerId: true }
+          }),
+          tx.projectMember.findUnique({
+            where: {
+              userId_projectId: { userId: assigneeId, projectId }
+            }
+          })
+        ]);
 
-    const prevRank = existingRanks.length > 0 ? existingRanks[existingRanks.length - 1] : null;
-    const newRank = generateBetween(prevRank, null);
-
-    const issue = await prisma.issue.create({
-      data: {
-        title: title.trim(),
-        description: description?.trim() || null,
-        type,
-        priority,
-        position: newRank,
-        projectId,
-        columnId,
-        reporterId: userId,
-        assigneeId: assigneeId || null
-      },
-      include: {
-        reporter: {
-          select: { id: true, email: true, username: true, }
-        },
-        assignee: {
-          select: { id: true, email: true, username: true }
-        },
-        column: true
+        const isMember = project.ownerId === assigneeId || !!member;
+        if (!isMember) {
+          throw new Error(ERROR_CODES.INVALID_ASSIGNEE);
+        }
       }
+
+      // Calculate new rank using lexorank
+      const existingRanks = column.issues.map(i => i.position);
+      const prevRank = existingRanks.length > 0 
+        ? existingRanks[existingRanks.length - 1] 
+        : null;
+      const newRank = generateBetween(prevRank, null);
+
+      // Create the issue
+      return tx.issue.create({
+        data: {
+          title: title.trim(),
+          description: description?.trim() || null,
+          type,
+          priority,
+          position: newRank,
+          projectId,
+          columnId,
+          reporterId: userId,
+          assigneeId: assigneeId || null
+        },
+        include: {
+          reporter: { select: userSelect },
+          assignee: { select: userSelect },
+          column: {
+            select: { id: true, name: true, position: true }
+          }
+        }
+      });
     });
 
     // Audit log for issue creation
@@ -185,18 +250,41 @@ const createIssue = async (req, res) => {
       }
     });
 
+    logInfo('Issue created successfully', {
+      issueId: issue.id,
+      projectId,
+      userId,
+      title: issue.title
+    });
+
     return res.status(201).json({
       success: true,
       data: issue
     });
-
   } catch (error) {
-    console.error('Error creating issue:', error);
+    // Handle known errors
+    if (error.message === ERROR_CODES.INVALID_COLUMN) {
+      return res.status(400).json(errorResponse(
+        ERROR_CODES.INVALID_COLUMN,
+        'Invalid column for this project'
+      ));
+    }
+    if (error.message === ERROR_CODES.INVALID_ASSIGNEE) {
+      return res.status(400).json(errorResponse(
+        ERROR_CODES.INVALID_ASSIGNEE,
+        'Assignee must be a project member'
+      ));
+    }
 
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to create issue'
+    logError('Error creating issue', error, {
+      projectId: req.params.projectId,
+      userId: req.user?.id
     });
+    return res.status(500).json(errorResponse(
+      ERROR_CODES.DATABASE_ERROR,
+      'Failed to create issue',
+      500
+    ));
   }
 };
 
@@ -208,107 +296,42 @@ const updateIssue = async (req, res) => {
   try {
     const { issueId } = req.params;
     const { title, description, type, priority, assigneeId, columnId } = req.body;
-
-    // Build update data
-    const updateData = {};
-
-    // VALIDATIONs CHANGE THIS TO ZOD LATER
-    if (title !== undefined) {
-      if (!title || typeof title !== 'string' || title.trim().length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'Title cannot be empty'
-        });
-      }
-      if (title.trim().length > 200) {
-        return res.status(400).json({
-          success: false,
-          error: 'Title must be 200 characters or less'
-        });
-      }
-      updateData.title = title.trim();
-    }
-
-    if (description !== undefined) {
-      if (description && description.length > 5000) {
-        return res.status(400).json({
-          success: false,
-          error: 'Description must be 5000 characters or less'
-        });
-      }
-      updateData.description = description?.trim() || null;
-    }
-
-    if (type !== undefined) {
-      if (!['TASK', 'BUG', 'STORY', 'EPIC'].includes(type)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid issue type'
-        });
-      }
-      updateData.type = type;
-    }
-
-    if (priority !== undefined) {
-      if (!['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(priority)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid priority'
-        });
-      }
-      updateData.priority = priority;
-    }
-
-    // Check if issue exists
-    const existingIssue = await prisma.issue.findUnique({
-      where: { id: issueId },
-      include: {
-        project: {
-          include: {
-            members: true
-          }
-        }
-      }
-    });
-
-    if (!existingIssue) {
-      return res.status(404).json({
-        success: false,
-        error: 'Issue not found'
-      });
-    }
-
-    // Check user's role in the project for authorization
     const userId = req.user.id;
-    const userMembership = existingIssue.project.members.find(m => m.userId === userId);
-    const isOwner = existingIssue.project.ownerId === userId;
-    const isAdmin = userMembership?.role === 'ADMIN';
-    const isAssignee = existingIssue.assigneeId === userId;
-    const isReporter = existingIssue.reporterId === userId;
-    
-    // Authorization: Owner/Admin can edit any issue, others can only edit their own assigned/reported issues
-    const canEdit = isOwner || isAdmin || isAssignee || isReporter;
-    
-    if (!canEdit) {
-      return res.status(403).json({
-        success: false,
-        error: 'You do not have permission to edit this issue'
-      });
-    }
 
-    // Handle assignee update // CAN CHANGE THIS TO MIDDLEWARE INSTEAD
+    // Issue is already attached by authorization middleware
+    const existingIssue = req.issue;
+
+    // Build update data (validation already done by Zod schema)
+    const updateData = {};
+    if (title !== undefined) updateData.title = title.trim();
+    if (description !== undefined) updateData.description = description?.trim() || null;
+    if (type !== undefined) updateData.type = type;
+    if (priority !== undefined) updateData.priority = priority;
+
+    // Handle assignee update
     if (assigneeId !== undefined) {
       if (assigneeId === null) {
         updateData.assigneeId = null;
       } else {
-        const isMember = existingIssue.project.ownerId === assigneeId ||
-          existingIssue.project.members.some(member => member.userId === assigneeId);
+        // Verify assignee is a project member
+        const [project, member] = await Promise.all([
+          prisma.project.findUnique({
+            where: { id: existingIssue.projectId },
+            select: { ownerId: true }
+          }),
+          prisma.projectMember.findUnique({
+            where: {
+              userId_projectId: { userId: assigneeId, projectId: existingIssue.projectId }
+            }
+          })
+        ]);
 
+        const isMember = project.ownerId === assigneeId || !!member;
         if (!isMember) {
-          return res.status(400).json({
-            success: false,
-            error: 'Assignee must be a project member'
-          });
+          return res.status(400).json(errorResponse(
+            ERROR_CODES.INVALID_ASSIGNEE,
+            'Assignee must be a project member'
+          ));
         }
         updateData.assigneeId = assigneeId;
       }
@@ -321,10 +344,10 @@ const updateIssue = async (req, res) => {
       });
 
       if (!newColumn || newColumn.projectId !== existingIssue.projectId) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid column for this project'
-        });
+        return res.status(400).json(errorResponse(
+          ERROR_CODES.INVALID_COLUMN,
+          'Invalid column for this project'
+        ));
       }
 
       updateData.columnId = columnId;
@@ -334,22 +357,20 @@ const updateIssue = async (req, res) => {
       where: { id: issueId },
       data: updateData,
       include: {
-        reporter: {
-          select: { id: true, email: true, username: true }
-        },
-        assignee: {
-          select: { id: true, email: true, username: true }
-        },
-        column: true
+        reporter: { select: userSelect },
+        assignee: { select: userSelect },
+        column: {
+          select: { id: true, name: true, position: true }
+        }
       }
     });
 
     // Audit log for issue update - only for significant changes
     const significantFields = ['priority', 'assigneeId', 'type'];
-    const hasSignificantChanges = significantFields.some(field => 
+    const hasSignificantChanges = significantFields.some(field =>
       updateData[field] !== undefined && updateData[field] !== existingIssue[field]
     );
-    
+
     if (hasSignificantChanges) {
       await auditLog(AUDIT_ACTIONS.ISSUE_UPDATED, {
         userId,
@@ -368,16 +389,27 @@ const updateIssue = async (req, res) => {
       });
     }
 
+    logInfo('Issue updated successfully', {
+      issueId,
+      projectId: existingIssue.projectId,
+      userId,
+      changes: Object.keys(updateData)
+    });
+
     return res.status(200).json({
       success: true,
       data: issue
     });
   } catch (error) {
-    console.error('Error updating issue:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to update issue'
+    logError('Error updating issue', error, {
+      issueId: req.params.issueId,
+      userId: req.user?.id
     });
+    return res.status(500).json(errorResponse(
+      ERROR_CODES.DATABASE_ERROR,
+      'Failed to update issue',
+      500
+    ));
   }
 };
 
@@ -389,43 +421,10 @@ const moveIssue = async (req, res) => {
   try {
     const { issueId } = req.params;
     const { columnId, newPosition } = req.body;
-    
-    // Check if issue exists and get project info for authorization
-    const issue = await prisma.issue.findUnique({
-      where: { id: issueId },
-      include: {
-        project: {
-          include: {
-            members: true
-          }
-        }
-      }
-    });
-
-    if (!issue) {
-      return res.status(404).json({
-        success: false,
-        error: 'Issue not found'
-      });
-    }
-
-    // Check user's role in the project for authorization
     const userId = req.user.id;
-    const userMembership = issue.project.members.find(m => m.userId === userId);
-    const isOwner = issue.project.ownerId === userId;
-    const isAdmin = userMembership?.role === 'ADMIN';
-    const isAssignee = issue.assigneeId === userId;
-    const isReporter = issue.reporterId === userId;
-    
-    // Authorization: Owner/Admin can move any issue, others can only move their own assigned/reported issues
-    const canMove = isOwner || isAdmin || isAssignee || isReporter;
-    
-    if (!canMove) {
-      return res.status(403).json({
-        success: false,
-        error: 'You do not have permission to move this issue'
-      });
-    }
+
+    // Issue is already attached by authorization middleware
+    const issue = req.issue;
 
     // Verify new column belongs to the same project
     const newColumn = await prisma.column.findUnique({
@@ -436,10 +435,10 @@ const moveIssue = async (req, res) => {
     });
 
     if (!newColumn || newColumn.projectId !== issue.projectId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid column for this project'
-      });
+      return res.status(400).json(errorResponse(
+        ERROR_CODES.INVALID_COLUMN,
+        'Invalid column for this project'
+      ));
     }
 
     const oldColumnId = issue.columnId;
@@ -448,14 +447,14 @@ const moveIssue = async (req, res) => {
 
     // Validate new position
     const maxPosition = isSameColumn
-    ? await prisma.issue.count({ where: { columnId } }) - 1
-    : await prisma.issue.count({ where: { columnId } });
+      ? await prisma.issue.count({ where: { columnId } }) - 1
+      : await prisma.issue.count({ where: { columnId } });
 
     if (newPosition > maxPosition) {
-      return res.status(400).json({
-        success: false,
-        error: `Position must be between 0 and ${maxPosition}`
-      });
+      return res.status(400).json(errorResponse(
+        ERROR_CODES.INVALID_POSITION,
+        `Position must be between 0 and ${maxPosition}`
+      ));
     }
 
     // If nothing changes, return early
@@ -531,14 +530,21 @@ const moveIssue = async (req, res) => {
     const updatedIssue = await prisma.issue.findUnique({
       where: { id: issueId },
       include: {
-        reporter: {
-          select: { id: true, email: true, username: true }
-        },
-        assignee: {
-          select: { id: true, email: true, username: true }
-        },
-        column: true
+        reporter: { select: userSelect },
+        assignee: { select: userSelect },
+        column: {
+          select: { id: true, name: true, position: true }
+        }
       }
+    });
+
+    logInfo('Issue moved successfully', {
+      issueId,
+      projectId: issue.projectId,
+      userId,
+      fromColumn: oldColumnId,
+      toColumn: columnId,
+      newPosition
     });
 
     return res.status(200).json({
@@ -546,11 +552,15 @@ const moveIssue = async (req, res) => {
       data: updatedIssue
     });
   } catch (error) {
-    console.error('Error moving issue:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to move issue'
+    logError('Error moving issue', error, {
+      issueId: req.params.issueId,
+      userId: req.user?.id
     });
+    return res.status(500).json(errorResponse(
+      ERROR_CODES.DATABASE_ERROR,
+      'Failed to move issue',
+      500
+    ));
   }
 };
 
@@ -561,43 +571,10 @@ const moveIssue = async (req, res) => {
 const deleteIssue = async (req, res) => {
   try {
     const { issueId } = req.params;
-
-    // Check if issue exists and get project info for authorization
-    const issue = await prisma.issue.findUnique({
-      where: { id: issueId },
-      include: {
-        project: {
-          include: {
-            members: true
-          }
-        }
-      }
-    });
-
-    if (!issue) {
-      return res.status(404).json({
-        success: false,
-        error: 'Issue not found'
-      });
-    }
-
-    // Check user's role in the project for authorization
     const userId = req.user.id;
-    const userMembership = issue.project.members.find(m => m.userId === userId);
-    const isOwner = issue.project.ownerId === userId;
-    const isAdmin = userMembership?.role === 'ADMIN';
-    const isAssignee = issue.assigneeId === userId;
-    const isReporter = issue.reporterId === userId;
-    
-    // Authorization: Owner/Admin can delete any issue, others can only delete their own assigned/reported issues
-    const canDelete = isOwner || isAdmin || isAssignee || isReporter;
-    
-    if (!canDelete) {
-      return res.status(403).json({
-        success: false,
-        error: 'You do not have permission to delete this issue'
-      });
-    }
+
+    // Issue is already attached by authorization middleware
+    const issue = req.issue;
 
     // Delete issue (no position adjustment needed with lexorank)
     await prisma.$transaction(async (tx) => {
@@ -620,16 +597,27 @@ const deleteIssue = async (req, res) => {
       }
     });
 
+    logInfo('Issue deleted successfully', {
+      issueId,
+      projectId: issue.projectId,
+      userId,
+      title: issue.title
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Issue deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting issue:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to delete issue'
+    logError('Error deleting issue', error, {
+      issueId: req.params.issueId,
+      userId: req.user?.id
     });
+    return res.status(500).json(errorResponse(
+      ERROR_CODES.DATABASE_ERROR,
+      'Failed to delete issue',
+      500
+    ));
   }
 };
 
@@ -639,5 +627,6 @@ module.exports = {
   createIssue,
   updateIssue,
   moveIssue,
-  deleteIssue
+  deleteIssue,
+  ERROR_CODES
 };

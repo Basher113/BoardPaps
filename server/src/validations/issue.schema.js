@@ -1,5 +1,7 @@
 const { z } = require('zod');
 
+// ==================== ENUMS ====================
+
 const issueTypeEnum = z.enum(['TASK', 'BUG', 'STORY', 'EPIC'], {
   errorMap: () => ({ message: 'Valid issue type is required (TASK, BUG, STORY, EPIC)' })
 });
@@ -8,78 +10,158 @@ const issuePriorityEnum = z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'], {
   errorMap: () => ({ message: 'Valid priority is required (LOW, MEDIUM, HIGH, CRITICAL)' })
 });
 
-const createIssueSchema = z.object({
- 
-    title: z.string()
-      .trim()
-      .min(1, 'Issue title is required')
-      .max(200, 'Title must be 200 characters or less'),
-    description: z.string()
-      .trim()
-      .max(5000, 'Description must be 5000 characters or less')
-      .optional()
-      .nullable()
-      .transform(val => val === '' ? null : val), // Empty string becomes null
-    type: issueTypeEnum,
-    priority: issuePriorityEnum,
-    columnId: z.string()
-      .min(1, 'Column ID is required'),
-    assigneeId: z.string()
-      .optional()
-      .nullable(),
-    position: z.number()
-      .int('Position must be an integer')
-      .nonnegative('Position must be a non-negative integer')
-      .optional()
-  
+// ==================== PARAMS SCHEMAS ====================
+
+/**
+ * Schema for validating route parameters with projectId
+ */
+const projectIssuesParamsSchema = z.object({
+  projectId: z.uuid('Invalid project ID format'),
 });
 
-const updateIssueSchema = z.object({
- 
+/**
+ * Schema for validating route parameters with projectId and issueId
+ */
+const issueParamsSchema = z.object({
+  projectId: z.uuid('Invalid project ID format'),
+  issueId: z.uuid('Invalid issue ID format'),
+});
+
+// ==================== BODY SCHEMAS ====================
+
+/**
+ * Schema for creating a new issue
+ */
+const createIssueSchema = z.object({
   title: z.string()
     .trim()
-    .min(1, 'Title cannot be empty')
-    .max(200, 'Title must be 200 characters or less')
-    .optional(),
+    .min(1, 'Issue title is required')
+    .max(200, 'Title must be 200 characters or less'),
+  
   description: z.string()
     .trim()
     .max(5000, 'Description must be 5000 characters or less')
     .optional()
     .nullable()
     .transform(val => val === '' ? null : val),
-  type: issueTypeEnum.optional(),
-  priority: issuePriorityEnum.optional(),
+  
+  type: issueTypeEnum,
+  
+  priority: issuePriorityEnum,
+  
+  columnId: z.uuid('Invalid column ID format'),
+  
   assigneeId: z.string()
+    .uuid('Invalid assignee ID format')
     .optional()
-    .nullable()
-
+    .nullable(),
+  
+  position: z.number()
+    .int('Position must be an integer')
+    .nonnegative('Position must be a non-negative integer')
+    .optional()
 });
 
+/**
+ * Schema for updating an existing issue
+ */
+const updateIssueSchema = z.object({
+  title: z.string()
+    .trim()
+    .min(1, 'Title cannot be empty')
+    .max(200, 'Title must be 200 characters or less')
+    .optional(),
+  
+  description: z.string()
+    .trim()
+    .max(5000, 'Description must be 5000 characters or less')
+    .optional()
+    .nullable()
+    .transform(val => val === '' ? null : val),
+  
+  type: issueTypeEnum.optional(),
+  
+  priority: issuePriorityEnum.optional(),
+  
+  assigneeId: z.uuid('Invalid assignee ID format')
+    .optional()
+    .nullable(),
+  
+  columnId: z.string()
+    .uuid('Invalid column ID format')
+    .optional()
+});
+
+/**
+ * Schema for moving an issue to a different column or position
+ */
 const moveIssueSchema = z.object({
+  columnId: z.uuid('Invalid column ID format'),
   
-    columnId: z.string()
-      .min(1, 'Column ID is required'),
-    newPosition: z.number()
-      .int('Position must be an integer')
-      .nonnegative('Position must be a non-negative integer')
-  
+  newPosition: z.number()
+    .int('Position must be an integer')
+    .nonnegative('Position must be a non-negative integer')
 });
 
 // ==================== QUERY SCHEMAS ====================
 
+/**
+ * Schema for querying issues with filters and pagination
+ */
 const getIssuesQuerySchema = z.object({
-
-  columnId: z.string().optional(),
-  assigneeId: z.string().optional(),
-  reporterId: z.string().optional(),
+  // Filters
+  columnId: z.string()
+    .uuid('Invalid column ID format')
+    .optional(),
+  
+  assigneeId: z.string()
+    .uuid('Invalid assignee ID format')
+    .optional(),
+  
+  reporterId: z.string()
+    .uuid('Invalid reporter ID format')
+    .optional(),
+  
   type: issueTypeEnum.optional(),
-  priority: issuePriorityEnum.optional()
-
+  
+  priority: issuePriorityEnum.optional(),
+  
+  // Pagination
+  page: z.coerce
+    .number()
+    .int('Page must be an integer')
+    .min(1, 'Page must be at least 1')
+    .default(1),
+  
+  limit: z.coerce
+    .number()
+    .int('Limit must be an integer')
+    .min(1, 'Limit must be at least 1')
+    .max(100, 'Limit cannot exceed 100')
+    .default(50),
+  
+  // Sorting
+  sortBy: z.enum(['createdAt', 'updatedAt', 'priority', 'type'])
+    .default('createdAt'),
+  
+  sortOrder: z.enum(['asc', 'desc'])
+    .default('desc')
 });
 
 module.exports = {
+  // Enums
+  issueTypeEnum,
+  issuePriorityEnum,
+  
+  // Params schemas
+  projectIssuesParamsSchema,
+  issueParamsSchema,
+  
+  // Body schemas
   createIssueSchema,
   updateIssueSchema,
   moveIssueSchema,
+  
+  // Query schemas
   getIssuesQuerySchema
-}
+};
