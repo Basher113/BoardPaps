@@ -63,7 +63,6 @@ const getMyProjects = async (req, res) => {
 
     const projects = await prisma.project.findMany({
       where: {
-        isArchived: false, // Exclude archived projects by default
         OR: [
           { ownerId: userId },
           { members: { some: { userId } } },
@@ -99,7 +98,7 @@ const getMyProjects = async (req, res) => {
         userRole: isOwner ? 'OWNER' : membership?.role === 'MEMBER' ? 'MEMBER' : 'ADMIN'
       };
     });
-
+    logInfo("Get my projects info", projects);
     return successResponse(res, projectsWithRole, 'Projects fetched successfully');
   } catch (error) {
     logError("Get my projects error", error);
@@ -547,137 +546,6 @@ const visitProject = async (req, res) => {
   }
 };
 
-// Archive a project (soft delete)
-const archiveProject = async (req, res) => {
-  try {
-    const { projectId } = req.params;
-    const userId = req.user.id;
-
-    // Check if user is OWNER or ADMIN
-    const membership = await prisma.projectMember.findUnique({
-      where: {
-        userId_projectId: { userId, projectId }
-      }
-    });
-
-    if (!membership || (membership.role !== "OWNER" && membership.role !== "ADMIN")) {
-      return forbiddenResponse(res, "You do not have permission to archive this project");
-    }
-
-    const project = await prisma.project.update({
-      where: { id: projectId },
-      data: { isArchived: true }
-    });
-
-    // Audit log for project archiving
-    await auditLog(AUDIT_ACTIONS.PROJECT_ARCHIVED, {
-      userId,
-      projectId,
-      targetType: 'PROJECT',
-      targetId: projectId,
-      metadata: { key: project.key, name: project.name }
-    });
-
-    logInfo(`Project archived: ${project.key}`, { projectId, userId });
-
-    return successResponse(res, project, "Project archived successfully");
-  } catch (error) {
-    logError("Archive project error", error);
-    return errorResponse(res, "Failed to archive project");
-  }
-};
-
-// Restore an archived project
-const restoreProject = async (req, res) => {
-  try {
-    const { projectId } = req.params;
-    const userId = req.user.id;
-
-    // Check if user is OWNER or ADMIN
-    const membership = await prisma.projectMember.findUnique({
-      where: {
-        userId_projectId: { userId, projectId }
-      }
-    });
-
-    if (!membership || (membership.role !== "OWNER" && membership.role !== "ADMIN")) {
-      return forbiddenResponse(res, "You do not have permission to restore this project");
-    }
-
-    const project = await prisma.project.update({
-      where: { id: projectId },
-      data: { isArchived: false }
-    });
-
-    // Audit log for project restoration
-    await auditLog(AUDIT_ACTIONS.PROJECT_RESTORED, {
-      userId,
-      projectId,
-      targetType: 'PROJECT',
-      targetId: projectId,
-      metadata: { key: project.key, name: project.name }
-    });
-
-    logInfo(`Project restored: ${project.key}`, { projectId, userId });
-
-    return successResponse(res, project, "Project restored successfully");
-  } catch (error) {
-    logError("Restore project error", error);
-    return errorResponse(res, "Failed to restore project");
-  }
-};
-
-// Get archived projects for the current user
-const getArchivedProjects = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const projects = await prisma.project.findMany({
-      where: {
-        isArchived: true,
-        OR: [
-          { ownerId: userId },
-          { members: { some: { userId } } },
-        ],
-      },
-      include: {
-        owner: {
-          select: { id: true, username: true, avatar: true }
-        },
-        members: {
-          include: {
-            user: {
-              select: { id: true, username: true, avatar: true }
-            }
-          }
-        },
-        _count: {
-          select: {
-            columns: true,
-            issues: true
-          }
-        }
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
-
-    // Add user's role to each project
-    const projectsWithRole = projects.map(project => {
-      const isOwner = project.ownerId === userId;
-      const membership = project.members.find(m => m.userId === userId);
-      return {
-        ...project,
-        userRole: isOwner ? 'OWNER' : membership?.role === 'MEMBER' ? 'MEMBER' : 'ADMIN'
-      };
-    });
-
-    return successResponse(res, projectsWithRole, 'Archived projects fetched successfully');
-  } catch (error) {
-    logError("Get archived projects error", error);
-    return errorResponse(res, "Failed to fetch archived projects");
-  }
-};
-
 // Get audit logs for a project
 const getProjectAuditLogs = async (req, res) => {
   try {
@@ -726,8 +594,5 @@ module.exports = {
   updateMemberRole,
   removeMember,
   transferOwnership,
-  archiveProject,
-  restoreProject,
-  getArchivedProjects,
   getProjectAuditLogs
 };

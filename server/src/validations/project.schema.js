@@ -60,15 +60,6 @@ const transferOwnershipSchema = z.object({
 });
 
 /**
- * Schema for archiving/restoring projects
- */
-const archiveProjectSchema = z.object({
-  reason: z.string()
-    .max(200, "Reason must be 200 characters or less")
-    .optional(),
-});
-
-/**
  * Validation middleware factory
  * Creates Express middleware from a Zod schema
  * 
@@ -104,7 +95,6 @@ module.exports = {
   createProjectSchema,
   updateProjectSchema,
   transferOwnershipSchema,
-  archiveProjectSchema,
   projectKeyRegex,
   validate,
 };

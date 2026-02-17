@@ -15,7 +15,6 @@ const projectRouter = Router();
 
 // All project routes require authentication
 projectRouter.get("/", requireAuth(), projectController.getMyProjects);
-projectRouter.get("/archived", requireAuth(), projectController.getArchivedProjects);
 projectRouter.post("/", requireAuth(), projectCreateLimiter, validateBody(createProjectSchema), projectController.createProject);
 projectRouter.get("/:projectId", requireAuth(), requireProjectMember,
   projectController.getProject
@@ -28,14 +27,6 @@ projectRouter.put("/:projectId", requireAuth(), requireProjectMember, requirePro
 );
 projectRouter.delete("/:projectId", requireAuth(), requireProjectMember, requireProjectRole(["OWNER"]), projectActionLimiter, 
   projectController.deleteProject
-);
-
-// Archive/Restore endpoints
-projectRouter.post("/:projectId/archive", requireAuth(), requireProjectMember, requireProjectRole(["ADMIN", "OWNER"]), projectActionLimiter,
-  projectController.archiveProject
-);
-projectRouter.post("/:projectId/restore", requireAuth(), requireProjectMember, requireProjectRole(["ADMIN", "OWNER"]), projectActionLimiter,
-  projectController.restoreProject
 );
 
 // Project Settings endpoint

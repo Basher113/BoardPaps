@@ -5,6 +5,7 @@ const {
   sendInvitationAcceptedEmail,
   sendInvitationDeclinedEmail,
 } = require("../services/email.service");
+const { auditLog, AUDIT_ACTIONS } = require("../services/audit.service");
 
 const INVITATION_EXPIRY_DAYS = parseInt(process.env.INVITATION_EXPIRY_DAYS || '6');
 const EMAIL_ENABLED = process.env.RESEND_API_KEY ? true : false;
@@ -128,6 +129,18 @@ const sendInvitation = async (req, res) => {
     res.status(201).json({
       success: true,
       data: invitation,
+    });
+
+    // Audit log for invitation creation
+    await auditLog(AUDIT_ACTIONS.INVITATION_CREATED, {
+      userId: invitedById,
+      projectId,
+      targetType: 'INVITATION',
+      targetId: invitation.id,
+      metadata: {
+        email: normalizedEmail,
+        role,
+      },
     });
     
     logInfo('Invitation sent', { 
@@ -325,6 +338,7 @@ const acceptInvitation = async (req, res) => {
           where: { id: invitationId },
           data: { status: "ACCEPTED" },
         });
+
       });
 
       res.json({
@@ -353,6 +367,18 @@ const acceptInvitation = async (req, res) => {
         projectId: invitation.projectId, 
         userId,
         role: invitation.role 
+      });
+
+      // Audit log for invitation acceptance
+      await auditLog(AUDIT_ACTIONS.INVITATION_ACCEPTED, {
+        userId,
+        projectId: invitation.projectId,
+        targetType: 'INVITATION',
+        targetId: invitationId,
+        metadata: {
+          email: invitation.email,
+          role: invitation.role,
+        },
       });
     } catch (txError) {
       if (txError.message === "ALREADY_MEMBER") {
@@ -435,6 +461,18 @@ const declineInvitation = async (req, res) => {
     }
     
     logInfo('Invitation declined', { invitationId, projectId: invitation.projectId });
+
+    // Audit log for invitation decline
+    await auditLog(AUDIT_ACTIONS.INVITATION_DECLINED, {
+      userId: req.user.id,
+      projectId: invitation.projectId,
+      targetType: 'INVITATION',
+      targetId: invitationId,
+      metadata: {
+        email: invitation.email,
+        role: invitation.role,
+      },
+    });
   } catch (error) {
     logError('Error declining invitation', error, { invitationId });
     res.status(500).json({

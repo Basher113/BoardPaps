@@ -50,8 +50,6 @@ enum AuditAction {
   PROJECT_CREATED
   PROJECT_UPDATED
   PROJECT_DELETED
-  PROJECT_ARCHIVED
-  PROJECT_RESTORED
   OWNERSHIP_TRANSFERRED
   
   // Member actions
@@ -111,7 +109,6 @@ model Project {
   key         String   @unique // e.g. "PROJ"
   description String?  // Optional project description
   ownerId     String
-  isArchived  Boolean  @default(false) // Soft delete for archiving
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
