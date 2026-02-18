@@ -1,3 +1,4 @@
+const { logError } = require("../lib/logger");
 const prisma = require("../lib/prisma");
 const { clerkMiddleware } = require("@clerk/express");
 
@@ -47,7 +48,7 @@ const withUser = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.error("Error in withUser middleware:", error);
+    logError("Error in withUser middleware:", error);
     // Continue even if there's an error - let the controller handle auth
     next();
   }

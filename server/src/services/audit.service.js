@@ -86,7 +86,6 @@ const auditLog = async (action, details) => {
   } catch (error) {
     // Log error but don't throw - audit logging should not break operations
     logError('Audit logging error', error);
-    console.error('Audit logging error:', error);
     return null;
   }
 };

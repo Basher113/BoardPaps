@@ -1,4 +1,5 @@
 const prisma = require("../lib/prisma")
+const { logError, logDebug } = require("../lib/logger")
 
 
 const getBoards = async (req, res)  =>  {
@@ -29,7 +30,7 @@ const getBoards = async (req, res)  =>  {
     });
     
   } catch (error) {
-    console.error('Error fetching boards:', error);
+    logError('Error fetching boards', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch boards'
@@ -90,7 +91,7 @@ const getBoard = async (req, res) => {
       data: board
     });
   } catch (error) {
-    console.error('Error fetching board:', error);
+    logError('Error fetching board', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch board'
@@ -146,7 +147,7 @@ const createBoard = async (req, res) => {
       data: board
     });
   } catch (error) {
-    console.error('Error creating board:', error);
+    logError('Error creating board', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to create board'
@@ -156,7 +157,7 @@ const createBoard = async (req, res) => {
 
 /**
  * Update a board
-*/
+ */
 const updateBoard = async (req, res) => {
   try {
     const { boardId } = req.params;
@@ -205,7 +206,7 @@ const updateBoard = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error updating board:', error);
+    logError('Error updating board', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to update board'
@@ -231,7 +232,7 @@ const deleteBoard = async (req, res) => {
     };
 
 
-    console.log(boardId, "BoardID");
+    logDebug("Deleting board", { boardId });
     
 
     // CASCADE ISSUES AND COLUMN WHEN BOARD IS DELETED // CAN ADD "onDelete: Cascade" on prisma model relations
@@ -253,7 +254,7 @@ const deleteBoard = async (req, res) => {
       message: 'Board deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting board:', error);
+    logError('Error deleting board', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to delete board'
@@ -303,7 +304,7 @@ const getRecentBoard = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching recent board:', error);
+    logError('Error fetching recent board', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch recent board',

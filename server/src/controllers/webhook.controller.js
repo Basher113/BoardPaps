@@ -1,5 +1,6 @@
 const prisma = require("../lib/prisma");
 const { verifyWebhook } = require("@clerk/express");
+const { logInfo, logWarn, logError } = require("../lib/logger");
 
 // Handle user.created event
 const handleUserCreated = async (data) => {
@@ -14,7 +15,7 @@ const handleUserCreated = async (data) => {
     },
   });
 
-  console.log(`User created via webhook: ${user.id}`);
+  logInfo("User created via webhook", { userId: user.id });
   return user;
 };
 
@@ -31,7 +32,7 @@ const handleUserUpdated = async (data) => {
     },
   });
 
-  console.log(`User updated via webhook: ${user.id}`);
+  logInfo("User updated via webhook", { userId: user.id });
   return user;
 };
 
@@ -45,7 +46,7 @@ const handleUserDeleted = async (data) => {
   });
 
   if (!existingUser) {
-    console.log(`User not found for deletion: ${clerkId}`);
+    logWarn("User not found for deletion", { clerkId });
     return null;
   }
 
@@ -55,7 +56,7 @@ const handleUserDeleted = async (data) => {
     where: { clerkId },
   });
 
-  console.log(`User deleted via webhook: ${clerkId}`);
+  logInfo("User deleted via webhook", { clerkId });
   return { clerkId, deleted: true };
 };
 
@@ -81,12 +82,12 @@ const webhookController = async (req, res) => {
         break;
 
       default:
-        console.log(`Unhandled webhook event: ${type}`);
+        logWarn("Unhandled webhook event", { type });
     }
 
     return res.status(200).json({ received: true });
   } catch (error) {
-    console.error("Webhook error:", error.message);
+    logError("Webhook error", error);
     return res.status(400).json({ error: error.message });
   }
 };

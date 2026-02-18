@@ -1,6 +1,7 @@
 const prisma = require("../lib/prisma");
 const { cloudinary } = require("../config/cloudinary.config");
 const { clerkClient } = require("@clerk/express");
+const { logError, logWarn } = require("../lib/logger");
 
 // ==================== CURRENT USER DATA ====================
 
@@ -16,7 +17,7 @@ const getCurrentUserDataController = async (req, res) => {
       clerkId: user.clerkId,
     });
   } catch (error) {
-    console.log("Error getting users:", error);
+    logError("Error getting users", error);
     return res.status(500).json({ message: "Internal Service Error" });
   }
 };
@@ -41,7 +42,7 @@ const getProfile = async (req, res) => {
     
     return res.json(user);
   } catch (error) {
-    console.log("Get Profile Error:", error);
+    logError("Get Profile Error", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -91,7 +92,7 @@ const updateProfile = async (req, res) => {
     
     return res.json(updatedUser);
   } catch (error) {
-    console.log("Update Profile Error:", error);
+    logError("Update Profile Error", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -118,7 +119,7 @@ const updateAvatar = async (req, res) => {
         const publicId = currentUser.avatar.split("/").pop().split(".")[0];
         await cloudinary.uploader.destroy(`avatars/${publicId}`);
       } catch (err) {
-        console.log("Error deleting old avatar:", err);
+        logWarn("Error deleting old avatar", { error: err.message });
       }
     }
 
@@ -136,7 +137,7 @@ const updateAvatar = async (req, res) => {
 
     return res.json(updatedUser);
   } catch (error) {
-    console.log("Update Avatar Error:", error);
+    logError("Update Avatar Error", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -156,7 +157,7 @@ const deleteAvatar = async (req, res) => {
         const publicId = currentUser.avatar.split("/").pop().split(".")[0];
         await cloudinary.uploader.destroy(`avatars/${publicId}`);
       } catch (err) {
-        console.log("Error deleting avatar from Cloudinary:", err);
+        logWarn("Error deleting avatar from Cloudinary", { error: err.message });
       }
     }
 
@@ -172,7 +173,7 @@ const deleteAvatar = async (req, res) => {
 
     return res.json({ message: "Avatar deleted successfully" });
   } catch (error) {
-    console.log("Delete Avatar Error:", error);
+    logError("Delete Avatar Error", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -189,7 +190,7 @@ const deleteAccount = async (req, res) => {
     try {
       await clerkClient.users.deleteUser(clerkId);
     } catch (clerkError) {
-      console.log("Clerk Delete User Error:", clerkError);
+      logWarn("Clerk Delete User Error", { error: clerkError.message });
       // Continue with local deletion even if Clerk fails
       // The webhook might have already handled this
     }
@@ -226,7 +227,7 @@ const deleteAccount = async (req, res) => {
     
     return res.json({ message: "Account deleted successfully" });
   } catch (error) {
-    console.log("Delete Account Error:", error);
+    logError("Delete Account Error", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

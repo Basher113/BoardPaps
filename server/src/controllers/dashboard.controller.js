@@ -1,4 +1,5 @@
 const prisma = require("../lib/prisma");
+const { logError } = require("../lib/logger");
 
 /**
  * Get all issues assigned to the logged-in user across all projects
@@ -112,7 +113,7 @@ const getUserIssues = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching dashboard issues:', error);
+    logError('Error fetching dashboard issues', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch dashboard issues'
