@@ -3,7 +3,7 @@ import { apiSlice } from "../../apiSlice";
 const userApiSlice = apiSlice.injectEndpoints({
   endpoints: builder => ({
     getCurrentUser: builder.query({
-      query: () => "auth/me",
+      query: () => "users/me",
       providesTags: ["User"],
     }),
   }),
