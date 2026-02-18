@@ -1,5 +1,4 @@
 const prisma = require("../lib/prisma");
-const bcrypt = require("bcryptjs");
 const { cloudinary } = require("../config/cloudinary.config");
 const { clerkClient } = require("@clerk/express");
 
@@ -34,7 +33,7 @@ const getProfile = async (req, res) => {
         email: true,
         username: true,
         avatar: true,
-        provider: true,
+        clerkId: true,
         createdAt: true,
         updatedAt: true,
       }
@@ -182,30 +181,10 @@ const deleteAvatar = async (req, res) => {
 
 // DELETE /api/users/me
 const deleteAccount = async (req, res) => {
-  const { password } = req.body;
   const userId = req.user.id;
   const clerkId = req.user.clerkId;
   
   try {
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    });
-    
-    // Check if user has a password set (not OAuth-only)
-    // Users with password must verify it before deleting
-    if (user.password) {
-      if (!password) {
-        return res.status(400).json({ message: "Password is required" });
-      }
-      
-      // Verify password against locally stored hash
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        return res.status(400).json({ message: "Incorrect password" });
-      }
-    }
-    
     // Delete user from Clerk first
     try {
       await clerkClient.users.deleteUser(clerkId);
@@ -217,11 +196,6 @@ const deleteAccount = async (req, res) => {
     
     // Use a transaction to delete all related records
     await prisma.$transaction([
-      // Delete all refresh tokens
-      prisma.refreshToken.deleteMany({
-        where: { userId }
-      }),
-
       // Delete invitations sent by this user
       prisma.invitation.deleteMany({
         where: { invitedById: userId }
