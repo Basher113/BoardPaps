@@ -91,7 +91,8 @@ const Projects = () => {
     navigate(`/project/${project.id}`);
   };
 
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (e) => {
+    e.preventDefault();
     if (!newProject.name.trim()) {
       toast.error("Project name is required");
       return;
@@ -112,7 +113,7 @@ const Projects = () => {
       toast.success("Project created successfully");
       setShowNewProject(false);
       setNewProject({ name: "", key: "", description: "" });
-      navigate(`/project/${result.id}`);
+      navigate(`/project/${result.data.id}`);
     } catch (error) {
       console.error("Failed to create project:", error);
       toast.error(error.data?.message || "Failed to create project");
@@ -279,7 +280,7 @@ const Projects = () => {
         <ModalOverlay onClick={() => setShowNewProject(false)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalTitle>Create New Project</ModalTitle>
-
+            <form method="post" onSubmit={handleCreateProject}>
             <Input
               placeholder="Project key (e.g. PROJ)"
               value={newProject.key}
@@ -315,7 +316,7 @@ const Projects = () => {
             />
 
             <ButtonGroup>
-              <Button primary onClick={handleCreateProject} disabled={isCreating}>
+              <Button primary disabled={isCreating}>
                 {isCreating ? "Creating..." : "Create Project"}
               </Button>
               <Button
@@ -328,6 +329,7 @@ const Projects = () => {
                 Cancel
               </Button>
             </ButtonGroup>
+            </form>
           </ModalContent>
         </ModalOverlay>
       )}

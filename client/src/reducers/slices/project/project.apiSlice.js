@@ -91,9 +91,10 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         // Optimistic update - add the issue immediately
         const patchResult = dispatch(
           projectApiSlice.util.updateQueryData("getProject", projectId, (project) => {
-            if (!project?.columns) return;
+            if (!project?.data?.columns) return;
             
-            const column = project.columns.find(c => c.id === columnId);
+            const columns = project.data.columns;
+            const column = columns.find(c => c.id === columnId);
             if (column) {
               const newIssue = {
                 id: `temp-${Date.now()}`,
@@ -119,7 +120,6 @@ export const projectApiSlice = apiSlice.injectEndpoints({
           patchResult.undo();
         }
       },
-      invalidatesTags: ["Project"],
     }),
     moveIssue: builder.mutation({
       query: ({ projectId, issueId, columnId, newPosition }) => ({
@@ -127,14 +127,15 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         method: "PATCH",
         body: { columnId, newPosition },
       }),
-      async onQueryStarted({ issueId, columnId, newPosition }, { dispatch, queryFulfilled }) {
+      async onQueryStarted({ projectId, issueId, columnId, newPosition }, { dispatch, queryFulfilled }) {
         // Optimistic update - update the issue immediately
         const patchResult = dispatch(
-          projectApiSlice.util.updateQueryData("getProject", undefined, (project) => {
-            if (!project?.columns) return;
+          projectApiSlice.util.updateQueryData("getProject", projectId, (project) => {
+            if (!project?.data?.columns) return;
             
+            const columns = project.data.columns;
             // Find the issue in any column
-            for (const column of project.columns) {
+            for (const column of columns) {
               const issueIndex = column.issues?.findIndex(i => i.id === issueId);
               if (issueIndex !== undefined && issueIndex !== -1) {
                 const issue = column.issues[issueIndex];
@@ -143,7 +144,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
                 column.issues.splice(issueIndex, 1);
                 
                 // Add to new column
-                const targetColumn = project.columns.find(c => c.id === columnId);
+                const targetColumn = columns.find(c => c.id === columnId);
                 if (targetColumn) {
                   // Insert at the correct position
                   const insertIndex = Math.min(newPosition, targetColumn.issues.length);
@@ -162,7 +163,6 @@ export const projectApiSlice = apiSlice.injectEndpoints({
           patchResult.undo();
         }
       },
-      invalidatesTags: ["Project"],
     }),
     updateIssue: builder.mutation({
       query: ({ projectId, issueId, columnId, newPosition, ...data }) => ({
@@ -170,14 +170,15 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         method: "PUT",
         body: { ...data, columnId, newPosition },
       }),
-      async onQueryStarted({ issueId, columnId, newPosition, ...data }, { dispatch, queryFulfilled }) {
+      async onQueryStarted({ projectId, issueId, columnId, newPosition, ...data }, { dispatch, queryFulfilled }) {
         // Optimistic update - update the issue immediately
         const patchResult = dispatch(
-          projectApiSlice.util.updateQueryData("getProject", undefined, (project) => {
-            if (!project?.columns) return;
+          projectApiSlice.util.updateQueryData("getProject", projectId, (project) => {
+            if (!project?.data?.columns) return;
             
+            const columns = project.data.columns;
             // Find the issue in any column
-            for (const column of project.columns) {
+            for (const column of columns) {
               const issueIndex = column.issues?.findIndex(i => i.id === issueId);
               if (issueIndex !== undefined && issueIndex !== -1) {
                 const issue = column.issues[issueIndex];
@@ -188,7 +189,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
                   column.issues.splice(issueIndex, 1);
                   
                   // Add to new column
-                  const targetColumn = project.columns.find(c => c.id === columnId);
+                  const targetColumn = columns.find(c => c.id === columnId);
                   if (targetColumn) {
                     const insertIndex = newPosition !== undefined 
                       ? Math.min(newPosition, targetColumn.issues.length)
@@ -219,14 +220,15 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         url: `projects/${projectId}/issues/${issueId}`,
         method: "DELETE",
       }),
-      async onQueryStarted(issueId, { dispatch, queryFulfilled }) {
+      async onQueryStarted({ projectId, issueId }, { dispatch, queryFulfilled }) {
         // Optimistic update - remove the issue immediately
         const patchResult = dispatch(
-          projectApiSlice.util.updateQueryData("getProject", undefined, (project) => {
-            if (!project?.columns) return;
+          projectApiSlice.util.updateQueryData("getProject", projectId, (project) => {
+            if (!project?.data?.columns) return;
             
+            const columns = project.data.columns;
             // Find and remove the issue from any column
-            for (const column of project.columns) {
+            for (const column of columns) {
               const issueIndex = column.issues?.findIndex(i => i.id === issueId);
               if (issueIndex !== undefined && issueIndex !== -1) {
                 column.issues.splice(issueIndex, 1);
@@ -260,6 +262,64 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         { type: 'AuditLog', id: projectId }
       ],
     }),
+    // Column operations
+    getColumns: builder.query({
+      query: (projectId) => `projects/${projectId}/columns`,
+      providesTags: (result, error, projectId) => [
+        { type: 'Column', id: projectId }
+      ],
+    }),
+    getColumn: builder.query({
+      query: ({ projectId, columnId }) => `projects/${projectId}/columns/${columnId}`,
+      providesTags: (result, error, { columnId }) => [
+        { type: 'Column', id: columnId }
+      ],
+    }),
+    createColumn: builder.mutation({
+      query: ({ projectId, ...data }) => ({
+        url: `projects/${projectId}/columns`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'Column', id: projectId },
+        { type: "Project", id: projectId }
+      ],
+    }),
+    updateColumn: builder.mutation({
+      query: ({ projectId, columnId, ...data }) => ({
+        url: `projects/${projectId}/columns/${columnId}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { projectId, columnId }) => [
+        { type: 'Column', id: columnId },
+        { type: 'Column', id: projectId },
+        { type: "Project", id: projectId }
+      ],
+    }),
+    reorderColumns: builder.mutation({
+      query: ({ projectId, columnOrders }) => ({
+        url: `projects/${projectId}/columns/reorder`,
+        method: "PATCH",
+        body: { columnOrders },
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'Column', id: projectId },
+        { type: "Project", id: projectId }
+      ],
+    }),
+    deleteColumn: builder.mutation({
+      query: ({ projectId, columnId }) => ({
+        url: `projects/${projectId}/columns/${columnId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { projectId, columnId }) => [
+        { type: 'Column', id: columnId },
+        { type: 'Column', id: projectId },
+        { type: "Project", id: projectId }
+      ],
+    }),
   }),
 });
 
@@ -279,4 +339,10 @@ export const {
   useUpdateIssueMutation,
   useDeleteIssueMutation,
   useGetProjectAuditLogsQuery,
+  useGetColumnsQuery,
+  useGetColumnQuery,
+  useCreateColumnMutation,
+  useUpdateColumnMutation,
+  useReorderColumnsMutation,
+  useDeleteColumnMutation,
 } = projectApiSlice;

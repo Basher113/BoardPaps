@@ -46,9 +46,9 @@ const IssueCard = ({
   const handleDragStart = useCallback((e) => {
     if (!currentUserId) return;
 
-    // Set drag data
-    e.dataTransfer.setData('text/plain', JSON.stringify({
-      issueId: issue.id,
+    // Set drag data with full issue object for the Column to use
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      issue,
       sourceColumnId: columnId
     }));
     
@@ -56,7 +56,7 @@ const IssueCard = ({
     e.dataTransfer.effectAllowed = 'move';
     
     // Call the callback if provided
-    onDragStart?.(issue.id);
+    onDragStart?.();
 
     // Add visual feedback
     e.target.classList.add('dragging');
@@ -118,7 +118,6 @@ const IssueCard = ({
     setShowMenu(false);
   }, [dispatch, issue.id, canEdit]);
 
-  console.log(issue.assignee);
   return (
     <CardContainer
       draggable={!!currentUserId}
