@@ -3,6 +3,25 @@ const bcrypt = require("bcryptjs");
 const { cloudinary } = require("../config/cloudinary.config");
 const { clerkClient } = require("@clerk/express");
 
+// ==================== CURRENT USER DATA ====================
+
+const getCurrentUserDataController = async (req, res) => {
+  try {
+    const user = req.user;
+    
+    return res.json({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      avatar: user.avatar,
+      clerkId: user.clerkId,
+    });
+  } catch (error) {
+    console.log("Error getting users:", error);
+    return res.status(500).json({ message: "Internal Service Error" });
+  }
+};
+
 // ==================== PROFILE ====================
 
 // GET /api/users/me/profile
@@ -159,7 +178,7 @@ const deleteAvatar = async (req, res) => {
   }
 };
 
-
+// ==================== ACCOUNT ====================
 
 // DELETE /api/users/me
 const deleteAccount = async (req, res) => {
@@ -239,10 +258,10 @@ const deleteAccount = async (req, res) => {
 };
 
 module.exports = {
+  getCurrentUserDataController,
   getProfile,
   updateProfile,
   updateAvatar,
   deleteAvatar,
-
   deleteAccount
 };

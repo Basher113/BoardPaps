@@ -36,12 +36,10 @@ app.use(withUser);
 app.use(globalApiLimiter);
 
 // Routes
-const authRoutes = require("./routes/auth.routes");
 const projectRoutes = require("./routes/project.routes");
 const usersRouter = require("./routes/users.routes");
 const dashboardRouter = require("./routes/dashboard.routes");
 
-app.use("/auth", authRoutes);
 app.use("/projects", projectRoutes);
 app.use("/users", usersRouter);
 app.use("/dashboard", dashboardRouter);

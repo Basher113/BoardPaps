@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const invitationController = require("../controllers/invitation.controller");
-const settingsController = require("../controllers/settings.controller");
+const usersController = require("../controllers/users.controller");
 const { validateBody } = require("../middlewares/validation.middleware");
 const { profileSchema } = require("../validations/settings.schema");
 const { uploadAvatar } = require("../middlewares/upload.middleware");
@@ -8,6 +8,10 @@ const {requireAuth} = require('@clerk/express');
 const { invitationActionLimiter } = require("../middlewares/rateLimiter.middleware");
 
 const usersRouter = Router();
+
+// Get me
+usersRouter.get("/me", requireAuth(), usersController.getCurrentUserDataController);
+
 
 // ==================== INVITATIONS ====================
 
@@ -40,19 +44,19 @@ usersRouter.post(
 
 // ==================== PROFILE ====================
 
-usersRouter.get("/me/profile", requireAuth(), settingsController.getProfile);
-usersRouter.put("/me/profile", requireAuth(), validateBody(profileSchema), settingsController.updateProfile);
+usersRouter.get("/me/profile", requireAuth(), usersController.getProfile);
+usersRouter.put("/me/profile", requireAuth(), validateBody(profileSchema), usersController.updateProfile);
 
 // ==================== AVATAR ====================
 
-usersRouter.put("/me/avatar", requireAuth(), uploadAvatar.single("avatar"), settingsController.updateAvatar);
-usersRouter.delete("/me/avatar", requireAuth(), settingsController.deleteAvatar);
+usersRouter.put("/me/avatar", requireAuth(), uploadAvatar.single("avatar"), usersController.updateAvatar);
+usersRouter.delete("/me/avatar", requireAuth(), usersController.deleteAvatar);
 
 // ==================== SECURITY ====================
 
 // Password change is handled client-side via Clerk's user.updatePassword()
 // This provides better security as Clerk handles password verification
 
-usersRouter.delete("/me", requireAuth(), settingsController.deleteAccount);
+usersRouter.delete("/me", requireAuth(), usersController.deleteAccount);
 
 module.exports = usersRouter;
