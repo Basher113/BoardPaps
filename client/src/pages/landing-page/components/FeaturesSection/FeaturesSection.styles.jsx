@@ -54,30 +54,31 @@ export const FeaturesGrid = styled.div`
 `;
 
 export const FeatureCard = styled.div`
-  background: #ffffff;
-  border: 1px solid #e4e4e7;
+  background: ${props => props.$negative ? '#fef2f2' : '#ffffff'};
+  border: 1px solid ${props => props.$negative ? '#fecaca' : '#e4e4e7'};
   border-radius: 12px;
   padding: 1.75rem;
   transition: border-color 0.25s ease, transform 0.25s ease,
     box-shadow 0.25s ease;
 
   &:hover {
-    border-color: #a1a1aa;
+    border-color: ${props => props.$negative ? '#f87171' : '#a1a1aa'};
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
   }
 `;
 
 export const FeatureIcon = styled.div`
-  width: 48px;
-  height: 48px;
-  border: 1px solid #e4e4e7;
+  width: ${props => props.$negative ? '32px' : '48px'};
+  height: ${props => props.$negative ? '32px' : '48px'};
+  border: 1px solid ${props => props.$negative ? '#f87171' : '#e4e4e7'};
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.25rem;
-  color: #18181b;
+  margin-bottom: ${props => props.$negative ? '0.75rem' : '1.25rem'};
+  color: ${props => props.$negative ? '#dc2626' : '#18181b'};
+  background: ${props => props.$negative ? '#ffffff' : 'transparent'};
 `;
 
 export const FeatureTitle = styled.h3`
@@ -90,6 +91,7 @@ export const FeatureTitle = styled.h3`
 
 export const FeatureDescription = styled.p`
   font-size: 0.9375rem;
-  color: #71717a;
+  color: ${props => props.$negative ? '#991b1b' : '#71717a'};
   line-height: 1.55;
+  font-weight: ${props => props.$negative ? '500' : '400'};
 `;

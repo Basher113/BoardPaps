@@ -27,10 +27,10 @@ export default function DashboardSection() {
     <StyledDashboardSection id="dashboard">
       <SectionContainer>
         <SectionHeader>
-          <SectionTitle>Your productivity at a glance</SectionTitle>
+          <SectionTitle>Your work, all in one place</SectionTitle>
           <SectionSubtitle>
-            Track every status and stay on top of your team's work with a
-            clear, organized view.
+            See all your assigned issues across every project at a glance.
+            No more jumping between boards to find your tasks.
           </SectionSubtitle>
         </SectionHeader>
 

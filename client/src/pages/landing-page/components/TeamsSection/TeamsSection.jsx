@@ -22,10 +22,10 @@ export default function TeamsSection() {
   const { ref, isVisible } = useScrollReveal({ threshold: 0.2 });
 
   const teamPoints = [
-    "Invite teammates with a single link",
-    "Assign Admin or Member roles",
-    "Control project-level permissions",
-    "Track progress transparently",
+    "Invite teammates via email with a personal message",
+    "Simple roles: Owner, Admin, or Member",
+    "Invitations expire after 7 days for security",
+    "Track all project activity with audit logs",
   ];
 
   return (
@@ -33,10 +33,10 @@ export default function TeamsSection() {
       <SectionContainer>
         <TeamsGrid ref={ref}>
           <TeamsContent>
-            <TeamsTitle>Built for teams that move fast</TeamsTitle>
+            <TeamsTitle>Team collaboration, simplified</TeamsTitle>
             <TeamsText>
-              Collaboration made simple. Invite your team, set permissions, and
-              keep everyone aligned on what matters.
+              No complex permission matrices. No endless role configurations.
+              Just invite your team and start working together.
             </TeamsText>
 
             <TeamsList>

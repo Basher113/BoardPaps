@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   CircleDot,
   Shield,
+  X,
 } from "lucide-react";
 
 import {
@@ -20,22 +21,22 @@ import {
 
 const features = [
   {
-    icon: <Users size={22} />,
-    title: "Teams & Invitations",
+    icon: <CircleDot size={22} />,
+    title: "Simple Kanban Board",
     description:
-      "Invite teammates with a single link. Assign roles and manage permissions instantly.",
+      "Drag and drop issues across columns. That's it. No complicated workflows to configure.",
+  },
+  {
+    icon: <Users size={22} />,
+    title: "Email Invitations",
+    description:
+      "Invite teammates via email with a personal message. They click, join, and start working.",
   },
   {
     icon: <LayoutDashboard size={22} />,
-    title: "User Dashboard",
+    title: "Personal Dashboard",
     description:
-      "Track your tasks, progress, and priorities at a glance with a personalized view.",
-  },
-  {
-    icon: <CircleDot size={22} />,
-    title: "Issue Tracking",
-    description:
-      "Create, assign, and move issues across status columns. Stay organized effortlessly.",
+      "See all your assigned issues across projects at a glance. Know exactly what needs your attention.",
   },
   {
     icon: <Shield size={22} />,
@@ -52,8 +53,8 @@ export default function FeaturesSection() {
         <SectionHeader>
           <SectionTitle>Everything you need to ship faster</SectionTitle>
           <SectionSubtitle>
-            Powerful features designed for modern teams who value clarity and
-            focus.
+            BoardPaps gives you exactly what you need to manage your work — 
+            nothing more, nothing less.
           </SectionSubtitle>
         </SectionHeader>
 
