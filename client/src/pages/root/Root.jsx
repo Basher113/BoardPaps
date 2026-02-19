@@ -1,5 +1,5 @@
 import { useAuth } from "@clerk/clerk-react";
-import { Outlet } from "react-router-dom"
+import { Outlet, useLocation, Navigate } from "react-router-dom"
 import Sidebar from "../../components/sidebar/Sidebar"
 import { useGetCurrentUserQuery } from "../../reducers/slices/user/user.slice"
 import { useSelector } from "react-redux"
@@ -11,6 +11,7 @@ import {Wrapper, OutletWrapper} from "./root.styles";
 const Root = () => {
   const activeView = useSelector(selectActiveView);
   const { userId, isLoaded, isSignedIn } = useAuth();
+  const location = useLocation();
   
   // Use Clerk's userId for quick check
   const { data: currentUser, isLoading } = useGetCurrentUserQuery(undefined, {
@@ -22,9 +23,19 @@ const Root = () => {
     return null;
   }
   
-  // If not signed in and not a verification route, show landing page
+  // If not signed in, only show landing page for the root path
+  // For other paths (like /invitations), let the Outlet render so ProtectedRoute can handle redirect
   if (!isSignedIn) {
-    return <LandingPage />;
+    if (location.pathname === "/") {
+      return <LandingPage />;
+    }
+    // For protected routes, just render the Outlet (ProtectedRoute will handle redirect)
+    return <Outlet />;
+  }
+  
+  // If signed in and on root path, redirect to dashboard
+  if (location.pathname === "/") {
+    return <Navigate to="/dashboard" replace />;
   }
   
   // Show loading while fetching user data (only for signed in users)

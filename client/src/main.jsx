@@ -6,6 +6,7 @@ import { routes } from './routes.jsx'
 import { Provider } from 'react-redux'
 import {store} from "./reducers/store.js";
 import { ToastContainer } from 'react-toastify'
+import ErrorBoundary from './components/error-boundary/ErrorBoundary.jsx'
 import 'react-toastify/dist/ReactToastify.css'
 
 import './index.css'
@@ -20,11 +21,13 @@ const router = createBrowserRouter(routes)
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-      <Provider store={store}>
-        <RouterProvider router={router}/>
-        <ToastContainer position="top-right" autoClose={5000} />
-      </Provider>
-    </ClerkProvider>
+    <ErrorBoundary>
+      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+        <Provider store={store}>
+          <RouterProvider router={router}/>
+          <ToastContainer position="top-right" autoClose={5000} />
+        </Provider>
+      </ClerkProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )

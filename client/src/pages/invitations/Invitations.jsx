@@ -128,7 +128,7 @@ const CardContent = styled.div`
 const ProjectIcon = styled.div`
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: #000000;
   border-radius: 12px;
   display: flex;
   align-items: center;

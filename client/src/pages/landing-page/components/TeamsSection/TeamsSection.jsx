@@ -33,10 +33,10 @@ export default function TeamsSection() {
       <SectionContainer>
         <TeamsGrid ref={ref}>
           <TeamsContent>
-            <TeamsTitle>Team collaboration, simplified</TeamsTitle>
+            <TeamsTitle>Team collaboration</TeamsTitle>
             <TeamsText>
-              No complex permission matrices. No endless role configurations.
-              Just invite your team and start working together.
+              Collaboration made simple. Invite your team, set permissions, and
+              keep everyone aligned on what matters.
             </TeamsText>
 
             <TeamsList>
