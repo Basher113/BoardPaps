@@ -387,9 +387,27 @@ const removeMember = async (req, res) => {
       return forbiddenResponse(res, "Admins cannot remove other admins");
     }
 
-    await prisma.projectMember.delete({
-      where: { id: memberId }
+    // Get the user's email to clean up their invitations
+    const targetUser = await prisma.user.findUnique({
+      where: { id: targetMember.userId },
+      select: { email: true }
     });
+
+    // Delete member and their ACCEPTED invitations in a transaction
+    await prisma.$transaction([
+      prisma.projectMember.delete({
+        where: { id: memberId }
+      }),
+      // Delete any ACCEPTED invitations for this user in this project
+      // This allows them to be re-invited in the future
+      prisma.invitation.deleteMany({
+        where: {
+          projectId: projectId,
+          email: targetUser?.email,
+          status: "ACCEPTED"
+        }
+      })
+    ]);
 
     // Audit log for member removal
     const action = isRemovingSelf ? AUDIT_ACTIONS.MEMBER_LEFT : AUDIT_ACTIONS.MEMBER_REMOVED;
