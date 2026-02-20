@@ -46,11 +46,11 @@ const sendInvitationEmail = async (invitation, project, inviter) => {
               <tr>
                 <td style="padding: 20px 40px;">
                   <p style="margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-                    <strong style="color: #1a1a2e;">${inviter.username || inviter.email}</strong> has invited you to join the project <strong style="color: #6366f1;">${project.name}</strong> on BoardPaps.
+                    <strong style="color: #1a1a2e;">${inviter.username || inviter.email}</strong> has invited you to join the project <strong style="color: #f16363;">${project.name}</strong> on BoardPaps.
                   </p>
                   
                   ${invitation.message ? `
-                    <div style="background-color: #f8f9fa; border-left: 4px solid #6366f1; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                    <div style="background-color: #f8f9fa; border-left: 4px solid #f16363; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
                       <p style="margin: 0; color: #4a4a4a; font-size: 14px; font-style: italic;">
                         "${invitation.message}"
                       </p>
