@@ -1,32 +1,85 @@
 import { apiSlice } from "../../apiSlice";
 
+/**
+ * Project API Slice
+ * Contains core project-related endpoints
+ * 
+ * Caching Strategy:
+ * - Project list uses granular tags for individual projects
+ * - Single project uses entity-specific tag
+ * - Cache retention: 5 minutes for project data (user works on it for extended periods)
+ * 
+ * Related slices:
+ * - issue.apiSlice.js - Issue CRUD operations
+ * - member.apiSlice.js - Member management
+ * - column.apiSlice.js - Column management
+ * - invitation.apiSlice.js - Invitation management
+ */
 export const projectApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    // ==================== PROJECT QUERIES ====================
+    
+    /**
+     * Get all projects the current user is a member of
+     * Uses granular tags to prevent over-invalidation
+     */
     getMyProjects: builder.query({
       query: () => "projects",
-      providesTags: ["Project"],
+      providesTags: (result) => 
+        result?.data 
+          ? [
+              { type: 'Project', id: 'LIST' },
+              ...result.data.map(({ id }) => ({ type: 'Project', id })),
+            ]
+          : [{ type: 'Project', id: 'LIST' }],
+      keepUnusedDataFor: 300, // 5 minutes
     }),
+    
+    /**
+     * Get a single project with all its data (columns, issues, members)
+     * Primary data source for board view
+     */
     getProject: builder.query({
       query: (projectId) => `projects/${projectId}`,
-      providesTags: ["Project"],
+      providesTags: (result, error, projectId) => [
+        { type: 'Project', id: projectId },
+        { type: 'Project', id: 'LIST' },
+      ],
+      keepUnusedDataFor: 300, // 5 minutes - user works on project for extended periods
     }),
 
+    /**
+     * Get project settings (for settings page)
+     * Longer cache since settings rarely change
+     */
+    getProjectSettings: builder.query({
+      query: (projectId) => `projects/${projectId}/settings`,
+      providesTags: (result, error, projectId) => [
+        { type: "Project", id: projectId },
+        { type: "ProjectMembers", id: projectId },
+      ],
+      keepUnusedDataFor: 600, // 10 minutes - settings rarely change
+    }),
+
+    // ==================== PROJECT MUTATIONS ====================
+    
+    /**
+     * Create a new project
+     * Invalidates list but not individual projects
+     */
     createProject: builder.mutation({
       query: (data) => ({
         url: "projects",
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["Project"],
+      invalidatesTags: [{ type: 'Project', id: 'LIST' }],
     }),
-    // Project Settings
-    getProjectSettings: builder.query({
-      query: (projectId) => `projects/${projectId}/settings`,
-      providesTags: (result, error, projectId) => [
-        { type: "Project", id: projectId },
-        "ProjectMembers"
-      ],
-    }),
+    
+    /**
+     * Update project properties
+     * Only invalidates the specific project
+     */
     updateProject: builder.mutation({
       query: ({ projectId, ...data }) => ({
         url: `projects/${projectId}`,
@@ -34,16 +87,29 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         body: data,
       }),
       invalidatesTags: (result, error, { projectId }) => [
-        { type: "Project", id: projectId }
+        { type: 'Project', id: projectId },
       ],
     }),
+    
+    /**
+     * Delete a project
+     * Invalidates both the specific project and the list
+     */
     deleteProject: builder.mutation({
       query: (projectId) => ({
         url: `projects/${projectId}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Project"],
+      invalidatesTags: (result, error, projectId) => [
+        { type: 'Project', id: projectId },
+        { type: 'Project', id: 'LIST' },
+      ],
     }),
+    
+    /**
+     * Transfer project ownership to another member
+     * Invalidates project and members
+     */
     transferProjectOwnership: builder.mutation({
       query: ({ projectId, newOwnerId }) => ({
         url: `projects/${projectId}/transfer`,
@@ -51,203 +117,28 @@ export const projectApiSlice = apiSlice.injectEndpoints({
         body: { newOwnerId },
       }),
       invalidatesTags: (result, error, { projectId }) => [
-        { type: "Project", id: projectId },
-        "ProjectMembers"
+        { type: 'Project', id: projectId },
+        { type: "ProjectMembers", id: projectId },
       ],
     }),
-    // Member Management
-    getProjectMembers: builder.query({
-      query: (projectId) => `projects/${projectId}/members`,
-      providesTags: ["ProjectMembers"],
-    }),
-    updateMemberRole: builder.mutation({
-      query: ({ projectId, memberId, role }) => ({
-        url: `projects/${projectId}/members/${memberId}`,
-        method: "PUT",
-        body: { role },
-      }),
-      invalidatesTags: (result, error, { projectId }) => [
-        { type: "Project", id: projectId },
-        "ProjectMembers"
-      ],
-    }),
-    removeMember: builder.mutation({
-      query: ({ projectId, memberId }) => ({
-        url: `projects/${projectId}/members/${memberId}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: (result, error, { projectId }) => [
-        { type: "Project", id: projectId },
-        "ProjectMembers"
-      ],
-    }),
-    createIssue: builder.mutation({
-      query: ({ projectId, ...data }) => ({
-        url: `projects/${projectId}/issues`,
-        method: "POST",
-        body: data,
-      }),
-      async onQueryStarted({ projectId, columnId, ...data }, { dispatch, queryFulfilled }) {
-        // Optimistic update - add the issue immediately
-        const patchResult = dispatch(
-          projectApiSlice.util.updateQueryData("getProject", projectId, (project) => {
-            if (!project?.data?.columns) return;
-            
-            const columns = project.data.columns;
-            const column = columns.find(c => c.id === columnId);
-            if (column) {
-              const newIssue = {
-                id: `temp-${Date.now()}`,
-                ...data,
-                columnId,
-                position: column.issues?.length || 0,
-                reporter: { id: "current", username: "Current User" },
-                assignee: data.assigneeId ? { id: data.assigneeId, username: "Assignee" } : null,
-              };
-              
-              if (!column.issues) {
-                column.issues = [];
-              }
-              column.issues.push(newIssue);
-            }
-          })
-        );
-        
-        try {
-          await queryFulfilled;
-        } catch {
-          // Rollback on error
-          patchResult.undo();
-        }
-      },
-    }),
-    moveIssue: builder.mutation({
-      query: ({ projectId, issueId, columnId, newPosition }) => ({
-        url: `projects/${projectId}/issues/${issueId}/move`,
+
+    /**
+     * Mark project as visited (updates lastVisitedAt)
+     * No cache invalidation needed - just updates timestamp
+     */
+    visitProject: builder.mutation({
+      query: (projectId) => ({
+        url: `projects/${projectId}/visit`,
         method: "PATCH",
-        body: { columnId, newPosition },
       }),
-      async onQueryStarted({ projectId, issueId, columnId, newPosition }, { dispatch, queryFulfilled }) {
-        // Optimistic update - update the issue immediately
-        const patchResult = dispatch(
-          projectApiSlice.util.updateQueryData("getProject", projectId, (project) => {
-            if (!project?.data?.columns) return;
-            
-            const columns = project.data.columns;
-            // Find the issue in any column
-            for (const column of columns) {
-              const issueIndex = column.issues?.findIndex(i => i.id === issueId);
-              if (issueIndex !== undefined && issueIndex !== -1) {
-                const issue = column.issues[issueIndex];
-                
-                // Remove from old column
-                column.issues.splice(issueIndex, 1);
-                
-                // Add to new column
-                const targetColumn = columns.find(c => c.id === columnId);
-                if (targetColumn) {
-                  // Insert at the correct position
-                  const insertIndex = Math.min(newPosition, targetColumn.issues.length);
-                  targetColumn.issues.splice(insertIndex, 0, { ...issue, columnId });
-                }
-                break;
-              }
-            }
-          })
-        );
-        
-        try {
-          await queryFulfilled;
-        } catch {
-          // Rollback on error
-          patchResult.undo();
-        }
-      },
     }),
-    updateIssue: builder.mutation({
-      query: ({ projectId, issueId, columnId, newPosition, ...data }) => ({
-        url: `projects/${projectId}/issues/${issueId}`,
-        method: "PUT",
-        body: { ...data, columnId, newPosition },
-      }),
-      async onQueryStarted({ projectId, issueId, columnId, newPosition, ...data }, { dispatch, queryFulfilled }) {
-        // Optimistic update - update the issue immediately
-        const patchResult = dispatch(
-          projectApiSlice.util.updateQueryData("getProject", projectId, (project) => {
-            if (!project?.data?.columns) return;
-            
-            const columns = project.data.columns;
-            // Find the issue in any column
-            for (const column of columns) {
-              const issueIndex = column.issues?.findIndex(i => i.id === issueId);
-              if (issueIndex !== undefined && issueIndex !== -1) {
-                const issue = column.issues[issueIndex];
-                
-                // If moving to a different column
-                if (columnId && columnId !== issue.columnId) {
-                  // Remove from old column
-                  column.issues.splice(issueIndex, 1);
-                  
-                  // Add to new column
-                  const targetColumn = columns.find(c => c.id === columnId);
-                  if (targetColumn) {
-                    const insertIndex = newPosition !== undefined 
-                      ? Math.min(newPosition, targetColumn.issues.length)
-                      : targetColumn.issues.length;
-                    targetColumn.issues.splice(insertIndex, 0, { ...issue, columnId });
-                  }
-                } else {
-                  // Just update the issue properties
-                  column.issues[issueIndex] = { ...issue, ...data };
-                }
-                break;
-              }
-            }
-          })
-        );
-        
-        try {
-          await queryFulfilled;
-        } catch {
-          // Rollback on error
-          patchResult.undo();
-        }
-      },
-      invalidatesTags: ["Project"],
-    }),
-    deleteIssue: builder.mutation({
-      query: ({ projectId, issueId }) => ({
-        url: `projects/${projectId}/issues/${issueId}`,
-        method: "DELETE",
-      }),
-      async onQueryStarted({ projectId, issueId }, { dispatch, queryFulfilled }) {
-        // Optimistic update - remove the issue immediately
-        const patchResult = dispatch(
-          projectApiSlice.util.updateQueryData("getProject", projectId, (project) => {
-            if (!project?.data?.columns) return;
-            
-            const columns = project.data.columns;
-            // Find and remove the issue from any column
-            for (const column of columns) {
-              const issueIndex = column.issues?.findIndex(i => i.id === issueId);
-              if (issueIndex !== undefined && issueIndex !== -1) {
-                column.issues.splice(issueIndex, 1);
-                break;
-              }
-            }
-          })
-        );
-        
-        try {
-          await queryFulfilled;
-        } catch {
-          // Rollback on error
-          patchResult.undo();
-        }
-      },
-      invalidatesTags: ["Project"],
-    }),
-    // Audit Logs
+
+    // ==================== AUDIT LOGS ====================
+    
+    /**
+     * Get audit logs for a project
+     * Short cache since logs can be updated frequently
+     */
     getProjectAuditLogs: builder.query({
       query: ({ projectId, limit = 50, offset = 0, action, userId }) => {
         const params = new URLSearchParams();
@@ -261,64 +152,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       providesTags: (result, error, { projectId }) => [
         { type: 'AuditLog', id: projectId }
       ],
-    }),
-    // Column operations
-    getColumns: builder.query({
-      query: (projectId) => `projects/${projectId}/columns`,
-      providesTags: (result, error, projectId) => [
-        { type: 'Column', id: projectId }
-      ],
-    }),
-    getColumn: builder.query({
-      query: ({ projectId, columnId }) => `projects/${projectId}/columns/${columnId}`,
-      providesTags: (result, error, { columnId }) => [
-        { type: 'Column', id: columnId }
-      ],
-    }),
-    createColumn: builder.mutation({
-      query: ({ projectId, ...data }) => ({
-        url: `projects/${projectId}/columns`,
-        method: "POST",
-        body: data,
-      }),
-      invalidatesTags: (result, error, { projectId }) => [
-        { type: 'Column', id: projectId },
-        { type: "Project", id: projectId }
-      ],
-    }),
-    updateColumn: builder.mutation({
-      query: ({ projectId, columnId, ...data }) => ({
-        url: `projects/${projectId}/columns/${columnId}`,
-        method: "PUT",
-        body: data,
-      }),
-      invalidatesTags: (result, error, { projectId, columnId }) => [
-        { type: 'Column', id: columnId },
-        { type: 'Column', id: projectId },
-        { type: "Project", id: projectId }
-      ],
-    }),
-    reorderColumns: builder.mutation({
-      query: ({ projectId, columnOrders }) => ({
-        url: `projects/${projectId}/columns/reorder`,
-        method: "PATCH",
-        body: { columnOrders },
-      }),
-      invalidatesTags: (result, error, { projectId }) => [
-        { type: 'Column', id: projectId },
-        { type: "Project", id: projectId }
-      ],
-    }),
-    deleteColumn: builder.mutation({
-      query: ({ projectId, columnId }) => ({
-        url: `projects/${projectId}/columns/${columnId}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: (result, error, { projectId, columnId }) => [
-        { type: 'Column', id: columnId },
-        { type: 'Column', id: projectId },
-        { type: "Project", id: projectId }
-      ],
+      keepUnusedDataFor: 120, // 2 minutes
     }),
   }),
 });
@@ -326,23 +160,11 @@ export const projectApiSlice = apiSlice.injectEndpoints({
 export const {
   useGetMyProjectsQuery,
   useGetProjectQuery,
-  useCreateProjectMutation,
-  useDeleteProjectMutation,
   useGetProjectSettingsQuery,
+  useCreateProjectMutation,
   useUpdateProjectMutation,
+  useDeleteProjectMutation,
   useTransferProjectOwnershipMutation,
-  useGetProjectMembersQuery,
-  useUpdateMemberRoleMutation,
-  useRemoveMemberMutation,
-  useCreateIssueMutation,
-  useMoveIssueMutation,
-  useUpdateIssueMutation,
-  useDeleteIssueMutation,
+  useVisitProjectMutation,
   useGetProjectAuditLogsQuery,
-  useGetColumnsQuery,
-  useGetColumnQuery,
-  useCreateColumnMutation,
-  useUpdateColumnMutation,
-  useReorderColumnsMutation,
-  useDeleteColumnMutation,
 } = projectApiSlice;
