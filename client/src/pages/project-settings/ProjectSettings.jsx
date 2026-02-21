@@ -6,16 +6,20 @@ import {
   SettingsHeader,
   SettingsTitle,
   SettingsSubtitle,
-  TabsContainer,
-  Tab,
-  TabContent,
-  LoadingSkeleton
+  HeaderActions,
+  SettingsGrid,
+  SettingsNav,
+  SettingsNavItem,
+  SettingsContent,
+  TabContent
 } from './ProjectSettings.styles';
 import {
   useGetProjectSettingsQuery
 } from '../../reducers/slices/project/project.apiSlice';
 import { useGetCurrentUserQuery } from '../../reducers/slices/user/user.slice';
 import { setActiveView } from '../../reducers/slices/navigation/navigation.slice';
+import { SettingsSectionSkeleton, Spinner } from '../../components/ui/skeleton/Skeleton';
+import Button from '../../components/ui/button/Button';
 
 // Sub-components (each handles its own state and API calls)
 import GeneralSettings from './components/general/GeneralSettings';
@@ -48,12 +52,21 @@ const ProjectSettings = () => {
     return (
       <SettingsContainer>
         <SettingsHeader>
-          <SettingsTitle>Project Settings</SettingsTitle>
-          <SettingsSubtitle>Loading...</SettingsSubtitle>
+          <div>
+            <SettingsTitle>Project Settings</SettingsTitle>
+            <SettingsSubtitle>Loading...</SettingsSubtitle>
+          </div>
         </SettingsHeader>
-        <LoadingSkeleton $height="3rem" />
-        <div style={{ marginTop: '1.5rem' }} />
-        <LoadingSkeleton $height="3rem" />
+        <SettingsGrid>
+          <SettingsNav>
+            <SettingsNavItem $active><Spinner $size="14px" /> General</SettingsNavItem>
+            <SettingsNavItem>Members</SettingsNavItem>
+            <SettingsNavItem>Invitations</SettingsNavItem>
+          </SettingsNav>
+          <SettingsContent>
+            <SettingsSectionSkeleton />
+          </SettingsContent>
+        </SettingsGrid>
       </SettingsContainer>
     );
   }
@@ -72,8 +85,10 @@ const ProjectSettings = () => {
     return (
       <SettingsContainer>
         <SettingsHeader>
-          <SettingsTitle>Project Settings</SettingsTitle>
-          <SettingsSubtitle>Project not found</SettingsSubtitle>
+          <div>
+            <SettingsTitle>Project Settings</SettingsTitle>
+            <SettingsSubtitle>Project not found</SettingsSubtitle>
+          </div>
         </SettingsHeader>
       </SettingsContainer>
     );
@@ -82,71 +97,92 @@ const ProjectSettings = () => {
   return (
     <SettingsContainer>
       <SettingsHeader>
-        <SettingsTitle>{project.name} Settings</SettingsTitle>
-        <SettingsSubtitle>Manage your project settings and members</SettingsSubtitle>
+        <div>
+          <SettingsTitle>Project Settings</SettingsTitle>
+          <SettingsSubtitle>
+            Configure your project metadata, team permissions, and workflow logic for <strong>{project.name}</strong>.
+          </SettingsSubtitle>
+        </div>
+        
       </SettingsHeader>
 
-      <TabsContainer>
-        <Tab $active={activeTab === 'general'} onClick={() => setActiveTab('general')}>
-          General
-        </Tab>
-        <Tab $active={activeTab === 'members'} onClick={() => setActiveTab('members')}>
-          Members ({project.members?.length || 0})
-        </Tab>
-        <Tab $active={activeTab === 'invitations'} onClick={() => setActiveTab('invitations')}>
-          Invitations ({project.invitations?.length || 0})
-        </Tab>
-        {canManageSettings && (
-          <Tab $active={activeTab === 'activity'} onClick={() => setActiveTab('activity')}>
-            Activity
-          </Tab>
-        )}
-        {isOwner && (
-          <Tab $active={activeTab === 'danger'} onClick={() => setActiveTab('danger')}>
+      <SettingsGrid>
+        <SettingsNav>
+          <SettingsNavItem 
+            $active={activeTab === 'general'} 
+            onClick={() => setActiveTab('general')}
+          >
+            General Details
+          </SettingsNavItem>
+          <SettingsNavItem 
+            $active={activeTab === 'members'} 
+            onClick={() => setActiveTab('members')}
+          >
+            Members
+          </SettingsNavItem>
+          <SettingsNavItem 
+            $active={activeTab === 'invitations'} 
+            onClick={() => setActiveTab('invitations')}
+          >
+            Invitations
+          </SettingsNavItem>
+          {canManageSettings && (
+            <SettingsNavItem 
+              $active={activeTab === 'activity'} 
+              onClick={() => setActiveTab('activity')}
+            >
+              Activity
+            </SettingsNavItem>
+          )}
+          <SettingsNavItem 
+            $active={activeTab === 'danger'} 
+            onClick={() => setActiveTab('danger')}
+          >
             Danger Zone
-          </Tab>
-        )}
-      </TabsContainer>
+          </SettingsNavItem>
+        </SettingsNav>
 
-      <TabContent>
-        {activeTab === 'general' && (
-          <GeneralSettings
-            project={project}
-            canManageSettings={canManageSettings}
-            refetchProject={refetchProject}
-          />
-        )}
+        <SettingsContent>
+          {activeTab === 'general' && (
+            <GeneralSettings
+              project={project}
+              canManageSettings={canManageSettings}
+              refetchProject={refetchProject}
+            />
+          )}
 
-        {activeTab === 'members' && (
-          <MembersList
-            project={project}
-            currentUserId={currentUserId}
-            canManageSettings={canManageSettings}
-            refetchProject={refetchProject}
-          />
-        )}
+          {activeTab === 'members' && (
+            <MembersList
+              project={project}
+              currentUserId={currentUserId}
+              canManageSettings={canManageSettings}
+              refetchProject={refetchProject}
+            />
+          )}
 
-        {activeTab === 'invitations' && (
-          <InvitationsList
-            project={project}
-          />
-        )}
+          {activeTab === 'invitations' && (
+            <InvitationsList
+              project={project}
+            />
+          )}
 
-        {activeTab === 'activity' && canManageSettings && (
-          <ActivityList
-            projectId={project.id}
-            members={project.members}
-          />
-        )}
+          {activeTab === 'activity' && canManageSettings && (
+            <ActivityList
+              projectId={project.id}
+              members={project.members}
+            />
+          )}
 
-        {activeTab === 'danger' && isOwner && (
-          <DangerZone
-            project={project}
-            currentUserId={currentUserId}
-            refetchProject={refetchProject}
-          />
-        )}
-      </TabContent>
+          {activeTab === 'danger' && (
+            <DangerZone
+              project={project}
+              currentUserId={currentUserId}
+              refetchProject={refetchProject}
+              isOwner={isOwner}
+            />
+          )}
+        </SettingsContent>
+      </SettingsGrid>
     </SettingsContainer>
   );
 };

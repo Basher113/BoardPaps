@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import {
-  Content,
+  PageContainer,
   Header,
-  HeaderTop,
   HeaderLeft,
   Title,
   Subtitle,
@@ -14,21 +13,22 @@ import {
   SearchWrapper,
   SearchIcon,
   NewButton,
-  ProjectsGrid,
-  ProjectCard,
-  CardHeader,
+  ProjectsTable,
+  TableHeader,
+  TableHeaderCell,
+  ProjectRow,
+  ProjectInfo,
   ProjectName,
+  ProjectDescription,
   ProjectKey,
+  MemberAvatars,
+  AvatarOverflow,
+  LastUpdated,
+  LastUpdatedTime,
+  LastUpdatedBy,
   QuickActionsButton,
   QuickActionsMenu,
   MenuItem,
-  ProjectDescription,
-  ProjectMeta,
-  OwnerBadge,
-  MemberAvatars,
-  IssueCount,
-  LastUpdated,
-  RoleIndicator,
   EmptyState,
   EmptyIcon,
   EmptyTitle,
@@ -41,8 +41,14 @@ import {
   Textarea,
   ButtonGroup,
   Button,
-  LoadingContainer,
-  MetaValue
+  Footer,
+  StatusIndicator,
+  StatusDot,
+  StatItem,
+  StatValue,
+  StatLabel,
+  SkeletonRow,
+  SkeletonText,
 } from "./Projects.styles";
 import { formatDate } from "../../utils/date";
 import {
@@ -84,8 +90,13 @@ const Projects = () => {
   // Filter projects by search
   const projects = projectsData?.data || [];
   const filteredProjects = projects.filter(project => 
-    project.name.toLowerCase().includes(searchQuery.toLowerCase())
+    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    project.key.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Calculate stats
+  const totalIssues = projects.reduce((sum, p) => sum + (p._count?.issues || 0), 0);
+  const totalMembers = new Set(projects.flatMap(p => p.members?.map(m => m.user?.id) || [])).size;
 
   const openProject = (project) => {
     navigate(`/project/${project.id}`);
@@ -143,71 +154,141 @@ const Projects = () => {
     }
   };
 
-
-
+  // Loading skeleton
   if (isLoading) {
     return (
-      <Content>
-        <LoadingContainer>Loading projects...</LoadingContainer>
-      </Content>
+      <PageContainer>
+        <Header>
+          <HeaderLeft>
+            <Title>All Projects</Title>
+            <Subtitle>Loading your projects...</Subtitle>
+          </HeaderLeft>
+        </Header>
+        <ProjectsTable>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonRow key={i}>
+              <div>
+                <SkeletonText height="18px" width="60%" />
+                <SkeletonText height="12px" width="40%" style={{ marginTop: '4px' }} />
+              </div>
+              <SkeletonText height="24px" width="80px" />
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <SkeletonText height="32px" width="32px" style={{ borderRadius: '50%' }} />
+                <SkeletonText height="32px" width="32px" style={{ borderRadius: '50%' }} />
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <SkeletonText height="16px" width="60px" style={{ marginLeft: 'auto' }} />
+                <SkeletonText height="12px" width="80px" style={{ marginLeft: 'auto', marginTop: '4px' }} />
+              </div>
+            </SkeletonRow>
+          ))}
+        </ProjectsTable>
+      </PageContainer>
     );
   }
 
   return (
     <>
-      <Content>
+      <PageContainer>
         <Header>
-          <HeaderTop>
-            <HeaderLeft>
-              <Title>Projects</Title>
-              <Subtitle>Manage and access your projects</Subtitle>
-            </HeaderLeft>
-            <HeaderActions>
-              <SearchWrapper>
-                <SearchIcon>
-                  <Search size={16} />
-                </SearchIcon>
-                <SearchInput
-                  placeholder="Search projects..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </SearchWrapper>
-              <NewButton onClick={() => setShowNewProject(true)}>
-                <Plus size={16} />
-                Create Project
-              </NewButton>
-            </HeaderActions>
-          </HeaderTop>
+          <HeaderLeft>
+            <Title>All Projects</Title>
+            <Subtitle>
+              You have <strong>{projects.length} active project{projects.length !== 1 ? 's' : ''}</strong> in your workspace.
+            </Subtitle>
+          </HeaderLeft>
+          <HeaderActions>
+            <SearchWrapper>
+              <SearchIcon>
+                <Search size={16} />
+              </SearchIcon>
+              <SearchInput
+                placeholder="Search projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </SearchWrapper>
+            <NewButton onClick={() => setShowNewProject(true)}>
+              <Plus size={14} />
+              Create New
+            </NewButton>
+          </HeaderActions>
         </Header>
 
         {filteredProjects.length === 0 ? (
-          <EmptyState>
-            <EmptyIcon>
-              <FolderKanban size={32} />
-            </EmptyIcon>
-            <EmptyTitle>No projects yet</EmptyTitle>
-            <EmptyDescription>
-              Create your first project to get started managing your tasks
-            </EmptyDescription>
-            <EmptyButton onClick={() => setShowNewProject(true)}>
-              <Plus size={16} />
-              Create Project
-            </EmptyButton>
-          </EmptyState>
+          <ProjectsTable>
+            <EmptyState>
+              <EmptyIcon>
+                <FolderKanban size={32} />
+              </EmptyIcon>
+              <EmptyTitle>No projects yet</EmptyTitle>
+              <EmptyDescription>
+                Create your first project to get started managing your tasks
+              </EmptyDescription>
+              <EmptyButton onClick={() => setShowNewProject(true)}>
+                <Plus size={14} />
+                Create Project
+              </EmptyButton>
+            </EmptyState>
+          </ProjectsTable>
         ) : (
-          <ProjectsGrid>
-            {filteredProjects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                onClick={() => openProject(project)}
-              >
-                <CardHeader>
-                  <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+          <ProjectsTable>
+            <TableHeader>
+              <TableHeaderCell>Project Name</TableHeaderCell>
+              <TableHeaderCell>Key Identifier</TableHeaderCell>
+              <TableHeaderCell>Assigned Team</TableHeaderCell>
+              <TableHeaderCell>Last Updated</TableHeaderCell>
+            </TableHeader>
+            
+            {filteredProjects.map((project) => {
+              const members = project.members || [];
+              const displayMembers = members.slice(0, 4);
+              const remainingCount = members.length > 4 ? members.length - 4 : 0;
+              
+              return (
+                <ProjectRow
+                  key={project.id}
+                  onClick={() => openProject(project)}
+                >
+                  <ProjectInfo>
                     <ProjectName>{project.name}</ProjectName>
-                    <ProjectKey>{project.key}</ProjectKey>
-                    <RoleIndicator $role={project.userRole}>{project.userRole}</RoleIndicator>
-                  </div>
+                    <ProjectDescription>
+                      {project.description || 'Software Project'}
+                    </ProjectDescription>
+                  </ProjectInfo>
+
+                  <ProjectKey>{project.key}</ProjectKey>
+
+                  <MemberAvatars>
+                    {displayMembers.length > 0 ? (
+                      <>
+                        {displayMembers.map((member, idx) => (
+                          <UserAvatar 
+                            key={member.user?.id || idx} 
+                            user={member.user} 
+                            size="sm"
+                          />
+                        ))}
+                        {remainingCount > 0 && (
+                          <AvatarOverflow>+{remainingCount}</AvatarOverflow>
+                        )}
+                      </>
+                    ) : (
+                      <UserAvatar user={project.owner} size="sm" />
+                    )}
+                  </MemberAvatars>
+
+                  <LastUpdated>
+                    <LastUpdatedTime>
+                      {project.lastVisitedAt
+                        ? formatDate(project.lastVisitedAt)
+                        : 'Never visited'}
+                    </LastUpdatedTime>
+                    <LastUpdatedBy>
+                      By {project.owner?.username || 'Unknown'}
+                    </LastUpdatedBy>
+                  </LastUpdated>
+
                   <div ref={(el) => (menuRefs.current[project.id] = el)} style={{ position: 'relative' }}>
                     <QuickActionsButton onClick={(e) => toggleMenu(project.id, e)}>
                       <MoreVertical size={16} />
@@ -215,120 +296,98 @@ const Projects = () => {
                     {activeMenu === project.id && (
                       <QuickActionsMenu onClick={(e) => e.stopPropagation()}>
                         <MenuItem onClick={(e) => { e.stopPropagation(); handleMenuAction('view', project); }}>
-                          <FileText size={14} style={{ marginRight: '8px' }} />
+                          <FileText size={14} />
                           View
                         </MenuItem>
                         <MenuItem onClick={(e) => { e.stopPropagation(); handleMenuAction('settings', project); }}>
-                          <Settings size={14} style={{ marginRight: '8px' }} />
+                          <Settings size={14} />
                           Settings
                         </MenuItem>
                         {project.userRole !== 'OWNER' && (
                           <MenuItem onClick={(e) => { e.stopPropagation(); handleMenuAction('leave', project); }}>
-                            <LogOut size={14} style={{ marginRight: '8px' }} />
+                            <LogOut size={14} />
                             Leave
                           </MenuItem>
                         )}
                       </QuickActionsMenu>
                     )}
                   </div>
-                </CardHeader>
-
-                <ProjectDescription>
-                  {project.description || "No description"}
-                </ProjectDescription>
-
-                <ProjectMeta>
-                  <OwnerBadge>
-                    <UserAvatar user={project.owner} size="sm" />
-                    <span>{project.owner?.username || 'Unknown'}</span>
-                  </OwnerBadge>
-
-                  {project.members && project.members.length > 0 && (
-                    <MemberAvatars>
-                      {project.members.slice(0, 3).map((member, index) => (
-                        <UserAvatar 
-                          key={member.user?.id || index} 
-                          user={member.user} 
-                          size="sm" 
-                          style={{ marginLeft: index > 0 ? -8 : 0 }}
-                        />
-                      ))}
-                      {project.members.length > 3 && (
-                        <AvatarOverflow>+{project.members.length - 3}</AvatarOverflow>
-                      )}
-                    </MemberAvatars>
-                  )}
-
-                  <IssueCount>
-                    <FileText size={12} />
-                    <MetaValue>{project._count?.issues || 0}</MetaValue>
-                  </IssueCount>
-
-                  <LastUpdated>
-                    {project.lastVisitedAt
-                      ? formatDate(project.lastVisitedAt)
-                      : 'Never visited'}
-                  </LastUpdated>
-                </ProjectMeta>
-              </ProjectCard>
-            ))}
-          </ProjectsGrid>
+                </ProjectRow>
+              );
+            })}
+          </ProjectsTable>
         )}
-      </Content>
+
+        <Footer>
+          <StatusIndicator>
+            <StatusDot />
+            <StatLabel>System Active</StatLabel>
+          </StatusIndicator>
+          <StatItem>
+            <StatValue>{totalIssues}</StatValue>
+            <StatLabel>Total Tasks</StatLabel>
+          </StatItem>
+          <StatItem>
+            <StatValue>{totalMembers}</StatValue>
+            <StatLabel>Team Members</StatLabel>
+          </StatItem>
+        </Footer>
+      </PageContainer>
 
       {showNewProject && (
         <ModalOverlay onClick={() => setShowNewProject(false)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalTitle>Create New Project</ModalTitle>
             <form method="post" onSubmit={handleCreateProject}>
-            <Input
-              placeholder="Project key (e.g. PROJ)"
-              value={newProject.key}
-              onChange={(e) =>
-                setNewProject({ ...newProject, key: e.target.value.toUpperCase() })
-              }
-              maxLength={10}
-              style={{ textTransform: 'uppercase', fontWeight: 600 }}
-              disabled={isCreating}
-              required
-            />
-
-            <Input
-              placeholder="Project name"
-              value={newProject.name}
-              onChange={(e) =>
-                setNewProject({ ...newProject, name: e.target.value })
-              }
-              autoFocus
-              disabled={isCreating}
-            />
-
-            <Textarea
-              placeholder="Project description"
-              value={newProject.description}
-              onChange={(e) =>
-                setNewProject({
-                  ...newProject,
-                  description: e.target.value,
-                })
-              }
-              disabled={isCreating}
-            />
-
-            <ButtonGroup>
-              <Button primary disabled={isCreating}>
-                {isCreating ? "Creating..." : "Create Project"}
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowNewProject(false);
-                  setNewProject({ name: "", key: "", description: "" });
-                }}
+              <Input
+                placeholder="Project key (e.g. PROJ)"
+                value={newProject.key}
+                onChange={(e) =>
+                  setNewProject({ ...newProject, key: e.target.value.toUpperCase() })
+                }
+                maxLength={10}
+                style={{ textTransform: 'uppercase', fontWeight: 600 }}
                 disabled={isCreating}
-              >
-                Cancel
-              </Button>
-            </ButtonGroup>
+                required
+              />
+
+              <Input
+                placeholder="Project name"
+                value={newProject.name}
+                onChange={(e) =>
+                  setNewProject({ ...newProject, name: e.target.value })
+                }
+                autoFocus
+                disabled={isCreating}
+              />
+
+              <Textarea
+                placeholder="Project description"
+                value={newProject.description}
+                onChange={(e) =>
+                  setNewProject({
+                    ...newProject,
+                    description: e.target.value,
+                  })
+                }
+                disabled={isCreating}
+              />
+
+              <ButtonGroup>
+                <Button primary disabled={isCreating}>
+                  {isCreating ? 'Creating...' : 'Create Project'}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setShowNewProject(false);
+                    setNewProject({ name: "", key: "", description: "" });
+                  }}
+                  disabled={isCreating}
+                >
+                  Cancel
+                </Button>
+              </ButtonGroup>
             </form>
           </ModalContent>
         </ModalOverlay>

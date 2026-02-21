@@ -5,7 +5,7 @@ import {
   useDeleteIssueMutation,
   useCreateIssueMutation,
   useUpdateIssueMutation,
-} from '../../../reducers/slices/project/project.apiSlice';
+} from '../../../reducers/slices/issue/issue.apiSlice';
 import {
   closeDeleteModal,
   closeEditModal,

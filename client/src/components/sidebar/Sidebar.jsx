@@ -49,7 +49,7 @@ import { apiSlice } from '../../reducers/apiSlice';
 
 const Sidebar = ({ activeView, setActiveView, currentUser }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(true);
   
   const navigate = useNavigate();
   const dispatch = useDispatch();

@@ -1,288 +1,77 @@
 import { useState, useEffect } from "react";
-import styled from "styled-components";
-import { Mail, Check, X, Bell, Briefcase, ArrowLeft, Clock, Copy, CheckCircle, AlertCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Clock, CheckCircle, AlertCircle, User, Calendar, Users } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { setActiveView } from "../../reducers/slices/navigation/navigation.slice";
-import Button from "../../components/ui/button/Button";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
+import Button from "../../components/ui/button/Button";
 import {
   useGetMyInvitationsQuery,
   useAcceptInvitationMutation,
   useDeclineInvitationMutation,
 } from "../../reducers/slices/invitation/invitation.apiSlice";
 import { formatDistanceToNow } from "../../utils/date";
+import { InvitationCardSkeleton, ButtonSpinner } from "../../components/ui/skeleton/Skeleton";
+import {
+  PageContainer,
+  Header,
+  HeaderTop,
+  HeaderLeft,
+  Title,
+  Subtitle,
 
-const PageContainer = styled.div`
-  min-height: 100vh;
-  background-color: #f3f4f6;
-`;
+  Tabs,
+  Tab,
+  TabCount,
+  Content,
+  InvitationsList,
+  InvitationCard,
+  InvitationContent,
+  InvitationAvatar,
+  InvitationInfo,
+  InvitationTitle,
+  InvitationDetails,
+  InvitationMeta,
+  MetaItem,
+  MetaIcon,
+  InvitationActions,
+  StatusBadge,
+  EmptyState,
+  EmptyIcon,
+  EmptyTitle,
+  EmptyDescription,
+  ToastMessage,
+} from "./Invitations.styles";
 
-const Header = styled.header`
-  background-color: white;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 1rem 1.5rem;
-`;
+// Gradient colors for avatars
+const avatarGradients = [
+  "linear-gradient(135deg, #3f51b5 0%, #5c6bc0 100%)",
+  "linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%)",
+  "linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%)",
+  "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+  "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+  "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
+  "linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%)",
+];
 
-const HeaderContent = styled.div`
-  max-width: 80rem;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-`;
-
-const BackButton = styled(Link)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background-color: #f3f4f6;
-  color: #374151;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: #e5e7eb;
+// Get initials from name
+const getInitials = (name) => {
+  if (!name) return "??";
+  const words = name.split(" ");
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
   }
-`;
+  return name.substring(0, 2).toUpperCase();
+};
 
-const HeaderTitle = styled.h1`
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-`;
-
-const InvitationCount = styled.span`
-  background: #6366f1;
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 600;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-`;
-
-const Content = styled.main`
-  max-width: 80rem;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-`;
-
-const Section = styled.section`
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-`;
-
-const SectionHeader = styled.div`
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-`;
-
-const SectionTitle = styled.h2`
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #111827;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const SectionDescription = styled.p`
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
-`;
-
-const InvitationsList = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const InvitationCard = styled.div`
-  padding: 1.5rem;
-  border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.2s;
-
-  &:last-child {
-    border-bottom: none;
+// Get consistent gradient based on string
+const getGradient = (str) => {
+  if (!str) return avatarGradients[0];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
-
-  &:hover {
-    background-color: #f9fafb;
-  }
-`;
-
-const CardContent = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-`;
-
-const ProjectIcon = styled.div`
-  width: 48px;
-  height: 48px;
-  background: #000000;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 600;
-  flex-shrink: 0;
-`;
-
-const CardBody = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const ProjectName = styled.h3`
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 0.25rem;
-`;
-
-const ProjectKey = styled.span`
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
-`;
-
-const InvitationDetails = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 0.75rem;
-`;
-
-const DetailItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-`;
-
-const DetailLabel = styled.span`
-  color: #9ca3af;
-`;
-
-const DetailValue = styled.span`
-  color: #374151;
-  font-weight: 500;
-`;
-
-const RoleBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  background-color: ${props => props.role === 'ADMIN' ? '#fef3c7' : '#e0e7ff'};
-  color: ${props => props.role === 'ADMIN' ? '#92400e' : '#3730a3'};
-`;
-
-const ExpiryWarning = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: ${props => props.isExpiringSoon ? '#dc2626' : '#6b7280'};
-  font-size: 0.875rem;
-  
-  svg {
-    width: 14px;
-    height: 14px;
-  }
-`;
-
-const InvitedBy = styled.div`
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-top: 0.75rem;
-
-  strong {
-    color: #374151;
-  }
-`;
-
-const CardActions = styled.div`
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #f3f4f6;
-`;
-
-const AcceptButton = styled(Button)`
-  flex: 1;
-`;
-
-const DeclineButton = styled(Button)`
-  flex: 1;
-`;
-
-const EmptyState = styled.div`
-  padding: 4rem 1.5rem;
-  text-align: center;
-`;
-
-const EmptyIcon = styled.div`
-  width: 80px;
-  height: 80px;
-  background: #f3f4f6;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #9ca3af;
-  margin: 0 auto 1.5rem;
-`;
-
-const EmptyTitle = styled.h3`
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-`;
-
-const EmptyDescription = styled.p`
-  font-size: 0.875rem;
-  color: #6b7280;
-  max-width: 400px;
-  margin: 0 auto;
-`;
-
-const LoadingState = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 4rem;
-  color: #6b7280;
-`;
-
-const ToastMessage = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-// Helper function to check if invitation is expiring soon (within 24 hours)
-const isExpiringSoon = (expiresAt) => {
-  const now = new Date();
-  const expiry = new Date(expiresAt);
-  const hoursUntilExpiry = (expiry - now) / (1000 * 60 * 60);
-  return hoursUntilExpiry < 24 && hoursUntilExpiry > 0;
+  return avatarGradients[Math.abs(hash) % avatarGradients.length];
 };
 
 // Helper function to check if invitation is expired
@@ -307,6 +96,34 @@ const InvitationsPage = () => {
   const [showDeclineConfirm, setShowDeclineConfirm] = useState(false);
   const [invitationToDecline, setInvitationToDecline] = useState(null);
   const [processingId, setProcessingId] = useState(null);
+  const [activeTab, setActiveTab] = useState("pending");
+
+  // Filter invitations by status
+  const pendingInvitations = invitations.filter(inv => inv.status === "PENDING" && !isExpired(inv.expiresAt));
+  const acceptedInvitations = invitations.filter(inv => inv.status === "ACCEPTED");
+  const declinedInvitations = invitations.filter(inv => inv.status === "DECLINED");
+
+  // Get displayed invitations based on active tab
+  const getDisplayedInvitations = () => {
+    switch (activeTab) {
+      case "pending":
+        return pendingInvitations;
+      case "accepted":
+        return acceptedInvitations;
+      case "declined":
+        return declinedInvitations;
+      default:
+        return pendingInvitations;
+    }
+  };
+
+  // Filter by status filter
+  const getFilteredInvitations = () => {
+    const displayed = getDisplayedInvitations();
+    return displayed.filter(inv => inv.status.toLowerCase() === activeTab);
+  };
+
+  const displayedInvitations = getFilteredInvitations();
 
   const handleAccept = async (invitation) => {
     setProcessingId(invitation.id);
@@ -366,132 +183,222 @@ const InvitationsPage = () => {
     setInvitationToDecline(null);
   };
 
-  // Filter out expired invitations and show warning
-  const validInvitations = invitations.filter(inv => !isExpired(inv.expiresAt));
-  const expiredCount = invitations.length - validInvitations.length;
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+  };
 
-  useEffect(() => {
-    if (expiredCount > 0) {
-      toast.info(
-        <ToastMessage>
-          <AlertCircle size={18} />
-          {expiredCount} invitation(s) have expired and been removed
-        </ToastMessage>
-      );
-    }
-  }, [expiredCount]);
+  if (isLoading) {
+    return (
+      <PageContainer>
+        <Header>
+          <HeaderTop>
+            <HeaderLeft>
+              <Title>Invitations</Title>
+              <Subtitle>Loading your invitations...</Subtitle>
+            </HeaderLeft>
+          </HeaderTop>
+        </Header>
+        <Tabs>
+          <Tab $active>Pending <TabCount>0</TabCount></Tab>
+          <Tab>Accepted <TabCount>0</TabCount></Tab>
+          <Tab>Declined <TabCount>0</TabCount></Tab>
+        </Tabs>
+        <Content>
+          <InvitationsList>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <InvitationCardSkeleton key={i} />
+            ))}
+          </InvitationsList>
+        </Content>
+      </PageContainer>
+    );
+  }
 
   return (
-    <PageContainer>
-      <Header>
-        <HeaderContent>
-          <BackButton to="/app">
-            <ArrowLeft size={20} />
-          </BackButton>
-          <HeaderTitle>
-            <Bell size={24} />
-            Invitations
-            {validInvitations.length > 0 && (
-              <InvitationCount>{validInvitations.length}</InvitationCount>
-            )}
-          </HeaderTitle>
-        </HeaderContent>
-      </Header>
+    <>
+      <PageContainer>
+        <Header>
+          <HeaderTop>
+            <HeaderLeft>
+              <Title>Invitations</Title>
+              <Subtitle>Manage your project invitations</Subtitle>
+            </HeaderLeft>
+            
+          </HeaderTop>
+        </Header>
 
-      <Content>
-        {isLoading ? (
-          <Section>
-            <LoadingState>Loading invitations...</LoadingState>
-          </Section>
-        ) : validInvitations.length === 0 ? (
-          <Section>
+        <Tabs>
+          <Tab $active={activeTab === "pending"} onClick={() => handleTabChange("pending")}>
+            Pending
+            <TabCount>{pendingInvitations.length}</TabCount>
+          </Tab>
+          <Tab $active={activeTab === "accepted"} onClick={() => handleTabChange("accepted")}>
+            Accepted
+            <TabCount>{acceptedInvitations.length}</TabCount>
+          </Tab>
+          <Tab $active={activeTab === "declined"} onClick={() => handleTabChange("declined")}>
+            Declined
+            <TabCount>{declinedInvitations.length}</TabCount>
+          </Tab>
+        </Tabs>
+
+        <Content>
+          {displayedInvitations.length === 0 ? (
             <EmptyState>
-              <EmptyIcon>
-                <Mail size={40} />
-              </EmptyIcon>
-              <EmptyTitle>No pending invitations</EmptyTitle>
+              <EmptyIcon>📧</EmptyIcon>
+              <EmptyTitle>
+                {activeTab === "pending" && "No pending invitations"}
+                {activeTab === "accepted" && "No accepted invitations"}
+                {activeTab === "declined" && "No declined invitations"}
+              </EmptyTitle>
               <EmptyDescription>
-                You don't have any project invitations at the moment. When someone
-                invites you to join their project, you'll see it here.
+                {activeTab === "pending" && "You don't have any pending project invitations. When someone invites you to join their project, you'll see it here."}
+                {activeTab === "accepted" && "You haven't accepted any invitations yet. Accepted invitations will appear here."}
+                {activeTab === "declined" && "You don't have any declined invitations."}
               </EmptyDescription>
             </EmptyState>
-          </Section>
-        ) : (
-          <Section>
-            <SectionHeader>
-              <SectionTitle>
-                <Briefcase size={20} />
-                Project Invitations
-              </SectionTitle>
-              <SectionDescription>
-                Review and respond to your pending project invitations
-              </SectionDescription>
-            </SectionHeader>
-
+          ) : (
             <InvitationsList>
-              {validInvitations.map((invitation) => {
-                const expiringSoon = isExpiringSoon(invitation.expiresAt);
+              {displayedInvitations.map((invitation) => {
                 const isThisProcessing = processingId === invitation.id;
+                const inviterName = invitation.invitedBy?.username || "Unknown";
+                const projectName = invitation.project?.name || "Unknown Project";
+                const gradient = getGradient(projectName);
+                const initials = getInitials(inviterName);
+                const status = invitation.status.toLowerCase();
                 
                 return (
                   <InvitationCard key={invitation.id}>
-                    <CardContent>
-                      <ProjectIcon>
-                        {invitation.project.key.substring(0, 2).toUpperCase()}
-                      </ProjectIcon>
-                      <CardBody>
-                        <ProjectName>{invitation.project.name}</ProjectName>
-                        <ProjectKey>{invitation.project.key}</ProjectKey>
-
+                    <InvitationContent>
+                      <InvitationAvatar $gradient={gradient}>
+                        {initials}
+                      </InvitationAvatar>
+                      <InvitationInfo>
+                        <InvitationTitle>
+                          {inviterName} invited you to {projectName}
+                        </InvitationTitle>
                         <InvitationDetails>
-                          <DetailItem>
-                            <DetailLabel>Role:</DetailLabel>
-                            <RoleBadge role={invitation.role}>
-                              {invitation.role}
-                            </RoleBadge>
-                          </DetailItem>
-                          <DetailItem>
-                            <DetailLabel>Expires:</DetailLabel>
-                            <ExpiryWarning isExpiringSoon={expiringSoon}>
-                              <Clock size={14} />
-                              {expiringSoon ? "Expires soon - " : ""}
-                              {formatDistanceToNow(new Date(invitation.expiresAt))}
-                            </ExpiryWarning>
-                          </DetailItem>
+                          You've been invited to collaborate on the {projectName} team as a {invitation.role || "Member"}.
                         </InvitationDetails>
-
-                        <InvitedBy>
-                          Invited by <strong>{invitation.invitedBy?.username}</strong>
-                        </InvitedBy>
-                      </CardBody>
-                    </CardContent>
-
-                    <CardActions>
-                      <AcceptButton
-                        onClick={() => handleAccept(invitation)}
-                        disabled={isProcessing}
-                        isLoading={isThisProcessing && isAccepting}
-                      >
-                        <Check size={18} style={{ marginRight: "0.5rem" }} />
-                        Accept
-                      </AcceptButton>
-                      <DeclineButton
-                        variant="secondary"
-                        onClick={() => handleDeclineClick(invitation)}
-                        disabled={isProcessing}
-                        isLoading={isThisProcessing && isDeclining}
-                      >
-                        <X size={18} style={{ marginRight: "0.5rem" }} />
-                        Decline
-                      </DeclineButton>
-                    </CardActions>
+                        <InvitationMeta>
+                          <MetaItem>
+                            <MetaIcon>
+                              <Calendar size={14} />
+                            </MetaIcon>
+                            <span>{formatDistanceToNow(new Date(invitation.createdAt))}</span>
+                          </MetaItem>
+                          <MetaItem>
+                            <MetaIcon>
+                              <Users size={14} />
+                            </MetaIcon>
+                            <span>{invitation.role || "Member"} Role</span>
+                          </MetaItem>
+                          <MetaItem>
+                            <StatusBadge $status={status}>
+                              {status.toUpperCase()}
+                            </StatusBadge>
+                          </MetaItem>
+                        </InvitationMeta>
+                      </InvitationInfo>
+                    </InvitationContent>
+                    <InvitationActions>
+                      {invitation.status === "PENDING" && (
+                        <>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleAccept(invitation)}
+                            disabled={isProcessing}
+                            style={{ 
+                              padding: '0.625rem 1.25rem',
+                              fontSize: '0.8125rem',
+                              fontWeight: 500,
+                              background: '#1a1a1a',
+                              borderRadius: '8px',
+                            }}
+                          >
+                            {isThisProcessing && isAccepting ? (
+                              <>
+                                <ButtonSpinner />
+                                Accepting...
+                              </>
+                            ) : (
+                              "Accept"
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeclineClick(invitation)}
+                            disabled={isProcessing}
+                            style={{ 
+                              padding: '0.625rem 1.25rem',
+                              fontSize: '0.8125rem',
+                              fontWeight: 500,
+                              background: 'white',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '8px',
+                              color: '#1a1a1a',
+                            }}
+                          >
+                            {isThisProcessing && isDeclining ? (
+                              <>
+                                <ButtonSpinner />
+                                Declining...
+                              </>
+                            ) : (
+                              "Decline"
+                            )}
+                          </Button>
+                        </>
+                      )}
+                      {invitation.status === "ACCEPTED" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled
+                          style={{ 
+                            padding: '0.625rem 1.25rem',
+                            fontSize: '0.8125rem',
+                            fontWeight: 500,
+                            background: 'white',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '8px',
+                            color: '#808080',
+                            cursor: 'not-allowed',
+                          }}
+                        >
+                          Joined
+                        </Button>
+                      )}
+                      {invitation.status === "DECLINED" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled
+                          style={{ 
+                            padding: '0.625rem 1.25rem',
+                            fontSize: '0.8125rem',
+                            fontWeight: 500,
+                            background: 'white',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '8px',
+                            color: '#808080',
+                            cursor: 'not-allowed',
+                          }}
+                        >
+                          Declined
+                        </Button>
+                      )}
+                    </InvitationActions>
                   </InvitationCard>
                 );
               })}
             </InvitationsList>
-          </Section>
-        )}
-      </Content>
+          )}
+        </Content>
+      </PageContainer>
+
       <ConfirmModal
         isOpen={showDeclineConfirm}
         onClose={handleDeclineCancel}
@@ -502,7 +409,7 @@ const InvitationsPage = () => {
         cancelText="Cancel"
         variant="danger"
       />
-    </PageContainer>
+    </>
   );
 };
 

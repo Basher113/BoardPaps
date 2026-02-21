@@ -7,6 +7,7 @@ import { selectActiveView } from "../../reducers/slices/navigation/navigation.se
 import LandingPage from "../landing-page/LandingPage"
 
 import {Wrapper, OutletWrapper} from "./root.styles";
+import { FullPageLoading,  } from "../../components/ui/skeleton/Skeleton";
 
 const Root = () => {
   const activeView = useSelector(selectActiveView);
@@ -20,7 +21,7 @@ const Root = () => {
 
   // Wait for Clerk to load
   if (!isLoaded) {
-    return null;
+    return <FullPageLoading />;
   }
   
   // If not signed in, only show landing page for the root path

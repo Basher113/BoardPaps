@@ -120,7 +120,7 @@ const Column = ({
               columnId={column.id}
               onDragStart={handleCardDragStart}
               onDragEnd={handleCardDragEnd}
-              onClick={() => onCardClick(issue)}
+              onClick={() => onCardClick({...issue, column})}
             />
           ))
         ) : (

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { Trash, ChevronDown } from 'lucide-react';
 import {
   Section,
   SectionHeader,
+  SectionHeaderContent,
   SectionTitle,
   SectionDescription,
   SectionContent,
@@ -12,40 +13,39 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  AvatarWrapper,
-  MemberInfo,
+  TableHeaderCell,
+  UserCell,
+  UserInfo,
   MemberName,
   MemberEmail,
   RoleBadge,
-  ActionButton
+  ActionButton,
+  Button,
+  RoleDropdown,
+  RoleDropdownMenu,
+  RoleDropdownItem,
+  ActionsCell,
 } from '../../ProjectSettings.styles';
 import ConfirmModal from '../../../../components/ui/confirm-modal/ConfirmModal';
-import UserAvatar from '../../../../components/ui/user-avatar/UserAvatar';
-import { useUpdateMemberRoleMutation, useRemoveMemberMutation } from '../../../../reducers/slices/project/project.apiSlice';
+import UserAvatarComponent from '../../../../components/ui/user-avatar/UserAvatar';
+import { useRemoveMemberMutation, useUpdateMemberRoleMutation } from '../../../../reducers/slices/member/member.apiSlice';
 
 const MembersList = ({ project, currentUserId, canManageSettings, refetchProject }) => {
-  const navigate = useNavigate();
   const [selectedMember, setSelectedMember] = useState(null);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [newRole, setNewRole] = useState('');
+  const [openDropdown, setOpenDropdown] = useState(null);
 
-  const [updateMemberRole, { isLoading: roleLoading }] = useUpdateMemberRoleMutation();
   const [removeMember, { isLoading: removeLoading }] = useRemoveMemberMutation();
+  const [updateMemberRole, { isLoading: roleLoading }] = useUpdateMemberRoleMutation();
 
-  const handleRoleChange = async (memberId, newRole) => {
-    try {
-      await updateMemberRole({ 
-        projectId: project.id, 
-        memberId, 
-        role: newRole 
-      }).unwrap();
-      toast.success('Member role updated successfully');
-      refetchProject();
-    } catch (err) {
-      console.error('Failed to update role:', err);
-      toast.error(err.data?.message || 'Failed to update member role');
-    }
-  };
+  // Find current user's membership and role
+  const currentMember = project.members?.find(m => m.user.id === currentUserId);
+  const currentUserRole = currentMember?.role;
+
+  // Check if current user is owner
+  const isOwner = currentUserRole === 'OWNER';
 
   const handleRemoveMember = async () => {
     if (!selectedMember) return;
@@ -65,101 +65,144 @@ const MembersList = ({ project, currentUserId, canManageSettings, refetchProject
     }
   };
 
+  const handleRoleChange = async () => {
+    if (!selectedMember || !newRole) return;
+
+    try {
+      await updateMemberRole({
+        projectId: project.id,
+        memberId: selectedMember.id,
+        role: newRole
+      }).unwrap();
+      toast.success('Member role updated successfully');
+      setShowRoleModal(false);
+      setSelectedMember(null);
+      setNewRole('');
+      refetchProject();
+    } catch (err) {
+      console.error('Failed to update member role:', err);
+      toast.error(err.data?.message || 'Failed to update member role');
+    }
+  };
+
   const openRemoveModal = (member) => {
     setSelectedMember(member);
     setShowRemoveModal(true);
+    setOpenDropdown(null);
   };
 
-  // Find current user's membership
-  const currentMember = project.members?.find(m => m.user.id === currentUserId);
-  const isOwner = currentMember?.role === 'OWNER';
+  const openRoleModal = (member, role) => {
+    setSelectedMember(member);
+    setNewRole(role);
+    setShowRoleModal(true);
+    setOpenDropdown(null);
+  };
 
-  // Handle leave project
-  const handleLeaveProject = async () => {
-    if (!currentMember) return;
+  // Check if current user can modify a member's role
+  const canModifyRole = (member) => {
+    // Can't modify own role
+    if (member.user.id === currentUserId) return false;
+    // Can't modify owner's role
+    if (member.role === 'OWNER') return false;
+    // Only owner can modify roles
+    return isOwner;
+  };
 
-    try {
-      await removeMember({ 
-        projectId: project.id, 
-        memberId: currentMember.id 
-      }).unwrap();
-      toast.success('You have left the project successfully');
-      setShowLeaveModal(false);
-      // Navigate to dashboard after leaving
-      navigate('/dashboard');
-    } catch (err) {
-      console.error('Failed to leave project:', err);
-      toast.error(err.data?.message || 'Failed to leave project');
-    }
+  // Check if current user can remove a member
+  const canRemoveMember = (member) => {
+    // Can't remove yourself (use leave project instead)
+    if (member.user.id === currentUserId) return false;
+    // Can't remove owner
+    if (member.role === 'OWNER') return false;
+    // Owner can remove anyone
+    if (isOwner) return true;
+    // Admin can remove members (but not other admins)
+    if (currentUserRole === 'ADMIN' && member.role === 'MEMBER') return true;
+    return false;
+  };
+
+  // Get available roles for promotion/demotion
+  const getAvailableRoles = (currentRole) => {
+    const roles = ['MEMBER', 'ADMIN'];
+    return roles.filter(role => role !== currentRole);
   };
 
   return (
     <>
       <Section>
-        <SectionHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <SectionTitle>Team Members</SectionTitle>
-            <SectionDescription>Manage project members and their roles</SectionDescription>
-          </div>
-          {!isOwner && (
-            <ActionButton
-              variant="destructive"
-              onClick={() => setShowLeaveModal(true)}
-              style={{ marginTop: '0.25rem' }}
-            >
-              Leave Project
-            </ActionButton>
+        <SectionHeader>
+          <SectionHeaderContent>
+            <SectionTitle>Members</SectionTitle>
+            <SectionDescription>Manage who can view and edit this project.</SectionDescription>
+          </SectionHeaderContent>
+          {canManageSettings && (
+            <Button $variant="primary" style={{ padding: '0.5rem 0.875rem', fontSize: '0.75rem' }}>
+              + Add Member
+            </Button>
           )}
         </SectionHeader>
-        <SectionContent>
+        <SectionContent style={{ padding: 0 }}>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableCell>Member</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Joined</TableCell>
-                <TableCell>Actions</TableCell>
+                <TableHeaderCell>Team Member</TableHeaderCell>
+                <TableHeaderCell>Role</TableHeaderCell>
+                <TableHeaderCell>Actions</TableHeaderCell>
               </TableRow>
             </TableHeader>
             <TableBody>
               {project.members?.map((member) => (
                 <TableRow key={member.id}>
                   <TableCell>
-                    <AvatarWrapper>
-                      <UserAvatar user={member.user} size="md" />
-                    </AvatarWrapper>
-                    <MemberInfo>
-                      <MemberName>
-                        {member.user.username}
-                        {member.user.id === currentUserId && ' (You)'}
-                      </MemberName>
-                      <MemberEmail>{member.user.email}</MemberEmail>
-                    </MemberInfo>
+                    <UserCell>
+                      <UserAvatarComponent user={member.user} size="sm" />
+                      <UserInfo>
+                        <MemberName>
+                          {member.user.username}
+                          {member.user.id === currentUserId && ' (You)'}
+                        </MemberName>
+                        <MemberEmail>{member.user.email}</MemberEmail>
+                      </UserInfo>
+                    </UserCell>
                   </TableCell>
                   <TableCell>
-                    <RoleBadge $role={member.role}>{member.role}</RoleBadge>
+                    {canModifyRole(member) ? (
+                      <RoleDropdown>
+                        <RoleBadge 
+                          $isLead={member.role === 'OWNER' || member.role === 'ADMIN'}
+                          onClick={() => setOpenDropdown(openDropdown === member.id ? null : member.id)}
+                          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                          {member.role}
+                          <ChevronDown size={12} />
+                        </RoleBadge>
+                        {openDropdown === member.id && (
+                          <RoleDropdownMenu>
+                            {getAvailableRoles(member.role).map((role) => (
+                              <RoleDropdownItem 
+                                key={role}
+                                onClick={() => openRoleModal(member, role)}
+                              >
+                                {role === 'ADMIN' ? 'Promote to Admin' : 'Demote to Member'}
+                              </RoleDropdownItem>
+                            ))}
+                          </RoleDropdownMenu>
+                        )}
+                      </RoleDropdown>
+                    ) : (
+                      <RoleBadge $isLead={member.role === 'OWNER' || member.role === 'ADMIN'}>
+                        {member.role}
+                      </RoleBadge>
+                    )}
                   </TableCell>
-                  <TableCell>{formatDate(project.createdAt)}</TableCell>
                   <TableCell>
-                    {canManageSettings && member.role !== 'OWNER' && member.user.id !== currentUserId && (
-                      <ActionButton
-                        variant="outline"
-                        onClick={() => handleRoleChange(member.id, member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN')}
-                        disabled={roleLoading}
-                      >
-                        {member.role === 'ADMIN' ? 'Demote to Member' : 'Promote to Admin'}
-                      </ActionButton>
-                    )}
-                    {member.user.id !== currentUserId && member.role !== 'OWNER' && (
-                      <ActionButton
-                        variant="destructive"
-                        onClick={() => openRemoveModal(member)}
-                        disabled={removeLoading}
-                        style={{ marginLeft: '0.5rem' }}
-                      >
-                        Remove
-                      </ActionButton>
-                    )}
+                    <ActionsCell>
+                      {canRemoveMember(member) && (
+                        <ActionButton onClick={() => openRemoveModal(member)}>
+                          <Trash color='rgb(255, 120, 120)'/>
+                        </ActionButton>
+                      )}
+                    </ActionsCell>
                   </TableCell>
                 </TableRow>
               ))}
@@ -184,29 +227,24 @@ const MembersList = ({ project, currentUserId, canManageSettings, refetchProject
         isLoading={removeLoading}
       />
 
-      {/* Leave Project Confirmation Modal */}
+      {/* Role Change Confirmation Modal */}
       <ConfirmModal
-        isOpen={showLeaveModal}
-        onClose={() => setShowLeaveModal(false)}
-        onConfirm={handleLeaveProject}
-        title="Leave Project"
-        message="Are you sure you want to leave this project? You will lose access to all project resources."
-        confirmText="Leave Project"
+        isOpen={showRoleModal}
+        onClose={() => {
+          setShowRoleModal(false);
+          setSelectedMember(null);
+          setNewRole('');
+        }}
+        onConfirm={handleRoleChange}
+        title="Change Member Role"
+        message={`Are you sure you want to ${newRole === 'ADMIN' ? 'promote' : 'demote'} ${selectedMember?.user?.username} to ${newRole}?`}
+        confirmText={newRole === 'ADMIN' ? 'Promote' : 'Demote'}
         cancelText="Cancel"
-        variant="danger"
-        isLoading={removeLoading}
+        variant="primary"
+        isLoading={roleLoading}
       />
     </>
   );
-};
-
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
 };
 
 export default MembersList;

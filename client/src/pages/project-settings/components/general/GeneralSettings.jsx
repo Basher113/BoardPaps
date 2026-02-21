@@ -3,21 +3,24 @@ import { toast } from 'react-toastify';
 import {
   Section,
   SectionHeader,
+  SectionHeaderContent,
   SectionTitle,
   SectionDescription,
   SectionContent,
   Form,
   FormGroup,
+  FormRow,
   Label,
   RequiredMark,
   Input,
+  Textarea,
+  Select,
   Button,
   FormActions,
   ErrorMessage,
-  MetaInfo,
-  MetaItem,
-  MetaLabel,
-  MetaValue,
+  DetailRow,
+  DetailLabel,
+  DetailValue,
 } from '../../ProjectSettings.styles';
 import Modal from '../../../../components/ui/modal/Modal';
 import { useUpdateProjectMutation } from '../../../../reducers/slices/project/project.apiSlice';
@@ -29,44 +32,40 @@ const GeneralSettings = ({ project, canManageSettings, refetchProject }) => {
     <>
       <Section>
         <SectionHeader>
-          <SectionTitle>General Information</SectionTitle>
-          <SectionDescription>View and edit your project details</SectionDescription>
+          <SectionHeaderContent>
+            <SectionTitle>General Details</SectionTitle>
+            <SectionDescription>Basic information about your project.</SectionDescription>
+          </SectionHeaderContent>
+          {canManageSettings && (
+            <Button 
+              type="button" 
+              onClick={() => setShowEditModal(true)}
+              style={{ background: '#1a1a1a', color: 'white', border: 'none' }}
+            >
+              Edit Project
+            </Button>
+          )}
         </SectionHeader>
         <SectionContent>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-            {canManageSettings && (
-              <Button type="button" onClick={() => setShowEditModal(true)}>
-                Edit Project
-              </Button>
-            )}
-          </div>
-
-          <MetaInfo>
-            <MetaItem>
-              <MetaLabel>Project Name</MetaLabel>
-              <MetaValue>{project?.name}</MetaValue>
-            </MetaItem>
-            <MetaItem>
-              <MetaLabel>Project Key</MetaLabel>
-              <MetaValue>{project?.key}</MetaValue>
-            </MetaItem>
-            <MetaItem>
-              <MetaLabel>Description</MetaLabel>
-              <MetaValue>{project?.description || 'No description'}</MetaValue>
-            </MetaItem>
-            <MetaItem>
-              <MetaLabel>Created</MetaLabel>
-              <MetaValue>{formatDate(project?.createdAt)}</MetaValue>
-            </MetaItem>
-            <MetaItem>
-              <MetaLabel>Owner</MetaLabel>
-              <MetaValue>{project?.owner?.username}</MetaValue>
-            </MetaItem>
-            <MetaItem>
-              <MetaLabel>Members</MetaLabel>
-              <MetaValue>{project?.members?.length || 0}</MetaValue>
-            </MetaItem>
-          </MetaInfo>
+          <DetailRow>
+            <DetailLabel>Project Name</DetailLabel>
+            <DetailValue>{project?.name || '—'}</DetailValue>
+          </DetailRow>
+          
+          <DetailRow>
+            <DetailLabel>Project Key</DetailLabel>
+            <DetailValue>{project?.key || '—'}</DetailValue>
+          </DetailRow>
+          
+          <DetailRow>
+            <DetailLabel>Project Category</DetailLabel>
+            <DetailValue>Software Design System</DetailValue>
+          </DetailRow>
+          
+          <DetailRow>
+            <DetailLabel>Project Description</DetailLabel>
+            <DetailValue>{project?.description || 'No description provided.'}</DetailValue>
+          </DetailRow>
         </SectionContent>
       </Section>
 
@@ -180,37 +179,26 @@ const GeneralSettingsEditModal = ({
 
         <FormGroup>
           <Label htmlFor="description">Description</Label>
-          <Input
+          <Textarea
             id="description"
-            type="text"
-            as="textarea"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             placeholder="Enter project description"
-            style={{ minHeight: '80px', resize: 'vertical' }}
+            style={{ minHeight: '80px' }}
           />
         </FormGroup>
 
         <FormActions>
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button type="button" $variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" $variant="primary" disabled={isLoading}>
             {isLoading ? 'Saving...' : 'Save Changes'}
           </Button>
         </FormActions>
       </Form>
     </Modal>
   );
-};
-
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
 };
 
 export default GeneralSettings;

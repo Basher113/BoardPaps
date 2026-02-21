@@ -1,5 +1,3 @@
-
-
 import ProjectBoard from "./pages/board/Board"
 import ProjectSettings from "./pages/project-settings/ProjectSettings"
 import Root from "./pages/root/Root"
@@ -11,6 +9,7 @@ import InvitationsPage from "./pages/invitations/Invitations"
 import Settings from "./pages/settings/Settings"
 import ProtectedRoute from "./ProtectedRoutes";
 import AuthLayout from "./pages/auth/AuthLayout"
+import RouteErrorBoundary from "./components/error-boundary/RouteErrorBoundary"
 
 // Email verification page handled by Clerk
 
@@ -35,27 +34,63 @@ export const routes = [
     children: [
       {
         path: "dashboard",
-        element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
+        element: (
+          <ProtectedRoute>
+            <RouteErrorBoundary routeType="dashboard">
+              <Dashboard />
+            </RouteErrorBoundary>
+          </ProtectedRoute>
+        ),
       },
       {
         path: "projects",
-        element: <ProtectedRoute><Projects /></ProtectedRoute>,
+        element: (
+          <ProtectedRoute>
+            <RouteErrorBoundary routeType="projects">
+              <Projects />
+            </RouteErrorBoundary>
+          </ProtectedRoute>
+        ),
       },
       {
         path: "project/:projectId",
-        element: <ProtectedRoute><ProjectBoard /></ProtectedRoute>,
+        element: (
+          <ProtectedRoute>
+            <RouteErrorBoundary routeType="board">
+              <ProjectBoard />
+            </RouteErrorBoundary>
+          </ProtectedRoute>
+        ),
       },
       {
         path: "project/:projectId/settings",
-        element: <ProtectedRoute><ProjectSettings /></ProtectedRoute>,
+        element: (
+          <ProtectedRoute>
+            <RouteErrorBoundary routeType="projectSettings">
+              <ProjectSettings />
+            </RouteErrorBoundary>
+          </ProtectedRoute>
+        ),
       },
       {
         path: "invitations",
-        element: <ProtectedRoute><InvitationsPage /></ProtectedRoute>,
+        element: (
+          <ProtectedRoute>
+            <RouteErrorBoundary routeType="invitations">
+              <InvitationsPage />
+            </RouteErrorBoundary>
+          </ProtectedRoute>
+        ),
       },
       {
         path: "settings",
-        element: <ProtectedRoute><Settings /></ProtectedRoute>,
+        element: (
+          <ProtectedRoute>
+            <RouteErrorBoundary routeType="settings">
+              <Settings />
+            </RouteErrorBoundary>
+          </ProtectedRoute>
+        ),
       },
     ]
   },

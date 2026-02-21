@@ -2,35 +2,38 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
-  DangerZone as DangerZoneWrapper,
-  DangerHeader,
-  DangerIconWrapper,
-  DangerTitle,
-  DangerDescription,
-  DangerContent,
-  Divider,
-  Button,
-  ModalFormGroup,
-  ModalLabel
+  Section,
+  SectionHeader,
+  SectionTitle,
+  SectionDescription,
+  SectionContent,
+  DangerItem,
+  DangerItemInfo,
+  DangerItemTitle,
+  DangerItemDescription,
+  Button
 } from '../../ProjectSettings.styles';
 import Modal from '../../../../components/ui/modal/Modal';
-import { Trash2, UserCog, ArrowRight } from 'lucide-react';
 import { 
   useDeleteProjectMutation, 
   useTransferProjectOwnershipMutation 
 } from '../../../../reducers/slices/project/project.apiSlice';
+import { useLeaveProjectMutation } from '../../../../reducers/slices/member/member.apiSlice';
 
-const DangerZone = ({ project, currentUserId, refetchProject }) => {
+const DangerZone = ({ project, currentUserId, refetchProject, isOwner }) => {
   const navigate = useNavigate();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [transferUserId, setTransferUserId] = useState('');
 
   const [deleteProject, { isLoading: deleteLoading }] = useDeleteProjectMutation();
   const [transferOwnership, { isLoading: transferLoading }] = useTransferProjectOwnershipMutation();
+  const [leaveProject, { isLoading: leaveLoading }] = useLeaveProjectMutation();
 
-  const handleTransferOwnership = async () => {
+  const handleTransferOwnership = async (e) => {
+    e.preventDefault();
     if (!transferUserId) return;
 
     try {
@@ -48,7 +51,9 @@ const DangerZone = ({ project, currentUserId, refetchProject }) => {
     }
   };
 
-  const handleDeleteProject = async () => {
+  const handleDeleteProject = async (e) => {
+    e.preventDefault();
+
     if (deleteConfirm !== project?.name) {
       toast.error('Project name does not match');
       return;
@@ -57,193 +62,186 @@ const DangerZone = ({ project, currentUserId, refetchProject }) => {
     try {
       await deleteProject(project.id).unwrap();
       toast.success('Project deleted successfully');
-      navigate('/app/projects');
+      navigate('/projects');
     } catch (err) {
       console.error('Failed to delete project:', err);
       toast.error(err.data?.message || 'Failed to delete project');
     }
   };
 
+  const handleLeaveProject = async (e) => {
+    e.preventDefault();
+
+    try {
+      await leaveProject(project.id).unwrap();
+      toast.success('You have left the project');
+      navigate('/projects');
+    } catch (err) {
+      console.error('Failed to leave project:', err);
+      toast.error(err.data?.message || 'Failed to leave project');
+    }
+  };
+
+  // Owner view: Transfer ownership and Delete project
+  if (isOwner) {
+    return (
+      <>
+        <Section $danger>
+          <SectionHeader>
+            <SectionTitle $danger>Danger Zone</SectionTitle>
+            <SectionDescription>Irreversible actions for this project.</SectionDescription>
+          </SectionHeader>
+          <SectionContent>
+            <DangerItem $first>
+              <DangerItemInfo>
+                <DangerItemTitle>Transfer Ownership</DangerItemTitle>
+                <DangerItemDescription>Transfer this project to another member. You will become an admin after the transfer.</DangerItemDescription>
+              </DangerItemInfo>
+              <Button $variant="secondary" onClick={() => setShowTransferModal(true)}>
+                Transfer
+              </Button>
+            </DangerItem>
+            
+            <DangerItem>
+              <DangerItemInfo>
+                <DangerItemTitle>Delete Project</DangerItemTitle>
+                <DangerItemDescription>Permanently delete all project data and settings.</DangerItemDescription>
+              </DangerItemInfo>
+              <Button $variant="danger" onClick={() => setShowDeleteModal(true)}>
+                Delete Project
+              </Button>
+            </DangerItem>
+          </SectionContent>
+        </Section>
+
+        {/* Transfer Ownership Modal */}
+        <Modal
+          isOpen={showTransferModal}
+          onClose={() => {
+            setShowTransferModal(false);
+            setTransferUserId('');
+          }}
+          title="Transfer Ownership"
+        >
+          <form onSubmit={handleTransferOwnership}>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                Select new owner
+              </label>
+              <select
+                value={transferUserId}
+                onChange={(e) => setTransferUserId(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 0.875rem',
+                  border: '1px solid #e8e8e8',
+                  borderRadius: '0.625rem',
+                  fontSize: '0.875rem',
+                  background: '#fafafa'
+                }}
+              >
+                <option value="">Select a member</option>
+                {project.members
+                  ?.filter(m => m.user.id !== currentUserId)
+                  .map((member) => (
+                    <option key={member.id} value={member.user.id}>
+                      {member.user.username} ({member.user.email})
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+              <Button type="button" $variant="secondary" onClick={() => setShowTransferModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" $variant="primary" disabled={!transferUserId || transferLoading}>
+                {transferLoading ? 'Transferring...' : 'Transfer Ownership'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setDeleteConfirm('');
+          }}
+          title="Delete Project"
+        >
+          <form onSubmit={handleDeleteProject}>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                Type <strong>{project.name}</strong> to confirm
+              </label>
+              <input
+                type="text"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                placeholder="Enter project name"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 0.875rem',
+                  border: '1px solid #e8e8e8',
+                  borderRadius: '0.625rem',
+                  fontSize: '0.875rem',
+                  background: '#fafafa'
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+              <Button type="button" $variant="secondary" onClick={() => setShowDeleteModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" $variant="danger" disabled={deleteLoading || deleteConfirm !== project.name}>
+                {deleteLoading ? 'Deleting...' : 'Delete Project'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      </>
+    );
+  }
+
+  // Non-owner view: Leave project option
   return (
     <>
-      {/* Transfer Ownership */}
-      <DangerZoneWrapper>
-        <DangerHeader>
-          <DangerIconWrapper>
-            <UserCog size={20} color="#f59e0b" />
-          </DangerIconWrapper>
-          <div>
-            <DangerTitle>Transfer Ownership</DangerTitle>
-            <DangerDescription>
-              Transfer this project to another member. You will become an admin after the transfer.
-            </DangerDescription>
-          </div>
-        </DangerHeader>
-        <DangerContent>
-          <Button type="button" onClick={() => setShowTransferModal(true)}>
-            <ArrowRight size={16} style={{ marginRight: '0.5rem' }} />
-            Transfer Ownership
-          </Button>
-        </DangerContent>
-      </DangerZoneWrapper>
+      <Section $danger>
+        <SectionHeader>
+          <SectionTitle $danger>Danger Zone</SectionTitle>
+          <SectionDescription>Irreversible actions for this project.</SectionDescription>
+        </SectionHeader>
+        <SectionContent>
+          <DangerItem $first>
+            <DangerItemInfo>
+              <DangerItemTitle>Leave Project</DangerItemTitle>
+              <DangerItemDescription>Remove yourself from this project. You will lose access to all project data.</DangerItemDescription>
+            </DangerItemInfo>
+            <Button $variant="danger" onClick={() => setShowLeaveModal(true)}>
+              Leave Project
+            </Button>
+          </DangerItem>
+        </SectionContent>
+      </Section>
 
-      <Divider />
-
-      {/* Delete Project */}
-      <DangerZoneWrapper>
-        <DangerHeader>
-          <DangerIconWrapper>
-            <Trash2 size={20} color="#dc2626" />
-          </DangerIconWrapper>
-          <div>
-            <DangerTitle>Delete Project</DangerTitle>
-            <DangerDescription>
-              Permanently delete this project and all associated data. This action cannot be undone.
-            </DangerDescription>
-          </div>
-        </DangerHeader>
-        <DangerContent>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => setShowDeleteModal(true)}
-          >
-            <Trash2 size={16} style={{ marginRight: '0.5rem' }} />
-            Delete Project
-          </Button>
-        </DangerContent>
-      </DangerZoneWrapper>
-
-      {/* Transfer Ownership Modal */}
+      {/* Leave Project Confirmation Modal */}
       <Modal
-        isOpen={showTransferModal}
-        onClose={() => {
-          setShowTransferModal(false);
-          setTransferUserId('');
-        }}
-        title="Transfer Ownership"
+        isOpen={showLeaveModal}
+        onClose={() => setShowLeaveModal(false)}
+        title="Leave Project"
       >
-        <form onSubmit={(e) => { e.preventDefault(); handleTransferOwnership(); }}>
-          <ModalFormGroup>
-            <ModalLabel>Select new owner</ModalLabel>
-            <select
-              value={transferUserId}
-              onChange={(e) => setTransferUserId(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.625rem 0.875rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem',
-                background: '#fff'
-              }}
-            >
-              <option value="">Select a member</option>
-              {project.members
-                ?.filter(m => m.user.id !== currentUserId)
-                .map((member) => (
-                  <option key={member.id} value={member.user.id}>
-                    {member.user.username} ({member.user.email})
-                  </option>
-                ))}
-            </select>
-          </ModalFormGroup>
+        <form onSubmit={handleLeaveProject}>
+          <p style={{ fontSize: '0.875rem', color: '#4a4a4a', marginBottom: '1rem' }}>
+            Are you sure you want to leave <strong>{project.name}</strong>? You will lose access to all project data and will need to be invited again to rejoin.
+          </p>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
-            <button
-              type="button"
-              onClick={() => setShowTransferModal(false)}
-              style={{
-                padding: '0.625rem 1.25rem',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                borderRadius: '0.375rem',
-                border: '1px solid #d1d5db',
-                background: '#fff',
-                cursor: 'pointer'
-              }}
-            >
+            <Button type="button" $variant="secondary" onClick={() => setShowLeaveModal(false)}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!transferUserId || transferLoading}
-              style={{
-                padding: '0.625rem 1.25rem',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                borderRadius: '0.375rem',
-                border: '1px solid #6366f1',
-                background: !transferUserId ? '#a5b4fc' : '#6366f1',
-                color: '#fff',
-                cursor: !transferUserId ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {transferLoading ? 'Transferring...' : 'Transfer Ownership'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={() => {
-          setShowDeleteModal(false);
-          setDeleteConfirm('');
-        }}
-        title="Delete Project"
-      >
-        <form onSubmit={(e) => { e.preventDefault(); handleDeleteProject(); }}>
-          <ModalFormGroup>
-            <ModalLabel>
-              Type <strong>{project.name}</strong> to confirm
-            </ModalLabel>
-            <input
-              type="text"
-              value={deleteConfirm}
-              onChange={(e) => setDeleteConfirm(e.target.value)}
-              placeholder="Enter project name"
-              style={{
-                width: '100%',
-                padding: '0.625rem 0.875rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem'
-              }}
-            />
-          </ModalFormGroup>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
-            <button
-              type="button"
-              onClick={() => setShowDeleteModal(false)}
-              style={{
-                padding: '0.625rem 1.25rem',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                borderRadius: '0.375rem',
-                border: '1px solid #d1d5db',
-                background: '#fff',
-                cursor: 'pointer'
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={deleteLoading || deleteConfirm !== project.name}
-              style={{
-                padding: '0.625rem 1.25rem',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                borderRadius: '0.375rem',
-                border: '1px solid #dc2626',
-                background: deleteConfirm === project.name ? '#dc2626' : '#fca5a5',
-                color: '#fff',
-                cursor: deleteConfirm === project.name ? 'pointer' : 'not-allowed'
-              }}
-            >
-              {deleteLoading ? 'Deleting...' : 'Delete Project'}
-            </button>
+            </Button>
+            <Button type="submit" $variant="danger" disabled={leaveLoading}>
+              {leaveLoading ? 'Leaving...' : 'Leave Project'}
+            </Button>
           </div>
         </form>
       </Modal>

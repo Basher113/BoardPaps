@@ -9,6 +9,7 @@ import {
 
 import { useDispatch } from 'react-redux';
 import { setActiveView } from '../../reducers/slices/navigation/navigation.slice';
+import { SettingsSectionSkeleton, Spinner, LoadingContainer, LoadingText } from '../../components/ui/skeleton/Skeleton';
 
 // Sub-components (each handles its own state and API calls)
 import ProfileSection from './components/profile-section/ProfileSection';
@@ -19,7 +20,7 @@ const Settings = () => {
   const dispatch = useDispatch();
 
   // Get Clerk user info
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   
   // Check if user has a password set (can change password)
   // passwordEnabled is true for email/password users, false for pure OAuth users
@@ -29,6 +30,23 @@ const Settings = () => {
   useEffect(() => {
     dispatch(setActiveView('settings'));
   }, [dispatch]);
+
+  // Show loading state while Clerk loads user data
+  if (!isLoaded) {
+    return (
+      <SettingsContainer>
+        <SettingsHeader>
+          <SettingsTitle>Settings</SettingsTitle>
+          <SettingsSubtitle>Loading your settings...</SettingsSubtitle>
+        </SettingsHeader>
+        <SettingsSectionSkeleton />
+        <div style={{ marginTop: '1.5rem' }} />
+        <SettingsSectionSkeleton />
+        <div style={{ marginTop: '1.5rem' }} />
+        <SettingsSectionSkeleton />
+      </SettingsContainer>
+    );
+  }
 
   return (
     <SettingsContainer>

@@ -14,8 +14,8 @@ import useIssueModals from "./hooks/useIssueModals";
 import { selectActiveProjectId } from "../../reducers/slices/navigation/navigation.selector";
 import { 
   useGetProjectQuery, 
-  useMoveIssueMutation,
 } from "../../reducers/slices/project/project.apiSlice";
+import { useMoveIssueMutation } from "../../reducers/slices/issue/issue.apiSlice";
 import { 
   selectIsDeleteModalOpen,
   selectIsCreateModalOpen,
