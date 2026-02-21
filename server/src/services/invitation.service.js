@@ -217,7 +217,7 @@ const getProjectInvitations = async (projectId) => {
 };
 
 /**
- * Get all pending invitations for a user by email
+ * Get all invitations for a user by email (pending, accepted, declined)
  * @param {string} userEmail - User's email
  * @returns {Promise<Array>} List of invitations
  */
@@ -227,7 +227,6 @@ const getUserInvitations = async (userEmail) => {
   return prisma.invitation.findMany({
     where: {
       email: normalizedEmail,
-      status: "PENDING",
     },
     include: {
       project: {
