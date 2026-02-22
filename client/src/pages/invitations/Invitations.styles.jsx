@@ -3,6 +3,7 @@ import styled from "styled-components";
 // Page Layout
 export const PageContainer = styled.div`
   min-height: 100vh;
+  max-width: 1920px;
   background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%);
 `;
 

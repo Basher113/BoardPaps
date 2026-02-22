@@ -145,9 +145,10 @@ export const FocusSection = styled.section`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 900px;
+  max-width: 1440px;
   padding: 0 2.5rem;
-
+  align-items: center;
+  justify-content: center;
   @media (max-width: 768px) {
     padding: 0 1rem;
   }

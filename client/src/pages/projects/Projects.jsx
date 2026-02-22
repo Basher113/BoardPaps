@@ -34,13 +34,6 @@ import {
   EmptyTitle,
   EmptyDescription,
   EmptyButton,
-  ModalOverlay,
-  ModalContent,
-  ModalTitle,
-  Input,
-  Textarea,
-  ButtonGroup,
-  Button,
   Footer,
   StatusIndicator,
   StatusDot,
@@ -53,10 +46,10 @@ import {
 import { formatDate } from "../../utils/date";
 import {
   useGetMyProjectsQuery,
-  useCreateProjectMutation,
 } from "../../reducers/slices/project/project.apiSlice";
 import { setActiveView } from "../../reducers/slices/navigation/navigation.slice";
 import UserAvatar from "../../components/ui/user-avatar/UserAvatar";
+import CreateProjectDrawer from "./components/CreateProjectDrawer";
 import { FolderKanban, Search, MoreVertical, Plus, FileText, Settings, LogOut } from "lucide-react";
 
 const Projects = () => {
@@ -81,11 +74,8 @@ const Projects = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeMenu]);
-  
-  const [newProject, setNewProject] = useState({ name: "", key: "", description: "" });
 
   const { data: projectsData, isLoading } = useGetMyProjectsQuery();
-  const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
 
   // Filter projects by search
   const projects = projectsData?.data || [];
@@ -100,35 +90,6 @@ const Projects = () => {
 
   const openProject = (project) => {
     navigate(`/project/${project.id}`);
-  };
-
-  const handleCreateProject = async (e) => {
-    e.preventDefault();
-    if (!newProject.name.trim()) {
-      toast.error("Project name is required");
-      return;
-    }
-
-    if (!newProject.key.trim()) {
-      toast.error("Project key is required");
-      return;
-    }
-
-    try {
-      const result = await createProject({
-        name: newProject.name,
-        key: newProject.key.toUpperCase(),
-        description: newProject.description,
-      }).unwrap();
-
-      toast.success("Project created successfully");
-      setShowNewProject(false);
-      setNewProject({ name: "", key: "", description: "" });
-      navigate(`/project/${result.data.id}`);
-    } catch (error) {
-      console.error("Failed to create project:", error);
-      toast.error(error.data?.message || "Failed to create project");
-    }
   };
 
   const toggleMenu = (projectId, e) => {
@@ -334,64 +295,10 @@ const Projects = () => {
         </Footer>
       </PageContainer>
 
-      {showNewProject && (
-        <ModalOverlay onClick={() => setShowNewProject(false)}>
-          <ModalContent onClick={(e) => e.stopPropagation()}>
-            <ModalTitle>Create New Project</ModalTitle>
-            <form method="post" onSubmit={handleCreateProject}>
-              <Input
-                placeholder="Project key (e.g. PROJ)"
-                value={newProject.key}
-                onChange={(e) =>
-                  setNewProject({ ...newProject, key: e.target.value.toUpperCase() })
-                }
-                maxLength={10}
-                style={{ textTransform: 'uppercase', fontWeight: 600 }}
-                disabled={isCreating}
-                required
-              />
-
-              <Input
-                placeholder="Project name"
-                value={newProject.name}
-                onChange={(e) =>
-                  setNewProject({ ...newProject, name: e.target.value })
-                }
-                autoFocus
-                disabled={isCreating}
-              />
-
-              <Textarea
-                placeholder="Project description"
-                value={newProject.description}
-                onChange={(e) =>
-                  setNewProject({
-                    ...newProject,
-                    description: e.target.value,
-                  })
-                }
-                disabled={isCreating}
-              />
-
-              <ButtonGroup>
-                <Button primary disabled={isCreating}>
-                  {isCreating ? 'Creating...' : 'Create Project'}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setShowNewProject(false);
-                    setNewProject({ name: "", key: "", description: "" });
-                  }}
-                  disabled={isCreating}
-                >
-                  Cancel
-                </Button>
-              </ButtonGroup>
-            </form>
-          </ModalContent>
-        </ModalOverlay>
-      )}
+      <CreateProjectDrawer
+        isOpen={showNewProject}
+        onClose={() => setShowNewProject(false)}
+      />
     </>
   );
 };

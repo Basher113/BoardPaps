@@ -4,6 +4,7 @@ export const AuthLayoutWrapper = styled.div`
   display: flex;
   min-height: 100vh;
   width: 100%;
+  max-height: 100vh;
 `;
 
 export const FormContainer = styled.div`

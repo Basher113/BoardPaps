@@ -311,9 +311,7 @@ const EmptyState = () => {
 
   return (
     <FocusSection>
-      <SectionHeader>
-        <SectionTitle>Current Focus</SectionTitle>
-      </SectionHeader>
+      
       <EmptyStateContainer>
         <EmptyStateIcon>
           <CheckCircle size={64} style={{ color: '#22c55e', opacity: 0.3 }} />

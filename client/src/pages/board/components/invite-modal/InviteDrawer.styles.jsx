@@ -158,66 +158,26 @@ export const InputLabel = styled.label`
   letter-spacing: 1px;
 `;
 
-// Recipients
-export const RecipientsWrapper = styled.div`
-  background: #fafafa;
+// Email Input
+export const EmailInput = styled.input`
+  width: 100%;
+  padding: 0.75rem 1rem;
   border: 1px solid #e8e8e8;
   border-radius: 10px;
-  padding: 0.75rem 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  min-height: 80px;
-  align-content: flex-start;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  background: #fafafa;
   transition: all 0.3s ease;
 
-  &:focus-within {
+  &:focus {
+    outline: none;
     border-color: #1a1a1a;
     background: white;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
-`;
-
-export const EmailPill = styled.div`
-  background: white;
-  border: 1px solid #1a1a1a;
-  border-radius: 6px;
-  padding: 0.375rem 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-`;
-
-export const PillRemove = styled.button`
-  cursor: pointer;
-  color: #b0b0b0;
-  background: none;
-  border: none;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: #ff4444;
-  }
-`;
-
-export const EmailInput = styled.input`
-  flex: 1;
-  min-width: 120px;
-  border: none;
-  background: transparent;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 0.8125rem;
-  outline: none;
-  padding: 0.375rem 0;
 
   &::placeholder {
-    color: #c0c0c0;
+    color: #b0b0b0;
   }
 
   &:disabled {
