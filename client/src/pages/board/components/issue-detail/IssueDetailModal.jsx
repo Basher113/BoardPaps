@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { X, Paperclip, Smile, ArrowUp, ArrowDown, Minus, Calendar, Trash2, Loader2 } from 'lucide-react';
+import { X, ArrowUp, ArrowDown, Minus, Calendar, Trash2, Loader2 } from 'lucide-react';
 import UserAvatar from '../../../../components/ui/user-avatar/UserAvatar';
+import ConfirmModal from '../../../../components/ui/confirm-modal/ConfirmModal';
 import { useGetCommentsQuery, useCreateCommentMutation, useDeleteCommentMutation } from '../../../../reducers/slices/comment/comment.apiSlice';
 import { useGetCurrentUserQuery } from '../../../../reducers/slices/user/user.slice';
 import { formatRelativeTime } from '../../../../utils/date';
@@ -31,18 +32,15 @@ import {
   CommentAuthor,
   CommentTime,
   CommentText,
-  CommentActions,
   DeleteButton,
   DrawerFooter,
   CommentTextarea,
   FooterActions,
-  AttachmentBtns,
-  IconButton,
-  PostButton,
   LoadingSpinner,
   EmptyState,
   DueDate,
 } from './IssueDetailModal.styles';
+import Button from '../../../../components/ui/button/Button';
 
 // Helper functions
 const getStatusText = (status) => {
@@ -75,6 +73,7 @@ const formatDueDate = (dueDate) => {
 
 const IssueDetailModal = ({ isOpen, onClose, issue, projectId }) => {
   const [commentText, setCommentText] = useState('');
+  const [commentToDelete, setCommentToDelete] = useState(null);
   
   // Get current user for permission checks
   const { data: currentUser } = useGetCurrentUserQuery();
@@ -127,14 +126,18 @@ const IssueDetailModal = ({ isOpen, onClose, issue, projectId }) => {
     }
   };
 
-  const handleDeleteComment = async (commentId) => {
-    if (isDeletingComment) return;
+
+
+
+
+  const handleDeleteComment = async () => {
+    if (!commentToDelete || isDeletingComment) return;
     
     try {
       await deleteComment({
         projectId,
         issueId: issue.id,
-        commentId,
+        commentId: commentToDelete,
       }).unwrap();
     } catch (error) {
       console.error('Failed to delete comment:', error);
@@ -264,19 +267,20 @@ const IssueDetailModal = ({ isOpen, onClose, issue, projectId }) => {
                         <CommentTime>
                           {formatRelativeTime(comment.createdAt)}
                         </CommentTime>
+                        {currentUserId === comment.author?.id && (
+                          <DeleteButton 
+                            onClick={() => {
+                              setCommentToDelete(comment.id);
+                              handleDeleteComment()
+                            }}
+                            disabled={isDeletingComment}
+                            title="Delete comment"
+                          >
+                            <Trash2 size={14} />
+                          </DeleteButton>
+                        )}
                       </CommentHeader>
                       <CommentText>{comment.content}</CommentText>
-                      {currentUserId === comment.author?.id && (
-                        <CommentActions>
-                          <DeleteButton 
-                            onClick={() => handleDeleteComment(comment.id)}
-                            disabled={isDeletingComment}
-                          >
-                            <Trash2 size={12} />
-                            Delete
-                          </DeleteButton>
-                        </CommentActions>
-                      )}
                     </CommentBody>
                   </CommentItem>
                 ))}
@@ -296,23 +300,18 @@ const IssueDetailModal = ({ isOpen, onClose, issue, projectId }) => {
             disabled={isCreatingComment}
           />
           <FooterActions>
-            <AttachmentBtns>
-              <IconButton title="Attach file">
-                <Paperclip size={18} />
-              </IconButton>
-              <IconButton title="Add emoji">
-                <Smile size={18} />
-              </IconButton>
-            </AttachmentBtns>
-            <PostButton 
+            <Button
+              size='md' 
               onClick={handlePostComment}
               disabled={!commentText.trim() || isCreatingComment}
             >
               {isCreatingComment ? 'Posting...' : 'Post Comment'}
-            </PostButton>
+            </Button>
           </FooterActions>
         </DrawerFooter>
       </IssueDrawer>
+
+    
     </>
   );
 };

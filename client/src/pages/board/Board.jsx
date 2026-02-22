@@ -17,9 +17,8 @@ import Column from "./components/column/Column";
 import IssueCard from "./components/issue-card/IssueCard";
 import IssueDetailModal from "./components/issue-detail/IssueDetailModal";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
-import InviteModal from "./components/invite-modal/InviteModal";
-import Modal from "../../components/ui/modal/Modal";
-import IssueForm from "./components/form/IssueForm";
+import InviteDrawer from "./components/invite-modal/InviteDrawer";
+import IssueDrawer from "./components/form/IssueDrawer";
 import BoardSkeleton from "./components/skeleton/BoardSkeleton";
 import useIssueMutations from "./hooks/useIssueMutations";
 import useIssueModals from "./hooks/useIssueModals";
@@ -218,7 +217,7 @@ const Board = () => {
       }).unwrap();
     } catch (err) {
       console.error("Failed to move issue:", err);
-      toast.error("Failed to move issue. Please try again.");
+      toast.error(err?.data?.message || "Failed to move issue. Please try again.");
     }
   }, [columns, issueMap, findColumnByIssueId, moveIssue, activeProjectId]);
 
@@ -310,44 +309,35 @@ const Board = () => {
         variant="danger"
       />
 
-      {/* Invite Modal */}
-      <InviteModal
+      {/* Invite Drawer */}
+      <InviteDrawer
         isOpen={modals.isInviteModalOpen}
         onClose={modals.closeInviteModal}
         projectId={activeProjectId}
+        projectName={project?.name}
       />
 
-      {/* Create Issue Modal */}
-      <Modal
+      {/* Create Issue Drawer */}
+      <IssueDrawer
         isOpen={isCreateModalOpen}
+        columnId={createColumnId}
+        currentUserId={currentUser?.id}
+        projectMembers={project?.members || []}
+        projectKey={project?.key}
+        onSubmit={mutations.handleCreateIssue}
         onClose={mutations.handleCloseCreateModal}
-        title="Create Issue"
-      >
-        <IssueForm
-          columnId={createColumnId}
-          currentUserId={currentUser?.id}
-          projectMembers={project?.members || []}
-          onSubmit={mutations.handleCreateIssue}
-          onCancel={mutations.handleCloseCreateModal}
-        />
-      </Modal>
+      />
 
-      {/* Edit Issue Modal */}
-      <Modal
+      {/* Edit Issue Drawer */}
+      <IssueDrawer
         isOpen={isEditModalOpen}
+        issue={selectedIssue}
+        currentUserId={currentUser?.id}
+        projectMembers={project?.members || []}
+        projectKey={project?.key}
+        onSubmit={mutations.handleUpdateIssue}
         onClose={mutations.handleCloseEditModal}
-        title="Edit Issue"
-      >
-        {selectedIssue && (
-          <IssueForm
-            issue={selectedIssue}
-            currentUserId={currentUser?.id}
-            projectMembers={project?.members || []}
-            onSubmit={mutations.handleUpdateIssue}
-            onCancel={mutations.handleCloseEditModal}
-          />
-        )}
-      </Modal>
+      />
 
       {/* Issue Detail Modal */}
       <IssueDetailModal

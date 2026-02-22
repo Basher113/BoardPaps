@@ -678,36 +678,6 @@ export const PendingActions = styled.div`
   gap: 0.5rem;
 `;
 
-export const ResendButton = styled.button`
-  background: none;
-  border: none;
-  color: #808080;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: all 0.3s ease;
-
-  &:hover {
-    color: #1a1a1a;
-    background: #f0f0f0;
-  }
-`;
-
-export const CancelButton = styled.button`
-  background: none;
-  border: 1px solid #e0e0e0;
-  color: #808080;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  transition: all 0.3s ease;
-
-  &:hover {
-    color: #ff4444;
-    border-color: #ff4444;
-  }
-`;
 
 // Modal form styles
 export const ModalFormGroup = styled.div`

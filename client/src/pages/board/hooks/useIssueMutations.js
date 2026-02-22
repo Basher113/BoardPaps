@@ -47,7 +47,7 @@ const useIssueMutations = ({ selectedIssue } = {}) => {
       dispatch(closeDeleteModal());
     } catch (err) {
       console.error('Failed to delete issue:', err);
-      toast.error('Failed to delete issue');
+      toast.error(err?.data?.message || 'Failed to delete issue');
     }
   }, [deleteIssueId, activeProjectId, deleteIssue, dispatch]);
 
@@ -67,7 +67,7 @@ const useIssueMutations = ({ selectedIssue } = {}) => {
       dispatch(closeCreateModal());
     } catch (err) {
       console.error('Failed to create issue:', err);
-      toast.error('Failed to create issue');
+      toast.error(err?.data?.message  || 'Failed to create issue');
     }
   }, [activeProjectId, createIssue, dispatch]);
 
@@ -88,7 +88,7 @@ const useIssueMutations = ({ selectedIssue } = {}) => {
       dispatch(closeEditModal());
     } catch (err) {
       console.error('Failed to update issue:', err);
-      toast.error('Failed to update issue');
+      toast.error(err?.data?.message || 'Failed to update issue');
     }
   }, [selectedIssue, activeProjectId, updateIssue, dispatch]);
 

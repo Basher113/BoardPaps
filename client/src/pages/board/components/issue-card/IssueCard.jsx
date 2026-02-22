@@ -103,6 +103,8 @@ const IssueCard = ({
     return null;
   }
 
+  console.log(issue._count.comments);
+
   return (
     <CardContainer
       ref={setNodeRef}
@@ -205,7 +207,7 @@ const IssueCard = ({
           
           <StatItem>
             <MessageCircle size={12} />
-            <span>{issue._count?.comments ?? 0}</span>
+            <span>{issue._count?.comments}</span>
           </StatItem>
         </TaskStats>
         

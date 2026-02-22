@@ -265,46 +265,36 @@ export const CommentText = styled.p`
   margin: 0;
 `;
 
-export const CommentActions = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-
-  ${CommentItem}:hover & {
-    opacity: 1;
-  }
-`;
-
-export const CommentActionButton = styled.button`
+export const DeleteButton = styled.button`
   background: none;
   border: none;
   color: #b0b0b0;
   cursor: pointer;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem;
   border-radius: 4px;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+
+  ${CommentItem}:hover & {
+    opacity: 1;
+  }
 
   &:hover {
-    background: #f5f5f5;
-    color: #1a1a1a;
+    background: #fff0f0;
+    color: #ff4444;
   }
 
   &:focus {
     outline: none;
-    background: #f0f0f0;
-  }
-`;
-
-export const DeleteButton = styled(CommentActionButton)`
-  color: #ff4444;
-
-  &:hover {
     background: #fff0f0;
-    color: #cc0000;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 
@@ -346,54 +336,8 @@ export const FooterActions = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-`;
+  margin-left: auto;
 
-export const AttachmentBtns = styled.div`
-  display: flex;
-  gap: 0.5rem;
-`;
-
-export const IconButton = styled.button`
-  background: none;
-  border: none;
-  color: #b0b0b0;
-  cursor: pointer;
-  padding: 0.375rem;
-  border-radius: 6px;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    background: #f5f5f5;
-    color: #1a1a1a;
-  }
-`;
-
-export const PostButton = styled.button`
-  background: #1a1a1a;
-  color: white;
-  border: none;
-  padding: 0.625rem 1.25rem;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: #2d2d2d;
-    box-shadow: 0 4px 12px rgba(26, 26, 26, 0.2);
-  }
-
-  &:disabled {
-    background: #e0e0e0;
-    cursor: not-allowed;
-    box-shadow: none;
-  }
 `;
 
 // Loading and Empty States
