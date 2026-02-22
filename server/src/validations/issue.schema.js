@@ -56,6 +56,17 @@ const createIssueSchema = z.object({
     .optional()
     .nullable(),
   
+  dueDate: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/, 'Invalid due date format')
+    .or(z.date({ message: 'Invalid due date format' }))
+    .optional()
+    .nullable()
+    .transform(val => {
+      if (!val) return null;
+      if (val instanceof Date) return val;
+      return new Date(val);
+    }),
+  
   position: z.number()
     .int('Position must be an integer')
     .nonnegative('Position must be a non-negative integer')
@@ -87,9 +98,19 @@ const updateIssueSchema = z.object({
     .optional()
     .nullable(),
   
-  columnId: z.string()
-    .uuid('Invalid column ID format')
+  columnId: z.uuid('Invalid column ID format')
+    .optional(),
+  
+  dueDate: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/, 'Invalid due date format')
+    .or(z.date({ message: 'Invalid due date format' }))
     .optional()
+    .nullable()
+    .transform(val => {
+      if (!val) return null;
+      if (val instanceof Date) return val;
+      return new Date(val);
+    })
 });
 
 /**
@@ -110,16 +131,13 @@ const moveIssueSchema = z.object({
  */
 const getIssuesQuerySchema = z.object({
   // Filters
-  columnId: z.string()
-    .uuid('Invalid column ID format')
+  columnId: z.uuid('Invalid column ID format')
     .optional(),
   
-  assigneeId: z.string()
-    .uuid('Invalid assignee ID format')
+  assigneeId: z.uuid('Invalid assignee ID format')
     .optional(),
   
-  reporterId: z.string()
-    .uuid('Invalid reporter ID format')
+  reporterId: z.uuid('Invalid reporter ID format')
     .optional(),
   
   type: issueTypeEnum.optional(),

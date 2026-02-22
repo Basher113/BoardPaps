@@ -134,6 +134,9 @@ const getProject = async (req, res) => {
                 },
                 assignee: {
                   select: { id: true, email: true, username: true, avatar: true }
+                },
+                _count: {
+                  select: { comments: true }
                 }
               }
             },

@@ -25,6 +25,9 @@ const {
 // Controller
 const issueController = require("../controllers/issue.controller");
 
+// Sub-routes
+const commentRoutes = require("./comment.routes");
+
 // ==================== ISSUE ROUTES ====================
 
 /**
@@ -108,5 +111,14 @@ issueRouter.delete("/:issueId",
   canDeleteIssue,
   issueController.deleteIssue
 );
+
+// ==================== COMMENT ROUTES ====================
+
+/**
+ * @route /api/projects/:projectId/issues/:issueId/comments
+ * @desc Nested routes for issue comments
+ * @access Project members only
+ */
+issueRouter.use("/:issueId/comments", commentRoutes);
 
 module.exports = issueRouter;

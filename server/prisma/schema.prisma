@@ -69,6 +69,10 @@ enum AuditAction {
   ISSUE_UPDATED
   ISSUE_DELETED
   
+  // Issue comment actions
+  COMMENT_ADDED
+  COMMENT_DELETED
+  
   // Column actions
   COLUMN_CREATED
   COLUMN_UPDATED
@@ -107,6 +111,9 @@ model User {
 
   // Invitations sent by this user
   invitationsSent Invitation[] @relation("InvitedByUser")
+  
+  // Comments authored by this user
+  comments IssueComment[] @relation("CommentAuthor")
   
   // Audit logs created by this user
   auditLogs AuditLog[]
@@ -173,10 +180,12 @@ model Column {
 
 model Issue {
   id          String        @id @default(uuid())
+  issueKey    String        // Auto-generated key like "PROJ-1", "PROJ-2", etc.
   title       String
   description String?
   type        IssueType
   priority    IssuePriority
+  dueDate     DateTime?     // Optional due date for the issue
 
   position    String           // order inside column
 
@@ -192,9 +201,27 @@ model Issue {
   column      Column        @relation(fields: [columnId], references: [id], onDelete: Cascade)
   reporter    User          @relation("ReporterIssues", fields: [reporterId], references: [id])
   assignee    User?         @relation("AssignedIssues", fields: [assigneeId], references: [id])
+  comments    IssueComment[]
 
   @@index([columnId])
   @@unique([columnId, position])
+  @@unique([issueKey])
+}
+
+model IssueComment {
+  id        String   @id @default(uuid())
+  content   String   @db.VarChar(5000)
+  issueId   String
+  authorId  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  author    User     @relation("CommentAuthor", fields: [authorId], references: [id])
+
+  @@index([issueId])
+  @@index([authorId])
 }
 
 model Invitation {

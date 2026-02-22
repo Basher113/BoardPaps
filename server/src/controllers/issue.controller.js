@@ -165,11 +165,21 @@ const getIssue = async (req, res) => {
 const createIssue = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { title, description, type, priority, columnId, assigneeId } = req.body;
+    const { title, description, type, priority, columnId, assigneeId, dueDate } = req.body;
     const userId = req.user.id;
 
     // Use transaction for data consistency
     const issue = await prisma.$transaction(async (tx) => {
+      // Get project with key for issue key generation
+      const project = await tx.project.findUnique({
+        where: { id: projectId },
+        select: { key: true }
+      });
+
+      if (!project) {
+        throw new Error(ERROR_CODES.COLUMN_NOT_FOUND);
+      }
+
       // Verify column belongs to the project and get existing issues
       const column = await tx.column.findUnique({
         where: { id: columnId },
@@ -187,7 +197,7 @@ const createIssue = async (req, res) => {
 
       // If assigneeId provided, verify they're a member
       if (assigneeId) {
-        const [project, member] = await Promise.all([
+        const [projectOwner, member] = await Promise.all([
           tx.project.findUnique({
             where: { id: projectId },
             select: { ownerId: true }
@@ -199,7 +209,7 @@ const createIssue = async (req, res) => {
           })
         ]);
 
-        const isMember = project.ownerId === assigneeId || !!member;
+        const isMember = projectOwner.ownerId === assigneeId || !!member;
         if (!isMember) {
           throw new Error(ERROR_CODES.INVALID_ASSIGNEE);
         }
@@ -212,9 +222,27 @@ const createIssue = async (req, res) => {
         : null;
       const newRank = generateBetween(prevRank, null);
 
+      // Generate issue key: Get the highest issue number for this project
+      const lastIssue = await tx.issue.findFirst({
+        where: { projectId },
+        select: { issueKey: true },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      let nextIssueNumber = 1;
+      if (lastIssue) {
+        // Extract number from issue key (e.g., "PROJ-123" -> 123)
+        const match = lastIssue.issueKey.match(/-(\d+)$/);
+        if (match) {
+          nextIssueNumber = parseInt(match[1], 10) + 1;
+        }
+      }
+      const issueKey = `${project.key}-${nextIssueNumber}`;
+
       // Create the issue
       return tx.issue.create({
         data: {
+          issueKey,
           title: title.trim(),
           description: description?.trim() || null,
           type,
@@ -223,7 +251,8 @@ const createIssue = async (req, res) => {
           projectId,
           columnId,
           reporterId: userId,
-          assigneeId: assigneeId || null
+          assigneeId: assigneeId || null,
+          dueDate: dueDate || null
         },
         include: {
           reporter: { select: userSelect },
@@ -242,16 +271,19 @@ const createIssue = async (req, res) => {
       targetType: 'ISSUE',
       targetId: issue.id,
       metadata: {
+        issueKey: issue.issueKey,
         issueTitle: issue.title,
         issueType: issue.type,
         issuePriority: issue.priority,
         columnId,
-        assigneeId: assigneeId || null
+        assigneeId: assigneeId || null,
+        dueDate: dueDate || null
       }
     });
 
     logInfo('Issue created successfully', {
       issueId: issue.id,
+      issueKey: issue.issueKey,
       projectId,
       userId,
       title: issue.title
@@ -295,7 +327,7 @@ const createIssue = async (req, res) => {
 const updateIssue = async (req, res) => {
   try {
     const { issueId } = req.params;
-    const { title, description, type, priority, assigneeId, columnId } = req.body;
+    const { title, description, type, priority, assigneeId, columnId, dueDate } = req.body;
     const userId = req.user.id;
 
     // Issue is already attached by authorization middleware
@@ -307,6 +339,7 @@ const updateIssue = async (req, res) => {
     if (description !== undefined) updateData.description = description?.trim() || null;
     if (type !== undefined) updateData.type = type;
     if (priority !== undefined) updateData.priority = priority;
+    if (dueDate !== undefined) updateData.dueDate = dueDate;
 
     // Handle assignee update
     if (assigneeId !== undefined) {
@@ -366,7 +399,7 @@ const updateIssue = async (req, res) => {
     });
 
     // Audit log for issue update - only for significant changes
-    const significantFields = ['priority', 'assigneeId', 'type'];
+    const significantFields = ['priority', 'assigneeId', 'type', 'dueDate'];
     const hasSignificantChanges = significantFields.some(field =>
       updateData[field] !== undefined && updateData[field] !== existingIssue[field]
     );
@@ -378,12 +411,14 @@ const updateIssue = async (req, res) => {
         targetType: 'ISSUE',
         targetId: issueId,
         metadata: {
+          issueKey: issue.issueKey,
           issueTitle: issue.title,
           changes: Object.keys(updateData).filter(f => significantFields.includes(f)),
           previousValues: {
             priority: existingIssue.priority,
             assigneeId: existingIssue.assigneeId,
-            type: existingIssue.type
+            type: existingIssue.type,
+            dueDate: existingIssue.dueDate
           }
         }
       });
@@ -590,6 +625,7 @@ const deleteIssue = async (req, res) => {
       targetType: 'ISSUE',
       targetId: issueId,
       metadata: {
+        issueKey: issue.issueKey,
         issueTitle: issue.title,
         issueType: issue.type,
         issuePriority: issue.priority,
@@ -599,6 +635,7 @@ const deleteIssue = async (req, res) => {
 
     logInfo('Issue deleted successfully', {
       issueId,
+      issueKey: issue.issueKey,
       projectId: issue.projectId,
       userId,
       title: issue.title
