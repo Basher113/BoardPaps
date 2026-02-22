@@ -45,6 +45,7 @@ export const issueApiSlice = apiSlice.injectEndpoints({
                 position: column.issues?.length || 0,
                 reporter: { id: "current", username: "Current User" },
                 assignee: data.assigneeId ? { id: data.assigneeId, username: "Assignee" } : null,
+                _count: { comments: 0 }, // Default count for optimistic update
                 isOptimistic: true, // Flag for UI to show loading state
               };
               

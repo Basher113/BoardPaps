@@ -13,11 +13,10 @@ export const ColumnContainer = styled.div`
   
   /* Visual feedback when dragging over */
   transition: all 0.2s ease;
+  
   ${props => props.$isDragOver && `
-    & > div:last-child {
-      background-color: rgba(26, 51, 119, 0.72)
-      border-radius: 0.75rem;
-    }
+    border-color: #6299ff;
+    background-color: rgba(98, 153, 255, 0.05);
   `}
 `;
 
@@ -87,7 +86,8 @@ export const CardList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 1rem;
+  padding: 0.5rem;
+  min-height: 100px;
 
   /* Scrollbar */
   &::-webkit-scrollbar {
@@ -104,7 +104,7 @@ export const CardList = styled.div`
   }
 
   ${props => props.$isDragOver && `
-    background-color: rgba(98, 153, 255, 0.1);
+    background-color: rgba(98, 153, 255, 0.08);
     border-radius: 0.75rem;
   `}
 `;

@@ -1,8 +1,20 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import { BoardContainer } from "./Board.styles";
 import Header from "./components/header/Header";
 import Column from "./components/column/Column";
+import IssueCard from "./components/issue-card/IssueCard";
 import IssueDetailModal from "./components/issue-detail/IssueDetailModal";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
 import InviteModal from "./components/invite-modal/InviteModal";
@@ -28,7 +40,7 @@ import { setActiveView } from "../../reducers/slices/navigation/navigation.slice
 
 /**
  * Board Component
- * Main Kanban board view - now minimal, delegating to hooks and child components
+ * Main Kanban board view with dnd-kit drag and drop
  */
 const Board = () => {
   const dispatch = useDispatch();
@@ -69,7 +81,6 @@ const Board = () => {
   // ==================== DERIVED STATE ====================
   
   const columns = useMemo(() => project?.columns || [], [project]);
-  const projectKey = project?.key || "PROJ";
   
   const currentUser = currentUserData;
   const currentUserMembership = project?.members?.find(
@@ -88,16 +99,116 @@ const Board = () => {
     return null;
   }, [selectedIssueId, columns]);
 
-  // ==================== CUSTOM HOOKS ====================
-  
-  const mutations = useIssueMutations({ selectedIssue });
-  const modals = useIssueModals();
+  // ==================== DND-KIT SETUP ====================
 
-  // ==================== ISSUE MOVE HANDLER ====================
+  // Track active issue for DragOverlay
+  const [activeIssue, setActiveIssue] = useState(null);
 
-  const handleIssueMove = async ({ issue, targetColumnId, newPosition }) => {
-    if (!activeProjectId) return;
+  // Configure sensors for different input methods
+  const sensors = useSensors(
+    // Mouse/pointer sensor - requires movement before drag starts
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before drag starts
+      },
+    }),
+    // Touch sensor - optimized for mobile
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200, // 200ms hold before drag starts
+        tolerance: 8, // Allow 8px movement during hold
+      },
+    }),
+    // Keyboard sensor for accessibility
+    useSensor(KeyboardSensor)
+  );
 
+  // Flatten all issues for lookup
+  const allIssues = useMemo(() => {
+    return columns?.flatMap(column => column.issues || []) || [];
+  }, [columns]);
+
+  // Create issue map for quick lookup
+  const issueMap = useMemo(() => {
+    const map = new Map();
+    allIssues.forEach(issue => {
+      map.set(issue.id, issue);
+    });
+    return map;
+  }, [allIssues]);
+
+  // Find which column an issue belongs to
+  const findColumnByIssueId = useCallback((issueId) => {
+    if (!columns) return null;
+    for (const column of columns) {
+      const issue = column.issues?.find(i => i.id === issueId);
+      if (issue) return column.id;
+    }
+    return null;
+  }, [columns]);
+
+  // Handle drag start
+  const handleDragStart = useCallback((event) => {
+    const { active } = event;
+    const issue = issueMap.get(active.id);
+    if (issue) {
+      setActiveIssue(issue);
+    }
+  }, [issueMap]);
+
+  // Handle drag end
+  const handleDragEnd = useCallback(async (event) => {
+    const { active, over } = event;
+    
+    // Reset active issue
+    setActiveIssue(null);
+
+    // If no drop target, cancel
+    if (!over) return;
+
+    const issueId = active.id;
+    const overId = over.id;
+
+    // Find the source column
+    const sourceColumnId = findColumnByIssueId(issueId);
+    
+    // Determine if overId is a column or an issue
+    let targetColumnId;
+    let newPosition = 0;
+    
+    // Check if overId is a column ID
+    const targetColumn = columns?.find(c => c.id === overId);
+    
+    if (targetColumn) {
+      // Dropped on a column
+      targetColumnId = overId;
+      newPosition = targetColumn.issues?.length || 0;
+    } else {
+      // Dropped on an issue - find the column that contains this issue
+      targetColumnId = findColumnByIssueId(overId);
+      if (!targetColumnId) return;
+      
+      // Find the target column to get position
+      const column = columns?.find(c => c.id === targetColumnId);
+      const overIssueIndex = column?.issues?.findIndex(i => i.id === overId) ?? 0;
+      newPosition = Math.max(0, overIssueIndex);
+    }
+    
+    // If dropped in same column at same position, no action needed
+    if (sourceColumnId === targetColumnId) {
+      // Check if position actually changed
+      const sourceColumn = columns?.find(c => c.id === sourceColumnId);
+      const currentIssueIndex = sourceColumn?.issues?.findIndex(i => i.id === issueId) ?? -1;
+      if (currentIssueIndex === newPosition || newPosition === sourceColumn?.issues?.length) {
+        return; // Same position, no need to move
+      }
+    }
+
+    // Find the issue data
+    const issue = issueMap.get(issueId);
+    if (!issue) return;
+
+    // Call the move API
     try {
       await moveIssue({
         projectId: activeProjectId,
@@ -107,8 +218,14 @@ const Board = () => {
       }).unwrap();
     } catch (err) {
       console.error("Failed to move issue:", err);
+      toast.error("Failed to move issue. Please try again.");
     }
-  };
+  }, [columns, issueMap, findColumnByIssueId, moveIssue, activeProjectId]);
+
+  // ==================== CUSTOM HOOKS ====================
+  
+  const mutations = useIssueMutations({ selectedIssue });
+  const modals = useIssueModals();
 
   // ==================== RENDER STATES ====================
 
@@ -145,7 +262,12 @@ const Board = () => {
   // ==================== MAIN RENDER ====================
 
   return (
-    <>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       <Header
         boardName={project.name || "Project Board"}
         projectName={project.name || ""}
@@ -160,13 +282,21 @@ const Board = () => {
           <Column
             key={column.id}
             column={column}
-            projectKey={projectKey}
-            onIssueMove={handleIssueMove}
             onAddClick={modals.openCreateModalWithColumn}
             onCardClick={modals.openDetailModal}
           />
         ))}
       </BoardContainer>
+
+      {/* DragOverlay shows a visual copy while dragging */}
+      <DragOverlay>
+        {activeIssue ? (
+          <IssueCard
+            issue={activeIssue}
+            isDragging
+          />
+        ) : null}
+      </DragOverlay>
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
@@ -226,7 +356,7 @@ const Board = () => {
         issue={modals.detailIssue}
         projectId={activeProjectId}
       />
-    </>
+    </DndContext>
   );
 };
 

@@ -1,12 +1,11 @@
 import { useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-
-import { MoreHorizontal, Edit, Trash2, Eye, Calendar, MessageCircle, Paperclip } from 'lucide-react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { MoreHorizontal, Edit, Trash2, Eye, Calendar, MessageCircle } from 'lucide-react';
 import {
   CardContainer,
   CardHeader,
-  TypeContainer,
-  IssueId,
   MenuButton,
   MenuContainer,
   MenuDropdown,
@@ -26,11 +25,7 @@ import { openEditModal, openDeleteModal } from '../../../../reducers/slices/issu
 
 const IssueCard = ({ 
   issue, 
-  columnId,
-  isDragging,
-  onDragStart,
-  onDragOverIssue,
-  onDropOnIssue,
+  isDragging = false,
   onClick
 }) => {
   const dispatch = useDispatch();
@@ -41,54 +36,29 @@ const IssueCard = ({
   const currentUserId = currentUserData?.id;
   
   // Check if currentUserId is loaded and matches assignee OR reporter
-  const canEdit = currentUserId && (issue.assignee?.id === currentUserId || issue.reporter?.id === currentUserId);
+  const canEdit = currentUserId && (issue?.assignee?.id === currentUserId || issue?.reporter?.id === currentUserId);
 
-  // Handle drag start using native HTML5 drag events
-  const handleDragStart = useCallback((e) => {
-    if (!currentUserId) return;
+  // ==================== DND-KIT SORTABLE ====================
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSortableDragging,
+  } = useSortable({ 
+    id: issue?.id || 'placeholder',
+    disabled: !currentUserId || !issue?.id, // Disable drag if not logged in or no issue
+  });
 
-    // Set drag data with full issue object for the Column to use
-    e.dataTransfer.setData('application/json', JSON.stringify({
-      issue,
-      sourceColumnId: columnId
-    }));
-    
-    // Set drag effect
-    e.dataTransfer.effectAllowed = 'move';
-    
-    // Call the callback if provided
-    onDragStart?.();
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isSortableDragging ? 0.5 : 1,
+  };
 
-    // Add visual feedback
-    e.target.classList.add('dragging');
-  }, [currentUserId, issue, columnId, onDragStart]);
-
-  // Handle drag end
-  const handleDragEnd = useCallback((e) => {
-    e.target.classList.remove('dragging');
-  }, []);
-
-  // Handle drag over for drop target
-  const handleDragOver = useCallback((e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    onDragOverIssue?.(e, issue.id);
-  }, [issue.id, onDragOverIssue]);
-
-  // Handle drag leave
-  const handleDragLeave = useCallback((e) => {
-    // Only clear if leaving the card entirely
-    if (!e.currentTarget.contains(e.relatedTarget)) {
-      // Parent will handle clearing
-    }
-  }, []);
-
-  // Handle drop on this card
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onDropOnIssue?.(e, issue.id, columnId);
-  }, [issue.id, columnId, onDropOnIssue]);
+  // ==================== MENU HANDLERS ====================
 
   const handleMenuClick = useCallback((e) => {
     e.stopPropagation();
@@ -125,25 +95,27 @@ const IssueCard = ({
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  // Combine dragging states
+  const isCurrentlyDragging = isDragging || isSortableDragging;
+
+  // Guard: Don't render if issue data is incomplete
+  if (!issue?.id) {
+    return null;
+  }
+
   return (
     <CardContainer
-      draggable={!!currentUserId}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      ref={setNodeRef}
+      style={style}
       $canEdit={currentUserId === issue.assigneeId || currentUserId === issue.reporterId}
-      $isDragging={isDragging}
+      $isDragging={isCurrentlyDragging}
       onClick={() => onClick?.(issue)}
+      {...attributes}
+      {...listeners}
     >
       <CardHeader>
-        
-       
-        
-      
-        <CardTitle>{issue.title}</CardTitle>
-         <MenuContainer>
+        <CardTitle>{issue.title || 'Untitled Issue'}</CardTitle>
+        <MenuContainer>
           <MenuButton 
             onClick={handleMenuClick}
             aria-label="Issue options"
@@ -203,9 +175,9 @@ const IssueCard = ({
             </>
           )}
         </MenuContainer>
-       
       </CardHeader>
-       {issue.description && (
+       
+      {issue.description && (
         <CardDescription>{issue.description}</CardDescription>
       )}
       
@@ -231,14 +203,10 @@ const IssueCard = ({
             </StatItem>
           )}
           
-          
           <StatItem>
             <MessageCircle size={12} />
-            <span>{issue._count.comments}</span>
+            <span>{issue._count?.comments ?? 0}</span>
           </StatItem>
-          
-          
-         
         </TaskStats>
         
         {issue.assignee && (

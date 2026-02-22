@@ -14,6 +14,11 @@ export const CardContainer = styled.div`
   color: inherit;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   position: relative;
+  
+  /* Better touch handling for mobile */
+  touch-action: none;
+  user-select: none;
+  
   &:hover {
     border-color: #d4d4d8;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -25,7 +30,9 @@ export const CardContainer = styled.div`
 
   ${props => props.$isDragging && `
     opacity: 0.5;
-    transform: rotate(3deg);
+    transform: rotate(3deg) scale(1.02);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    z-index: 100;
   `}
   
   ${props => props.$hasBorderTop && `
