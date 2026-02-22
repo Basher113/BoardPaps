@@ -185,19 +185,21 @@ export const issueApiSlice = apiSlice.injectEndpoints({
         try {
           const { data: response } = await queryFulfilled;
           
-          // Update with server response to ensure consistency
+          // Update with server response to ensure data consistency
           dispatch(
             apiSlice.util.updateQueryData("getProject", projectId, (project) => {
-              if (!project?.data?.columns || !response?.data) return;
+              if (!project?.data?.columns) return;
               
-              const updatedIssue = response.data;
               const columns = project.data.columns;
-              
-              // Find and update the issue
+              // Find the issue and update with server response
               for (const column of columns) {
                 const issueIndex = column.issues?.findIndex(i => i.id === issueId);
-                if (issueIndex !== -1) {
-                  column.issues[issueIndex] = updatedIssue;
+                if (issueIndex !== undefined && issueIndex !== -1) {
+                  // Merge server response with existing issue data
+                  column.issues[issueIndex] = {
+                    ...column.issues[issueIndex],
+                    ...(response.data || response),
+                  };
                   break;
                 }
               }

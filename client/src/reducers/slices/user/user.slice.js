@@ -5,7 +5,9 @@ const userApiSlice = apiSlice.injectEndpoints({
     getCurrentUser: builder.query({
       query: () => "users/me",
       providesTags: ["User"],
+      keepUnusedDataFor: 60 * 15, // 15 minutes
     }),
+    
   }),
 });
 
