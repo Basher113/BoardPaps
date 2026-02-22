@@ -1,37 +1,31 @@
 import styled from 'styled-components';
 
 export const ColumnContainer = styled.div`
-  background-color: #ffffff;
-  border-radius: 24px;
-  
+  width: 360px;
+  min-width: 360px;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
-  width: 363px;
-  max-width: 363px;
-  min-height: 600px;
-  max-height: 500px;
-  border: 1px solid oklch(0.922 0 0);
+  gap: 1rem;
+  max-height: 100%;
+  border: 1px solid rgb(219, 219, 219);
+  border-radius: 5px;
   padding: 1rem;
-  padding-bottom: 2rem;
-  box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
   
   /* Visual feedback when dragging over */
   transition: all 0.2s ease;
   ${props => props.$isDragOver && `
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+    & > div:last-child {
+      background-color: rgba(26, 51, 119, 0.72)
+      border-radius: 0.75rem;
+    }
   `}
 `;
 
 export const ColumnHeader = styled.div`
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #cccccc;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  border-radius: 0.5rem 0.5rem 0 0;
-  position: sticky;
+  align-items: center;
+  padding: 0 0.25rem;
 `;
 
 export const ColumnHeaderLeft = styled.div`
@@ -40,40 +34,45 @@ export const ColumnHeaderLeft = styled.div`
   gap: 0.5rem;
 `;
 
+export const ColumnDot = styled.div`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${props => props.$color || '#a1a1aa'};
+`;
+
 export const ColumnTitle = styled.h2`
   font-size: 0.875rem;
   font-weight: 600;
   color: #18181b;
   margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
 `;
 
 export const IssueCount = styled.span`
-  background-color: #e4e4e7;
-  color: #52525b;
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
+  background: #e4e4e7;
+  color: #71717a;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
   font-weight: 500;
 `;
 
 export const AddButton = styled.button`
-  padding: 0.5rem;
-  background: transparent;
-  border: 1px dashed #d4d4d8;
-  border-radius: 0.375rem;
-  color: #71717a;
+  color: #a1a1aa;
   cursor: pointer;
-  transition: all 0.15s ease;
+  font-size: 1.125rem;
+  transition: color 0.2s ease;
+  background: none;
+  border: none;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 24px;
+  height: 24px;
 
   &:hover {
-    border-color: #a1a1aa;
-    color: #52525b;
-    background-color: #fafafa;
+    color: #18181b;
   }
 
   &:disabled {
@@ -83,18 +82,30 @@ export const AddButton = styled.button`
 `;
 
 export const CardList = styled.div`
-  padding: 0.75rem;
   flex: 1;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  min-height: 100px;
-  overflow: auto;
-  
-  /* Visual feedback for drop zone */
+  gap: 0.75rem;
+  padding: 1rem;
+
+  /* Scrollbar */
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+    border-radius: 10px;
+  }
+
   ${props => props.$isDragOver && `
-    background-color: rgba(59, 130, 246, 0.05);
-    border-radius: 0.5rem;
+    background-color: rgba(98, 153, 255, 0.1);
+    border-radius: 0.75rem;
   `}
 `;
 
@@ -108,4 +119,7 @@ export const EmptyState = styled.div`
   font-size: 0.875rem;
   text-align: center;
   min-height: 100px;
+  background: white;
+  border-radius: 12px;
+  border: 1px dashed #d4d4d8;
 `;

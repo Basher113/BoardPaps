@@ -4,6 +4,7 @@ import {
   ColumnContainer,
   ColumnHeader,
   ColumnHeaderLeft,
+  ColumnDot,
   ColumnTitle,
   IssueCount,
   AddButton,
@@ -11,6 +12,21 @@ import {
   EmptyState,
 } from './Column.styles';
 import IssueCard from '../issue-card/IssueCard';
+
+// Column dot colors based on column name
+const getColumnColor = (columnName) => {
+  const normalized = columnName?.toLowerCase() || '';
+  if (normalized.includes('in progress') || normalized.includes('doing')) {
+    return '#18181b';
+  }
+  if (normalized.includes('review') || normalized.includes('testing')) {
+    return '#71717a';
+  }
+  if (normalized.includes('done') || normalized.includes('complete')) {
+    return '#d4d4d8';
+  }
+  return '#a1a1aa';
+};
 
 /**
  * Column component for Kanban board
@@ -32,6 +48,7 @@ const Column = ({
   onCardClick,
 }) => {
   const issueCount = column.issues?.length || 0;
+  const columnColor = getColumnColor(column.name);
 
   // ==================== DRAG STATE ====================
   
@@ -48,13 +65,25 @@ const Column = ({
     setDragState(prev => ({ ...prev, isDragOver: true }));
   }, []);
 
-  const handleDragLeave = useCallback(() => {
+  const handleDragLeave = useCallback((e) => {
+    // Only clear drag state if we're actually leaving the column container
+    // (not just entering a child element)
+    const relatedTarget = e.relatedTarget;
+    const currentTarget = e.currentTarget;
+    
+    // Check if we're still inside the column container
+    if (relatedTarget && currentTarget.contains(relatedTarget)) {
+      return;
+    }
+    
     setDragState(prev => ({ ...prev, isDragOver: false }));
   }, []);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
-    setDragState(prev => ({ ...prev, isDragOver: false }));
+    
+    // Always reset drag state on drop
+    setDragState({ isDragOver: false, draggedCardId: null });
     
     // Get the dragged issue data from dataTransfer
     const dragData = e.dataTransfer.getData('application/json');
@@ -77,6 +106,11 @@ const Column = ({
     }
   }, [column, onIssueMove]);
 
+  // Handle drag end to ensure state is reset
+  const handleColumnDragEnd = useCallback(() => {
+    setDragState({ isDragOver: false, draggedCardId: null });
+  }, []);
+
   const handleCardDragStart = useCallback(() => {
     // This is called by IssueCard when drag starts
     // The IssueCard handles the dataTransfer internally
@@ -94,9 +128,11 @@ const Column = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onDragEnd={handleColumnDragEnd}
     >
       <ColumnHeader>
         <ColumnHeaderLeft>
+          <ColumnDot $color={columnColor} />
           <ColumnTitle>{column.name}</ColumnTitle>
           <IssueCount>{issueCount}</IssueCount>
         </ColumnHeaderLeft>
@@ -106,7 +142,7 @@ const Column = ({
           aria-label={`Add issue to ${column.name}`}
           title={`Add issue to ${column.name}`}
         >
-          <Plus size={16} />
+          <Plus size={18} />
         </AddButton>
       </ColumnHeader>
 
@@ -136,3 +172,4 @@ const Column = ({
 };
 
 export default Column;
+

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 
-import { MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Eye, Calendar, MessageCircle, Paperclip } from 'lucide-react';
 import {
   CardContainer,
   CardHeader,
@@ -14,17 +14,18 @@ import {
   CardTitle,
   CardDescription,
   CardFooter,
-  MenuBackdrop
+  MenuBackdrop,
+  TagGroup,
+  Tag,
+  TaskStats,
+  StatItem,
 } from './IssueCard.styles';
-import IssueTypeIcon from '../issue-type-icon/IssueTypeIcon';
-import PriorityBadge from '../priority-badge/PriorityBadge';
 import UserAvatar from '../../../../components/ui/user-avatar/UserAvatar';
 import { useGetCurrentUserQuery } from '../../../../reducers/slices/user/user.slice';
 import { openEditModal, openDeleteModal } from '../../../../reducers/slices/issue/issue.slice';
 
 const IssueCard = ({ 
   issue, 
-  projectKey, 
   columnId,
   isDragging,
   onDragStart,
@@ -118,6 +119,12 @@ const IssueCard = ({
     setShowMenu(false);
   }, [dispatch, issue.id, canEdit]);
 
+  // Format date for display
+  const formatDate = (date) => {
+    if (!date) return null;
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   return (
     <CardContainer
       draggable={!!currentUserId}
@@ -128,13 +135,15 @@ const IssueCard = ({
       onDrop={handleDrop}
       $canEdit={currentUserId === issue.assigneeId || currentUserId === issue.reporterId}
       $isDragging={isDragging}
+      onClick={() => onClick?.(issue)}
     >
       <CardHeader>
-        <TypeContainer>
-          <IssueTypeIcon type={issue.type} />
-          <IssueId>{projectKey}-{issue.id.slice(-4)}</IssueId>
-        </TypeContainer>
-        <MenuContainer>
+        
+       
+        
+      
+        <CardTitle>{issue.title}</CardTitle>
+         <MenuContainer>
           <MenuButton 
             onClick={handleMenuClick}
             aria-label="Issue options"
@@ -194,14 +203,47 @@ const IssueCard = ({
             </>
           )}
         </MenuContainer>
+       
       </CardHeader>
-      <CardTitle>{issue.title}</CardTitle>
-      {issue.description && (
+       {issue.description && (
         <CardDescription>{issue.description}</CardDescription>
       )}
+      
+      {/* Tags - could be issue type or custom tags */}
+      <TagGroup>
+        <Tag>{issue.type || 'Task'}</Tag>
+        {issue.priority && (
+          <Tag style={{ 
+            color: issue.priority === 'HIGH' || issue.priority === 'URGENT' ? '#ff4444' : '#71717a',
+            fontWeight: issue.priority === 'HIGH' || issue.priority === 'URGENT' ? 600 : 500
+          }}>
+            {issue.priority}
+          </Tag>
+        )}
+      </TagGroup>
+      
       <CardFooter>
-        <PriorityBadge priority={issue.priority} />
-        <UserAvatar user={issue.assignee} size="sm" />
+        <TaskStats>
+          {issue.dueDate && (
+            <StatItem>
+              <Calendar size={12} />
+              <span>{formatDate(issue.dueDate)}</span>
+            </StatItem>
+          )}
+          
+          
+          <StatItem>
+            <MessageCircle size={12} />
+            <span>{issue._count.comments}</span>
+          </StatItem>
+          
+          
+         
+        </TaskStats>
+        
+        {issue.assignee && (
+          <UserAvatar user={issue.assignee} size="sm" />
+        )}
       </CardFooter>
     </CardContainer>
   );

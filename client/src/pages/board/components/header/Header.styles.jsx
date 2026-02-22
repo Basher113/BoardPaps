@@ -1,13 +1,19 @@
 import styled from 'styled-components';
 
 export const HeaderContainer = styled.header`
-  background-color: #ffffff;
+  padding: 1.25rem 2rem;
+  background: white;
   border-bottom: 1px solid #e4e4e7;
-  padding: 0.625rem 1rem;
-  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 5;
 
-  @media (min-width: 640px) {
-    padding: 0.75rem 1.5rem;
+  @media (max-width: 768px) {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
   }
 `;
 
@@ -15,6 +21,7 @@ export const HeaderContent = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
 `;
 
 export const HeaderLeft = styled.div`
@@ -29,7 +36,7 @@ export const MenuToggle = styled.button`
   border: none;
   padding: 0.25rem;
   cursor: pointer;
-  border-radius: 0.25rem;
+  border-radius: 6px;
   transition: all 0.15s ease;
 
   &:hover {
@@ -42,38 +49,34 @@ export const MenuToggle = styled.button`
   }
 `;
 
-export const HeaderTitleWrapper = styled.div``;
+export const HeaderTitleWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+`;
 
 export const BoardTitle = styled.h1`
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #18181b;
   margin: 0;
-
-  @media (min-width: 640px) {
-    font-size: 1.25rem;
-  }
+  letter-spacing: -0.025em;
 `;
 
 export const ProjectSubtitle = styled.p`
-  display: none;
   font-size: 0.75rem;
   color: #71717a;
   margin: 0;
-
-  @media (min-width: 640px) {
-    display: block;
-    font-size: 0.875rem;
-  }
 `;
 
 export const HeaderRight = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 
-  @media (min-width: 640px) {
-    gap: 0.75rem;
+  @media (max-width: 768px) {
+    width: 100%;
+    flex-wrap: wrap;
   }
 `;
 
@@ -83,7 +86,7 @@ export const SearchToggle = styled.button`
   border: none;
   padding: 0.25rem;
   cursor: pointer;
-  border-radius: 0.25rem;
+  border-radius: 6px;
   transition: all 0.15s ease;
 
   &:hover {
@@ -102,7 +105,7 @@ export const IconButton = styled.button`
   border: none;
   padding: 0.375rem;
   cursor: pointer;
-  border-radius: 0.25rem;
+  border-radius: 6px;
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
@@ -129,25 +132,25 @@ export const SearchIconWrapper = styled.div`
   left: 0.75rem;
   display: flex;
   align-items: center;
-  color: #71717a;
+  color: #a1a1aa;
   pointer-events: none;
 `;
 
 export const SearchInput = styled.input`
-  padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+  padding: 0.5rem 0.75rem 0.5rem 2.25rem;
   border: 1px solid #e4e4e7;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
   color: #18181b;
   background-color: #fafafa;
-  width: 16rem;
+  width: 220px;
   outline: none;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 
   &:focus {
     border-color: #18181b;
     background-color: #ffffff;
-    box-shadow: 0 0 0 1px #18181b;
+    box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.05);
   }
 
   &::placeholder {
@@ -159,15 +162,15 @@ export const CreateButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.875rem;
   background-color: #18181b;
   color: #fafafa;
   border: none;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 
   &:hover {
     background-color: #27272a;
@@ -182,6 +185,7 @@ export const MobileSearchWrapper = styled.div`
   padding: 0.75rem 1rem;
   border-top: 1px solid #e4e4e7;
   background-color: #ffffff;
+  width: 100%;
 
   @media (min-width: 640px) {
     display: none;
@@ -192,6 +196,10 @@ export const MembersWrapper = styled.div`
   display: flex;
   align-items: center;
   margin-right: 0.5rem;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 export const MemberAvatarWrapper = styled.div`
@@ -216,18 +224,18 @@ export const InviteButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.5rem 0.75rem;
-  background-color: #f4f4f5;
+  padding: 0.5rem 0.875rem;
+  background-color: white;
   color: #18181b;
   border: 1px solid #e4e4e7;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 
   &:hover {
-    background-color: #e4e4e7;
+    background-color: #f4f4f5;
   }
 `;
 
@@ -239,21 +247,40 @@ export const SettingsButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.5rem 0.75rem;
-  background-color: #f4f4f5;
+  padding: 0.5rem 0.875rem;
+  background-color: white;
   color: #18181b;
   border: 1px solid #e4e4e7;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 
   &:hover {
-    background-color: #e4e4e7;
+    background-color: #f4f4f5;
   }
 `;
 
 export const SettingsButtonText = styled.span`
   font-weight: 500;
+`;
+
+export const FilterButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  background-color: white;
+  color: #18181b;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #f4f4f5;
+  }
 `;

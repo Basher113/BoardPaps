@@ -1,31 +1,42 @@
 import styled from 'styled-components';
 
 export const CardContainer = styled.div`
-  background-color: #ffffff;
-  padding: 0.75rem;
-  border-radius: 0.375rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
   border: 1px solid #e4e4e7;
-  transition: all 0.15s ease;
-  cursor: pointer;
-  margin-bottom: 0.5rem;
+  cursor: ${props => props.$canEdit ? 'grab' : 'default'};
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   position: relative;
-  opacity: ${props => props.$canEdit ? 1 : 0.5};
-
   &:hover {
     border-color: #d4d4d8;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
 
-  @media (min-width: 640px) {
-    padding: 1rem;
+  &:active {
+    cursor: grabbing;
   }
+
+  ${props => props.$isDragging && `
+    opacity: 0.5;
+    transform: rotate(3deg);
+  `}
+  
+  ${props => props.$hasBorderTop && `
+    border-top: 3px solid #18181b;
+  `}
 `;
 
 export const CardHeader = styled.div`
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 0.375rem;
+  align-items: flex-start;
 `;
 
 export const TypeContainer = styled.div`
@@ -35,38 +46,91 @@ export const TypeContainer = styled.div`
 `;
 
 export const IssueId = styled.span`
-  font-size: 0.75rem;
-  color: #71717a;
-  font-family: monospace;
+  font-size: 0.6875rem;
+  color: #a1a1aa;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
 `;
 
 export const CardTitle = styled.h3`
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #18181b;
-  margin: 0 0 0.5rem 0;
   line-height: 1.4;
+  flex: 1;
+  margin: 0;
 `;
 
 export const CardDescription = styled.p`
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: #71717a;
-  margin: 0 0 0.75rem 0;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  margin: 0;
+`;
+
+export const TagGroup = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+`;
+
+export const Tag = styled.span`
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 10px;
+  background: #f4f4f5;
+  color: #71717a;
+  border: 1px solid #e4e4e7;
+  text-transform: capitalize;
 `;
 
 export const CardFooter = styled.div`
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f4f4f5;
 `;
 
+export const TaskStats = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #a1a1aa;
+`;
+
+export const StatItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+`;
+
+export const StatIcon = styled.span`
+  font-size: 0.75rem;
+`;
+
+export const AssigneeAvatar = styled.div`
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: ${props => props.$background || '#f4f4f5'};
+  color: ${props => props.$color || '#18181b'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px #e4e4e7;
+`;
+
+// Legacy exports for compatibility
 export const TagsContainer = styled.div`
   display: flex;
   align-items: center;
@@ -74,69 +138,14 @@ export const TagsContainer = styled.div`
   flex-wrap: wrap;
 `;
 
-export const Tag = styled.span`
-  background-color: #f4f4f5;
-  color: #52525b;
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-`;
-
 export const PriorityBadge = styled.span`
   padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
   font-weight: 500;
-  background-color: ${props => {
-    switch (props.$priority) {
-      case 'LOW':
-        return '#f4f4f5';
-      case 'MEDIUM':
-        return '#f4f4f5';
-      case 'HIGH':
-        return '#f4f4f5';
-      case 'CRITICAL':
-        return '#f4f4f5';
-      default:
-        return '#f4f4f5';
-    }
-  }};
-  color: ${props => {
-    switch (props.$priority) {
-      case 'LOW':
-        return '#52525b';
-      case 'MEDIUM':
-        return '#52525b';
-      case 'HIGH':
-        return '#52525b';
-      case 'CRITICAL':
-        return '#18181b';
-      default:
-        return '#52525b';
-    }
-  }};
-  border: 1px solid ${props => {
-    switch (props.$priority) {
-      case 'CRITICAL':
-        return '#d4d4d8';
-      default:
-        return 'transparent';
-    }
-  }};
-`;
-
-export const AssigneeAvatar = styled.div`
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 50%;
-  background-color: #18181b;
-  color: #fafafa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.625rem;
-  font-weight: 500;
+  background-color: #f4f4f5;
+  color: #71717a;
+  border: 1px solid #e4e4e7;
 `;
 
 export const CardActions = styled.div`
@@ -169,12 +178,12 @@ export const MenuContainer = styled.div`
 `;
 
 export const MenuButton = styled.button`
-  color: #71717a;
+  color: #a1a1aa;
   background: none;
   border: none;
   padding: 0.25rem;
   cursor: pointer;
-  border-radius: 0.25rem;
+  border-radius: 4px;
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
@@ -198,8 +207,8 @@ export const MenuDropdown = styled.div`
   right: 0;
   z-index: 10;
   background-color: #ffffff;
-  border-radius: 0.375rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   min-width: 10rem;
   padding: 0.25rem 0;
   margin-top: 0.25rem;
@@ -212,7 +221,7 @@ export const MenuItem = styled.button`
   gap: 0.5rem;
   width: 100%;
   padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: ${props => props.$danger ? '#dc2626' : '#18181b'};
   background: none;
   border: none;

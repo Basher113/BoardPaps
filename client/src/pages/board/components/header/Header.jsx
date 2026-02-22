@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Menu, Search, Plus, Users, Settings } from 'lucide-react';
+import { Menu, Search, Plus, Users, Settings, Filter } from 'lucide-react';
 import {
   HeaderContainer,
   HeaderContent,
@@ -13,14 +13,12 @@ import {
   SearchWrapper,
   SearchIconWrapper,
   SearchInput,
-  CreateButton,
   MobileSearchWrapper,
   MembersWrapper,
   MemberAvatarWrapper,
   InviteButton,
-  InviteButtonText,
   SettingsButton,
-  SettingsButtonText
+  FilterButton,
 } from './Header.styles';
 import UserAvatar from '../../../../components/ui/user-avatar/UserAvatar';
 
@@ -31,7 +29,6 @@ const Header = ({
   searchQuery,
   setSearchQuery,
   searchOpen,
-  setSearchOpen,
   onMenuToggle,
   onInvite,
   canInvite,
@@ -55,11 +52,23 @@ const Header = ({
           </MenuToggle>
           <HeaderTitleWrapper>
             <BoardTitle>{boardName}</BoardTitle>
-            <ProjectSubtitle>Project: {projectName}</ProjectSubtitle>
+            <ProjectSubtitle>{projectName} • Board</ProjectSubtitle>
           </HeaderTitleWrapper>
         </HeaderLeft>
         
         <HeaderRight>
+          <SearchWrapper>
+            <SearchIconWrapper>
+              <Search size={16} />
+            </SearchIconWrapper>
+            <SearchInput
+              type="text"
+              placeholder="Search tasks..."
+              value={searchQuery || ''}
+              onChange={(e) => setSearchQuery?.(e.target.value)}
+            />
+          </SearchWrapper>
+          
           {projectMembers && projectMembers.length > 0 && (
             <MembersWrapper>
               {displayedMembers.map((member) => (
@@ -74,47 +83,30 @@ const Header = ({
               )}
             </MembersWrapper>
           )}
-          <SearchToggle onClick={() => setSearchOpen(!searchOpen)}>
-            <Search size={20} />
-          </SearchToggle>
-          
-          <SearchWrapper>
-            <SearchIconWrapper>
-              <Search size={20} />
-            </SearchIconWrapper>
-            <SearchInput
-              type="text"
-              placeholder="Search issues..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </SearchWrapper>
           
           {canInvite && (
             <InviteButton onClick={onInvite}>
               <Users size={16} />
-              <InviteButtonText>Invite</InviteButtonText>
             </InviteButton>
           )}
           
           <SettingsButton onClick={handleSettingsClick}>
             <Settings size={16} />
-            <SettingsButtonText>Settings</SettingsButtonText>
           </SettingsButton>
         </HeaderRight>
       </HeaderContent>
       
       {searchOpen && (
         <MobileSearchWrapper>
-          <SearchWrapper style={{ display: 'block' }}>
+          <SearchWrapper style={{ display: 'flex', width: '100%' }}>
             <SearchIconWrapper>
-              <Search size={20} />
+              <Search size={16} />
             </SearchIconWrapper>
             <SearchInput
               type="text"
-              placeholder="Search issues..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tasks..."
+              value={searchQuery || ''}
+              onChange={(e) => setSearchQuery?.(e.target.value)}
               style={{ width: '100%' }}
             />
           </SearchWrapper>

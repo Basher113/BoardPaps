@@ -11,28 +11,32 @@ import Button from '../../components/ui/button/Button';
 import {
   DashboardContainer,
   Header,
+  HeaderTitle,
   Title,
   Subtitle,
-  StatusCardsContainer,
-  StatusCard,
-  StatusCount,
-  StatusCountLabel,
-  StatLabel,
-  StatNumber,
-  StatSublabel,
-  IssuesSection,
-  IssuesHeader,
-  IssuesTitle,
-  FilterBadge,
-  IssuesList,
-  IssueItem,
-  IssueIconWrapper,
-  IssueContent,
-  IssueTitle,
-  IssueMeta,
-  IssueKey,
-  ProjectLink,
-  IssueBadges,
+  HeaderActions,
+  NewTaskButton,
+  MetricsGrid,
+  MetricCard,
+  MetricLabel,
+  MetricValue,
+  FocusSection,
+  SectionHeader,
+  SectionTitle,
+  TaskList,
+  TaskItem,
+  TaskCheckbox,
+  TaskContent,
+  TaskName,
+  TaskMeta,
+  TaskTag,
+  TagDot,
+  TaskDue,
+  FilterContainer,
+  ProjectFilter,
+  FilterInfo,
+  QuickActions,
+  QuickActionButton,
   EmptyStateContainer,
   EmptyStateIcon,
   EmptyStateTitle,
@@ -44,13 +48,14 @@ import {
   ErrorIcon,
   ErrorTitle,
   ErrorDescription,
-  QuickActions,
-  QuickActionButton,
-  FilterContainer,
-  ProjectFilter,
-  FilterInfo
+  DashboardFooter,
+  FooterText,
+  IssueIconWrapper,
+  IssueKey,
+  ProjectLink,
+  IssueBadges,
 } from './Dashboard.styles';
-import { FolderKanban, CheckCircle, Clock, AlertCircle, List, ChevronRight } from 'lucide-react';
+import { FolderKanban, CheckCircle, ChevronRight, Plus } from 'lucide-react';
 
 // Status colors for visual distinction
 const STATUS_COLORS = {
@@ -77,19 +82,20 @@ const getStatusColor = (statusName) => {
   return '#64748b';
 };
 
-// Get icon for status
-const getStatusIcon = (statusName) => {
-  const normalized = statusName?.toLowerCase();
-  if (normalized?.includes('progress') || normalized?.includes('doing')) {
-    return <Clock size={18} />;
-  }
-  if (normalized?.includes('review') || normalized?.includes('testing')) {
-    return <AlertCircle size={18} />;
-  }
-  if (normalized?.includes('done') || normalized?.includes('complete')) {
-    return <CheckCircle size={18} />;
-  }
-  return <List size={18} />;
+// Get due date text
+const getDueText = (dueDate) => {
+  if (!dueDate) return null;
+  
+  const now = new Date();
+  const due = new Date(dueDate);
+  const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return 'Overdue';
+  if (diffDays === 0) return 'Due Today';
+  if (diffDays === 1) return 'Tomorrow';
+  if (diffDays <= 7) return `In ${diffDays} days`;
+  
+  return due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
 const Dashboard = () => {
@@ -133,11 +139,6 @@ const Dashboard = () => {
     });
   };
 
-  const handleProjectClick = (e, projectId) => {
-    e.stopPropagation();
-    navigate(`/project/${projectId}`);
-  };
-
   const handleClearFilter = () => {
     setSelectedStatus(null);
     setSelectedProject(null);
@@ -178,53 +179,41 @@ const Dashboard = () => {
     );
   }
 
-  const selectedStatusData = statusCounts.find(s => s.columnName === selectedStatus);
-  const activeColor = getStatusColor(selectedStatusData?.columnName);
-
   return (
     <DashboardContainer>
+      {/* Header */}
       <Header>
-        <Title>My Dashboard</Title>
-        <Subtitle>
-          {totalCount > 0
-            ? `You have ${totalCount} issue${totalCount !== 1 ? 's' : ''} assigned`
-            : 'No issues assigned to you'}
-        </Subtitle>
+        <HeaderTitle>
+          <h1>Welcome back</h1>
+          <p>Your personal dashboard is updated with today's priorities.</p>
+        </HeaderTitle>
+        <HeaderActions>
+          <NewTaskButton onClick={() => navigate('/projects')}>
+            <Plus size={16} />
+            New Task
+          </NewTaskButton>
+        </HeaderActions>
       </Header>
 
-      {/* Status Summary Cards */}
+      {/* Metrics Grid */}
       {statusCounts.length > 0 && (
-        <StatusCardsContainer>
-          {statusCounts.map((status) => {
-            const getSublabel = (columnName) => {
-              const normalized = columnName?.toLowerCase();
-              if (normalized?.includes('to do') || normalized?.includes('backlog')) {
-                return 'tasks pending';
-              }
-              if (normalized?.includes('progress')) {
-                return 'actively working';
-              }
-              if (normalized?.includes('review') || normalized?.includes('testing')) {
-                return 'in review';
-              }
-              if (normalized?.includes('done') || normalized?.includes('complete')) {
-                return 'tasks completed';
-              }
-              return 'issues';
-            };
-            return (
-              <StatusCard
-                key={status.columnName}
-                $isActive={selectedStatus === status.columnName}
-                onClick={() => handleStatusClick(status.columnName)}
-              >
-                <StatLabel>{status.columnName}</StatLabel>
-                <StatNumber>{status.count}</StatNumber>
-                <StatSublabel>{getSublabel(status.columnName)}</StatSublabel>
-              </StatusCard>
-            );
-          })}
-        </StatusCardsContainer>
+        <MetricsGrid>
+          <MetricCard>
+            <MetricLabel>Total Issues</MetricLabel>
+            <MetricValue>{totalCount}</MetricValue>
+          </MetricCard>
+          {statusCounts.slice(0, 3).map((status) => (
+            <MetricCard
+              key={status.columnName}
+              $clickable
+              $isActive={selectedStatus === status.columnName}
+              onClick={() => handleStatusClick(status.columnName)}
+            >
+              <MetricLabel>{status.columnName}</MetricLabel>
+              <MetricValue>{status.count}</MetricValue>
+            </MetricCard>
+          ))}
+        </MetricsGrid>
       )}
 
       {/* Project Filter */}
@@ -246,84 +235,56 @@ const Dashboard = () => {
         </FilterContainer>
       )}
 
-      {/* Issues Section */}
+      {/* Focus Section */}
       {issues.length === 0 ? (
         <EmptyState />
       ) : (
-        <IssuesSection>
-          <IssuesHeader>
-            <IssuesTitle>
-              {selectedStatus || selectedProject ? (
-                <>
-                  {selectedStatus && (
-                    <>
-                      {getStatusIcon(selectedStatusData?.columnName)}
-                      <span>{selectedStatusData?.columnName || 'Unknown'}</span>
-                    </>
-                  )}
-                  {selectedProject && (
-                    <span style={{ marginLeft: selectedStatus ? '0.5rem' : '0' }}>
-                      in {projects.find(p => p.id === selectedProject)?.name || 'Unknown Project'}
-                    </span>
-                  )}
-                  <FilterBadge $color={activeColor}>{filteredIssues.length}</FilterBadge>
-                </>
-              ) : (
-                <>
-                  <FolderKanban size={18} />
-                  <span>All Assigned Issues</span>
-                  <FilterBadge>{issues.length}</FilterBadge>
-                </>
-              )}
-            </IssuesTitle>
-            <QuickActions>
-              {(selectedStatus || selectedProject) && (
+        <FocusSection>
+          <SectionHeader>
+            <SectionTitle>
+              {selectedStatus ? `${selectedStatus} Issues` : 'Current Focus'}
+            </SectionTitle>
+            {(selectedStatus || selectedProject) && (
+              <QuickActions>
                 <QuickActionButton onClick={handleClearFilter}>
                   Clear Filter
                   <ChevronRight size={14} />
                 </QuickActionButton>
-              )}
-            </QuickActions>
-          </IssuesHeader>
-          <IssuesList>
-            {filteredIssues.map((issue) => (
-              <IssueItem key={issue.id} onClick={() => handleIssueClick(issue)}>
-                <IssueIconWrapper $type={issue.type}>
-                  <IssueTypeIcon type={issue.type} size={18} />
+              </QuickActions>
+            )}
+          </SectionHeader>
+          
+          <TaskList>
+            {filteredIssues.slice(0, 10).map((issue) => (
+              <TaskItem key={issue.id} onClick={() => handleIssueClick(issue)}>
+                <TaskCheckbox />
+                <IssueIconWrapper>
+                  <IssueTypeIcon type={issue.type} size={16} />
                 </IssueIconWrapper>
-                <IssueContent>
-                  <IssueTitle>{issue.title}</IssueTitle>
-                  <IssueMeta>
-                    <IssueKey>{issue.project.key}-{issue.id.slice(-4)}</IssueKey>
-                    <span>•</span>
-                    <ProjectLink
-                      onClick={(e) => handleProjectClick(e, issue.project.id)}
-                    >
-                      {issue.project.name}
-                    </ProjectLink>
-                    <span>•</span>
-                    <IssueBadges>
-                      <Badge
-                        variant="outline"
-                        style={{
-                          borderColor: getStatusColor(issue.column?.name) + '40',
-                          backgroundColor: getStatusColor(issue.column?.name) + '10',
-                          color: getStatusColor(issue.column?.name)
-                        }}
-                      >
-                        {issue.column?.name || 'Unknown'}
-                      </Badge>
-                      <PriorityBadge priority={issue.priority} />
-                    </IssueBadges>
-                  </IssueMeta>
-                </IssueContent>
-              </IssueItem>
+                <TaskContent>
+                  <TaskName>{issue.title}</TaskName>
+                  <TaskMeta>
+                    <TaskTag>
+                      <TagDot $color={getStatusColor(issue.column?.name)} />
+                      {issue.project?.name || 'Unknown'}
+                    </TaskTag>
+                    {issue.priority === 'HIGH' || issue.priority === 'URGENT' ? (
+                      <TaskTag style={{ color: '#ff4444', fontWeight: 700 }}>
+                        {issue.priority}
+                      </TaskTag>
+                    ) : (
+                      <TaskTag>{issue.column?.name || 'Unknown'}</TaskTag>
+                    )}
+                  </TaskMeta>
+                </TaskContent>
+                <TaskDue>{getDueText(issue.dueDate)}</TaskDue>
+              </TaskItem>
             ))}
             {filteredIssues.length === 0 && selectedStatus && (
               <EmptyStateContainer style={{ padding: '3rem 2rem' }}>
                 <EmptyStateIcon>📭</EmptyStateIcon>
                 <EmptyStateTitle style={{ fontSize: '1.125rem' }}>
-                  No issues in "{selectedStatusData?.columnName || 'Unknown'}"
+                  No issues in "{selectedStatus}"
                 </EmptyStateTitle>
                 <EmptyStateDescription style={{ marginBottom: '1.5rem' }}>
                   Try selecting a different status filter to view your assigned issues.
@@ -333,9 +294,14 @@ const Dashboard = () => {
                 </Button>
               </EmptyStateContainer>
             )}
-          </IssuesList>
-        </IssuesSection>
+          </TaskList>
+        </FocusSection>
       )}
+
+      {/* Footer */}
+      <DashboardFooter>
+        <FooterText>Minimal Personal Dashboard © 2026. Keep moving forward.</FooterText>
+      </DashboardFooter>
     </DashboardContainer>
   );
 };
@@ -344,7 +310,10 @@ const EmptyState = () => {
   const navigate = useNavigate();
 
   return (
-    <IssuesSection>
+    <FocusSection>
+      <SectionHeader>
+        <SectionTitle>Current Focus</SectionTitle>
+      </SectionHeader>
       <EmptyStateContainer>
         <EmptyStateIcon>
           <CheckCircle size={64} style={{ color: '#22c55e', opacity: 0.3 }} />
@@ -364,7 +333,7 @@ const EmptyState = () => {
           </Button>
         </div>
       </EmptyStateContainer>
-    </IssuesSection>
+    </FocusSection>
   );
 };
 

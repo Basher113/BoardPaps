@@ -224,6 +224,7 @@ const Board = () => {
         isOpen={modals.isDetailModalOpen}
         onClose={modals.closeDetailModal}
         issue={modals.detailIssue}
+        projectId={activeProjectId}
       />
     </>
   );

@@ -20,7 +20,8 @@ const getInitialFormData = (issue, currentUserId) => {
       description: issue.description || '',
       type: issue.type || 'TASK',
       priority: issue.priority || 'MEDIUM',
-      assigneeId: issue.assigneeId || issue.assignee?.id || ''
+      assigneeId: issue.assigneeId || issue.assignee?.id || '',
+      dueDate: issue.dueDate ? new Date(issue.dueDate).toISOString().split('T')[0] : ''
     };
   }
   return {
@@ -28,7 +29,8 @@ const getInitialFormData = (issue, currentUserId) => {
     description: '',
     type: 'TASK',
     priority: 'MEDIUM',
-    assigneeId: currentUserId || ''
+    assigneeId: currentUserId || '',
+    dueDate: ''
   };
 };
 
@@ -106,7 +108,8 @@ const IssueForm = ({
       description: true,
       type: true,
       priority: true,
-      assigneeId: true
+      assigneeId: true,
+      dueDate: true
     });
     
     const validationErrors = validate(formData);
@@ -117,7 +120,8 @@ const IssueForm = ({
         ...formData,
         title: formData.title.trim(),
         description: formData.description?.trim() || null,
-        assigneeId: formData.assigneeId || null
+        assigneeId: formData.assigneeId || null,
+        dueDate: formData.dueDate || null
       };
       
       // Include columnId for create mode
@@ -223,6 +227,18 @@ const IssueForm = ({
             <option key={user.id} value={user.id}>{user.username}</option>
           ))}
         </Select>
+      </FormGroup>
+      
+      <FormGroup>
+        <Label htmlFor="issue-dueDate">Due Date</Label>
+        <Input
+          id="issue-dueDate"
+          type="date"
+          value={formData.dueDate || ''}
+          onChange={(e) => handleChange('dueDate', e.target.value || null)}
+          disabled={isLoading}
+          min={new Date().toISOString().split('T')[0]}
+        />
       </FormGroup>
       
       <FormActions>
