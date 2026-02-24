@@ -6,7 +6,6 @@ import {
   HeroContainer,
   HeroImage,
 } from "./AuthLayout.styles";
-import heroImage from "../../assets/images/hero-auth.webp";
 
 const AuthLayout = () => {
 
@@ -18,7 +17,7 @@ const AuthLayout = () => {
         </FormContent>
       </FormContainer>
       <HeroContainer>
-        <HeroImage src={heroImage} alt="Productivity workspace" />
+        <HeroImage alt="Productivity workspace" />
         
       </HeroContainer>
     </AuthLayoutWrapper>

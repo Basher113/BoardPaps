@@ -7,6 +7,7 @@ import Dashboard from "./pages/dashboard/Dashboard"
 import Projects from "./pages/projects/Projects"
 import InvitationsPage from "./pages/invitations/Invitations"
 import Settings from "./pages/settings/Settings"
+import Calendar from "./pages/calendar/Calendar"
 import ProtectedRoute from "./ProtectedRoutes";
 import AuthLayout from "./pages/auth/AuthLayout"
 import RouteErrorBoundary from "./components/error-boundary/RouteErrorBoundary"
@@ -88,6 +89,16 @@ export const routes = [
           <ProtectedRoute>
             <RouteErrorBoundary routeType="settings">
               <Settings />
+            </RouteErrorBoundary>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "calendar",
+        element: (
+          <ProtectedRoute>
+            <RouteErrorBoundary routeType="calendar">
+              <Calendar />
             </RouteErrorBoundary>
           </ProtectedRoute>
         ),

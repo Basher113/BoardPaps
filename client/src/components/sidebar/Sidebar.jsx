@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useClerk } from '@clerk/clerk-react';
-import { LayoutDashboard, Settings, MoreHorizontal, FolderKanban, LogOut, Bell, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Settings, MoreHorizontal, FolderKanban, LogOut, Bell, Menu, X, CalendarDays } from 'lucide-react';
 import {
   SidebarContainer,
   SidebarHeader,
@@ -62,8 +62,9 @@ const Sidebar = ({ activeView, setActiveView, currentUser }) => {
   const projects = projectsData?.data || [];
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    {id: 'invitations', icon: Bell, label: "Invitations"},
+    { id: 'calendar', icon: CalendarDays, label: 'Calendar' },
     { id: 'settings', icon: Settings, label: 'Settings' },
-    {id: 'invitations', icon: Bell, label: "Invitations"}
   ];
 
   const invitationsCount = invitationsCountData?.data?.count || 0;
@@ -76,6 +77,11 @@ const Sidebar = ({ activeView, setActiveView, currentUser }) => {
     } catch {
       //
     }
+  };
+  
+  const handleCalendarClick = () => {
+    setIsMobileOpen(false);
+    navigate('/calendar');
   };
   
   const handleInvitationsClick = () => {
@@ -121,7 +127,7 @@ const Sidebar = ({ activeView, setActiveView, currentUser }) => {
               <NavItem key={item.id}>
                 <NavButton
                   $active={activeView === item.id}
-                  onClick={item.id === 'dashboard' ? handleDashboardClick : item.id === 'settings' ? handleSettingsClick : item.id === "invitations" ? handleInvitationsClick : () => setActiveView(item.id)}
+                  onClick={item.id === 'dashboard' ? handleDashboardClick : item.id === 'calendar' ? handleCalendarClick : item.id === 'settings' ? handleSettingsClick : item.id === "invitations" ? handleInvitationsClick : () => setActiveView(item.id)}
                 >
                   <item.icon size={20} />
                   <span>{item.label}</span>
