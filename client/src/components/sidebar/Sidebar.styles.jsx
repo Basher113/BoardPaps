@@ -338,6 +338,29 @@ export const ProjectList = styled.ul`
   gap: 0.125rem;
 `;
 
+export const ViewAllButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+  background: transparent;
+  color: #71717a;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: left;
+  margin-top: 0.25rem;
+
+  &:hover {
+    background-color: #27272a;
+    color: #fafafa;
+  }
+`;
+
 export const ProjectItem = styled.li``;
 
 export const ProjectButton = styled.button`

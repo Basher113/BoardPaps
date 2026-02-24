@@ -32,6 +32,7 @@ import {
   ProjectSectionTitle,
   ProjectList,
   EmptyProjects,
+  ViewAllButton,
 
   // Invitation Badge Styles
   InvitationBadge,
@@ -142,15 +143,18 @@ const Sidebar = ({ activeView, setActiveView, currentUser }) => {
                 <EmptyProjects>No projects yet</EmptyProjects>
               ) : (
                 <ProjectList>
-                  {projects.map((project) => {
-                     
-                    return (
-                      <ProjectItem
-                        key={project.id}
-                        project={project}
-                      />
-                    );
-                  })}
+                  {projects.slice(0, 5).map((project) => (
+                    <ProjectItem
+                      key={project.id}
+                      project={project}
+                    />
+                  ))}
+                  {projects.length > 5 && (
+                    <ViewAllButton onClick={handleProjectsClick}>
+                      <span>View all projects</span>
+                      <span>({projects.length} total)</span>
+                    </ViewAllButton>
+                  )}
                 </ProjectList>
               )}
             </ProjectSection>

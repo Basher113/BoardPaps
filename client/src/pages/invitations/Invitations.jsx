@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { setActiveView } from "../../reducers/slices/navigation/navigation.slice";
 import ConfirmModal from "../../components/ui/confirm-modal/ConfirmModal";
 import Button from "../../components/ui/button/Button";
+import UserAvatar from "../../components/ui/user-avatar/UserAvatar";
 import {
   useGetMyInvitationsQuery,
   useAcceptInvitationMutation,
@@ -27,7 +28,6 @@ import {
   InvitationsList,
   InvitationCard,
   InvitationContent,
-  InvitationAvatar,
   InvitationInfo,
   InvitationTitle,
   InvitationDetails,
@@ -42,37 +42,6 @@ import {
   EmptyDescription,
   ToastMessage,
 } from "./Invitations.styles";
-
-// Gradient colors for avatars
-const avatarGradients = [
-  "linear-gradient(135deg, #3f51b5 0%, #5c6bc0 100%)",
-  "linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%)",
-  "linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%)",
-  "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-  "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-  "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
-  "linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%)",
-];
-
-// Get initials from name
-const getInitials = (name) => {
-  if (!name) return "??";
-  const words = name.split(" ");
-  if (words.length >= 2) {
-    return (words[0][0] + words[1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-};
-
-// Get consistent gradient based on string
-const getGradient = (str) => {
-  if (!str) return avatarGradients[0];
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return avatarGradients[Math.abs(hash) % avatarGradients.length];
-};
 
 // Helper function to check if invitation is expired
 const isExpired = (expiresAt) => {
@@ -263,16 +232,12 @@ const InvitationsPage = () => {
                 const isThisProcessing = processingId === invitation.id;
                 const inviterName = invitation.invitedBy?.username || "Unknown";
                 const projectName = invitation.project?.name || "Unknown Project";
-                const gradient = getGradient(projectName);
-                const initials = getInitials(inviterName);
                 const status = invitation.status.toLowerCase();
                 
                 return (
                   <InvitationCard key={invitation.id}>
                     <InvitationContent>
-                      <InvitationAvatar $gradient={gradient}>
-                        {initials}
-                      </InvitationAvatar>
+                      <UserAvatar user={invitation.invitedBy} size="lg" />
                       <InvitationInfo>
                         <InvitationTitle>
                           {inviterName} invited you to {projectName}
