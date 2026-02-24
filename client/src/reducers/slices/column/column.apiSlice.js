@@ -134,8 +134,13 @@ export const columnApiSlice = apiSlice.injectEndpoints({
     reorderColumns: builder.mutation({
       query: ({ projectId, columnOrder }) => ({
         url: `projects/${projectId}/columns/reorder`,
-        method: "PUT",
-        body: { columnOrder },
+        method: "PATCH",
+        body: { 
+          columnOrders: columnOrder.map((id, index) => ({
+            id,
+            position: index
+          }))
+        },
       }),
       async onQueryStarted({ projectId, columnOrder }, { dispatch, queryFulfilled }) {
         // Optimistic update - reorder columns immediately
@@ -163,6 +168,78 @@ export const columnApiSlice = apiSlice.injectEndpoints({
       },
       // No invalidatesTags - cache updated optimistically
     }),
+
+    /**
+     * Sync all columns (bulk create/update/delete)
+     * Used for workflow settings where multiple changes are made at once
+     */
+    syncColumns: builder.mutation({
+      query: ({ projectId, columns }) => ({
+        url: `projects/${projectId}/columns/sync`,
+        method: "PUT",
+        body: { columns },
+      }),
+      async onQueryStarted({ projectId, columns }, { dispatch, queryFulfilled }) {
+        // Optimistic update for both getProject and getProjectSettings caches
+        const patchResults = [];
+        
+        // Update getProject cache (used by board view)
+        patchResults.push(
+          dispatch(
+            apiSlice.util.updateQueryData("getProject", projectId, (project) => {
+              if (!project?.data) return;
+              
+              project.data.columns = columns.map((col, index) => ({
+                ...col,
+                id: col.id || `temp-${Date.now()}-${index}`,
+                position: index,
+                _count: col._count || { issues: 0 },
+              }));
+            })
+          )
+        );
+        
+        // Update getProjectSettings cache (used by settings page)
+        patchResults.push(
+          dispatch(
+            apiSlice.util.updateQueryData("getProjectSettings", projectId, (project) => {
+              if (!project?.data) return;
+              
+              project.data.columns = columns.map((col, index) => ({
+                ...col,
+                id: col.id || `temp-${Date.now()}-${index}`,
+                position: index,
+                _count: col._count || { issues: 0 },
+              }));
+            })
+          )
+        );
+        
+        try {
+          const { data: response } = await queryFulfilled;
+          
+          // Replace with server response in both caches
+          if (response?.data) {
+            dispatch(
+              apiSlice.util.updateQueryData("getProject", projectId, (project) => {
+                if (!project?.data) return;
+                project.data.columns = response.data;
+              })
+            );
+            dispatch(
+              apiSlice.util.updateQueryData("getProjectSettings", projectId, (project) => {
+                if (!project?.data) return;
+                project.data.columns = response.data;
+              })
+            );
+          }
+        } catch {
+          // Undo all patches on error
+          patchResults.forEach((patch) => patch.undo());
+        }
+      },
+      // No invalidatesTags - cache updated optimistically
+    }),
   }),
 });
 
@@ -171,4 +248,5 @@ export const {
   useUpdateColumnMutation,
   useDeleteColumnMutation,
   useReorderColumnsMutation,
+  useSyncColumnsMutation,
 } = columnApiSlice;

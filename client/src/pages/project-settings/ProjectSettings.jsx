@@ -27,6 +27,7 @@ import MembersList from './components/members/MembersList';
 import InvitationsList from './components/invitations/InvitationsList';
 import DangerZone from './components/danger-zone/DangerZone';
 import ActivityList from './components/activity/ActivityList';
+import WorkflowSettings from './components/workflow/WorkflowSettings';
 
 const ProjectSettings = () => {
   const { projectId } = useParams();
@@ -72,13 +73,13 @@ const ProjectSettings = () => {
   }
 
   const project = projectData.data;
-  // Determine if user is owner
+  // Determine if user is owner (either via project.ownerId or via OWNER role in members)
   const isOwner = project?.owner?.id === currentUserId || 
     project?.members?.some(m => m.user.id === currentUserId && m.role === 'OWNER');
   
-  // Determine if user can manage settings
-  const canManageSettings = project?.members?.some(m => 
-    m.user.id === currentUserId && (m.role === 'OWNER' || m.role === 'ADMIN')
+  // Determine if user can manage settings (owner or admin)
+  const canManageSettings = isOwner || project?.members?.some(m => 
+    m.user.id === currentUserId && m.role === 'ADMIN'
   );
 
   if (!project) {
@@ -126,6 +127,12 @@ const ProjectSettings = () => {
           >
             Invitations
           </SettingsNavItem>
+          <SettingsNavItem 
+            $active={activeTab === 'workflow'} 
+            onClick={() => setActiveTab('workflow')}
+          >
+            Workflow & Board
+          </SettingsNavItem>
           {canManageSettings && (
             <SettingsNavItem 
               $active={activeTab === 'activity'} 
@@ -163,6 +170,13 @@ const ProjectSettings = () => {
           {activeTab === 'invitations' && (
             <InvitationsList
               project={project}
+            />
+          )}
+
+          {activeTab === 'workflow' && (
+            <WorkflowSettings
+              project={project}
+              canManageSettings={canManageSettings}
             />
           )}
 
