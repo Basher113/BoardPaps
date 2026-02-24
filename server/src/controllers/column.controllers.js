@@ -1,5 +1,5 @@
 const prisma = require("../lib/prisma");
-const logger = require("../lib/logger");
+const {logInfo, logError} = require("../lib/logger");
 
 /**
  * Get all columns for a project
@@ -24,7 +24,7 @@ const getColumns = async (req, res) => {
       data: columns
     });
   } catch (error) {
-    logger.error('Error fetching columns:', { 
+    logError('Error fetching columns:', { 
       error: error.message, 
       projectId: req.params.projectId 
     });
@@ -83,7 +83,7 @@ const getColumn = async (req, res) => {
       data: column
     });
   } catch (error) {
-    logger.error('Error fetching column:', { 
+    logError('Error fetching column:', { 
       error: error.message, 
       columnId: req.params.columnId 
     });
@@ -129,7 +129,7 @@ const createColumn = async (req, res) => {
       }
     });
 
-    logger.info('Column created', { 
+    logInfo('Column created', { 
       columnId: column.id, 
       projectId,
       userId: req.user?.id 
@@ -140,7 +140,7 @@ const createColumn = async (req, res) => {
       data: column
     });
   } catch (error) {
-    logger.error('Error creating column:', { 
+    logError('Error creating column:', { 
       error: error.message, 
       projectId: req.params.projectId 
     });
@@ -196,7 +196,7 @@ const updateColumn = async (req, res) => {
       }
     });
 
-    logger.info('Column updated', { 
+    logInfo('Column updated', { 
       columnId, 
       projectId,
       userId: req.user?.id,
@@ -208,7 +208,7 @@ const updateColumn = async (req, res) => {
       data: column
     });
   } catch (error) {
-    logger.error('Error updating column:', { 
+    logError('Error updating column:', { 
       error: error.message, 
       columnId: req.params.columnId 
     });
@@ -265,7 +265,7 @@ const reorderColumns = async (req, res) => {
       orderBy: { position: 'asc' }
     });
 
-    logger.info('Columns reordered', { 
+    logInfo('Columns reordered', { 
       projectId,
       userId: req.user?.id,
       columnCount: columnOrders.length
@@ -276,7 +276,7 @@ const reorderColumns = async (req, res) => {
       data: columns
     });
   } catch (error) {
-    logger.error('Error reordering columns:', { 
+    logError('Error reordering columns:', { 
       error: error.message, 
       projectId: req.params.projectId 
     });
@@ -347,7 +347,7 @@ const deleteColumn = async (req, res) => {
       )
     );
 
-    logger.info('Column deleted', { 
+    logInfo('Column deleted', { 
       columnId, 
       projectId,
       userId: req.user?.id
@@ -358,7 +358,7 @@ const deleteColumn = async (req, res) => {
       message: 'Column deleted successfully'
     });
   } catch (error) {
-    logger.error('Error deleting column:', { 
+    logError('Error deleting column:', { 
       error: error.message, 
       columnId: req.params.columnId 
     });
@@ -369,11 +369,153 @@ const deleteColumn = async (req, res) => {
   }
 };
 
+/**
+ * Sync all columns (bulk create/update/delete)
+ * @route PUT /api/projects/:projectId/columns/sync
+ */
+const syncColumns = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { columns } = req.body;
+
+    if (!Array.isArray(columns)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid columns payload'
+      });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Get existing DB columns with issue counts
+      const existingColumns = await tx.column.findMany({
+        where: { projectId },
+        include: {
+          _count: {
+            select: { issues: true }
+          }
+        }
+      });
+
+      const existingMap = new Map(existingColumns.map(c => [c.id, c]));
+
+      // Collect incoming IDs (only valid UUIDs)
+      const incomingIds = new Set(
+        columns.filter(c => c.id && existingMap.has(c.id)).map(c => c.id)
+      );
+
+      // DELETE removed columns
+      const toDelete = existingColumns.filter(c => !incomingIds.has(c.id));
+
+      for (const col of toDelete) {
+        // Check if column has issues before deleting
+        if (col._count.issues > 0) {
+          throw new Error(`Cannot delete column "${col.name}" - it contains ${col._count.issues} issue(s). Move or delete them first.`);
+        }
+        await tx.column.delete({
+          where: { id: col.id }
+        });
+      }
+
+      // Use negative positions temporarily to avoid unique constraint violations
+      const tempPositionOffset = -1000000;
+
+      // UPDATE existing columns with temporary positions first
+      const existingUpdates = columns.filter(c => c.id && existingMap.has(c.id));
+
+      for (let i = 0; i < existingUpdates.length; i++) {
+        const col = existingUpdates[i];
+        await tx.column.update({
+          where: { id: col.id },
+          data: {
+            name: col.name?.trim() || existingMap.get(col.id).name,
+            position: tempPositionOffset + i,
+          },
+        });
+      }
+
+      // CREATE new columns with temporary positions
+      const newColumns = columns.filter(c => !c.id || !existingMap.has(c.id));
+      const createdColumns = [];
+
+      for (let i = 0; i < newColumns.length; i++) {
+        const col = newColumns[i];
+        const created = await tx.column.create({
+          data: {
+            name: col.name?.trim() || 'Untitled',
+            position: tempPositionOffset - 1000 - i,
+            projectId,
+          },
+        });
+        createdColumns.push({ tempId: col.tempId, id: created.id });
+      }
+
+      // FINAL POSITION UPDATE - set correct positions for all columns
+      for (const col of columns) {
+        let id = col.id;
+
+        // Find the real ID for newly created columns
+        if (!id || !existingMap.has(id)) {
+          const created = createdColumns.find(c => c.tempId === col.tempId);
+          if (created) id = created.id;
+        }
+
+        if (!id) continue;
+
+        await tx.column.update({
+          where: { id },
+          data: { position: col.position },
+        });
+      }
+
+      // Return updated columns
+      return await tx.column.findMany({
+        where: { projectId },
+        orderBy: { position: 'asc' },
+        include: {
+          _count: {
+            select: { issues: true }
+          }
+        }
+      });
+    });
+
+    logInfo('Columns synced', {
+      projectId,
+      userId: req.user?.id,
+      columnCount: result.length
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    logError('Error syncing columns:', {
+      error: error.message,
+      projectId: req.params.projectId
+    });
+
+    // Check for specific error messages
+    if (error.message.includes('Cannot delete column')) {
+      return res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to sync columns'
+    });
+  }
+};
+
 module.exports = {
   getColumns,
   getColumn,
   createColumn,
   updateColumn,
   reorderColumns,
-  deleteColumn
+  deleteColumn,
+  syncColumns
 };

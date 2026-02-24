@@ -54,17 +54,16 @@ columnRouter.post(
 );
 
 /**
- * @route PUT /api/projects/:projectId/columns/:columnId
- * @desc Update a column
+ * @route PUT /api/projects/:projectId/columns/sync
+ * @desc Sync all columns (bulk create/update/delete)
  * @access Admin, Owner
  */
 columnRouter.put(
-  "/:columnId",
+  "/sync",
   requireProjectMember,
   requireProjectRole(["ADMIN", "OWNER"]),
   projectActionLimiter,
-  validateBody(updateColumnSchema),
-  columnController.updateColumn
+  columnController.syncColumns
 );
 
 /**
@@ -82,14 +81,28 @@ columnRouter.patch(
 );
 
 /**
+ * @route PUT /api/projects/:projectId/columns/:columnId
+ * @desc Update a column
+ * @access Admin, Owner
+ */
+columnRouter.put(
+  "/:columnId",
+  requireProjectMember,
+  requireProjectRole(["ADMIN", "OWNER"]),
+  projectActionLimiter,
+  validateBody(updateColumnSchema),
+  columnController.updateColumn
+);
+
+/**
  * @route DELETE /api/projects/:projectId/columns/:columnId
- * @desc Delete a column (only Owner can delete)
- * @access Owner
+ * @desc Delete a column (Admin or Owner can delete)
+ * @access Admin, Owner
  */
 columnRouter.delete(
   "/:columnId",
   requireProjectMember,
-  requireProjectRole(["OWNER"]),
+  requireProjectRole(["ADMIN", "OWNER"]),
   projectActionLimiter,
   columnController.deleteColumn
 );
