@@ -103,8 +103,6 @@ const IssueCard = ({
     return null;
   }
 
-  console.log(issue._count.comments);
-
   return (
     <CardContainer
       ref={setNodeRef}

@@ -19,6 +19,7 @@ import {
   useTransferProjectOwnershipMutation 
 } from '../../../../reducers/slices/project/project.apiSlice';
 import { useLeaveProjectMutation } from '../../../../reducers/slices/member/member.apiSlice';
+import { logger } from '../../../../utils/logger';
 
 const DangerZone = ({ project, currentUserId, refetchProject, isOwner }) => {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ const DangerZone = ({ project, currentUserId, refetchProject, isOwner }) => {
       setTransferUserId('');
       refetchProject();
     } catch (err) {
-      console.error('Failed to transfer ownership:', err);
+      logger.apiError('Transfer ownership', err);
       toast.error(err.data?.message || 'Failed to transfer ownership');
     }
   };
@@ -64,7 +65,7 @@ const DangerZone = ({ project, currentUserId, refetchProject, isOwner }) => {
       toast.success('Project deleted successfully');
       navigate('/projects');
     } catch (err) {
-      console.error('Failed to delete project:', err);
+      logger.apiError('Delete project', err);
       toast.error(err.data?.message || 'Failed to delete project');
     }
   };
@@ -77,7 +78,7 @@ const DangerZone = ({ project, currentUserId, refetchProject, isOwner }) => {
       toast.success('You have left the project');
       navigate('/projects');
     } catch (err) {
-      console.error('Failed to leave project:', err);
+      logger.apiError('Leave project', err);
       toast.error(err.data?.message || 'Failed to leave project');
     }
   };

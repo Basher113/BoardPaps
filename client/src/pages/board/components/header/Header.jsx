@@ -87,11 +87,13 @@ const Header = ({
           {canInvite && (
             <InviteButton onClick={onInvite}>
               <Users size={16} />
+              Invite
             </InviteButton>
           )}
           
           <SettingsButton onClick={handleSettingsClick}>
             <Settings size={16} />
+            Settings
           </SettingsButton>
         </HeaderRight>
       </HeaderContent>

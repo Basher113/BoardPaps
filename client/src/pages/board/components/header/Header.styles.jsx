@@ -2,8 +2,6 @@ import styled from 'styled-components';
 
 export const HeaderContainer = styled.header`
   padding: 1.25rem 2rem;
-  background: white;
-  border-bottom: 1px solid #e4e4e7;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -74,10 +72,6 @@ export const HeaderRight = styled.div`
   align-items: center;
   gap: 0.75rem;
 
-  @media (max-width: 768px) {
-    width: 100%;
-    flex-wrap: wrap;
-  }
 `;
 
 export const SearchToggle = styled.button`

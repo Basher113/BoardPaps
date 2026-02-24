@@ -27,6 +27,7 @@ import {
   useGetProjectQuery, 
 } from "../../reducers/slices/project/project.apiSlice";
 import { useMoveIssueMutation } from "../../reducers/slices/issue/issue.apiSlice";
+import { logger } from "../../utils/logger";
 import { 
   selectIsDeleteModalOpen,
   selectIsCreateModalOpen,
@@ -216,7 +217,7 @@ const Board = () => {
         newPosition,
       }).unwrap();
     } catch (err) {
-      console.error("Failed to move issue:", err);
+      logger.apiError("Move issue", err);
       toast.error(err?.data?.message || "Failed to move issue. Please try again.");
     }
   }, [columns, issueMap, findColumnByIssueId, moveIssue, activeProjectId]);

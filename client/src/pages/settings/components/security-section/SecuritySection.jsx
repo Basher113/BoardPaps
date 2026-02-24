@@ -22,6 +22,7 @@ import {
 } from '../../Settings.styles';
 import Modal from '../../../../components/ui/modal/Modal';
 import { Lock, CheckCircle2, XCircle } from 'lucide-react';
+import { logger } from '../../../../utils/logger';
 
 const SecuritySection = ({ hasPassword }) => {
   const { user } = useUser();
@@ -81,7 +82,7 @@ const SecuritySection = ({ hasPassword }) => {
         setPasswordSuccess(null);
       }, 1500);
     } catch (err) {
-      console.error('Clerk password update error:', err);
+      logger.apiError('Password update', err);
       // Handle Clerk-specific errors
       const errorMessage = err.errors?.[0]?.message || err.message || 'Failed to change password';
       setPasswordError(errorMessage);

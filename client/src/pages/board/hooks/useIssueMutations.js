@@ -13,6 +13,7 @@ import {
   selectDeleteIssueId,
 } from '../../../reducers/slices/issue/issue.slice';
 import { selectActiveProjectId } from '../../../reducers/slices/navigation/navigation.selector';
+import { logger } from '../../../utils/logger';
 
 /**
  * Custom hook for handling issue CRUD mutations
@@ -46,7 +47,7 @@ const useIssueMutations = ({ selectedIssue } = {}) => {
       toast.success('Issue deleted successfully');
       dispatch(closeDeleteModal());
     } catch (err) {
-      console.error('Failed to delete issue:', err);
+      logger.apiError('Delete issue', err);
       toast.error(err?.data?.message || 'Failed to delete issue');
     }
   }, [deleteIssueId, activeProjectId, deleteIssue, dispatch]);
@@ -66,7 +67,7 @@ const useIssueMutations = ({ selectedIssue } = {}) => {
       toast.success('Issue created successfully');
       dispatch(closeCreateModal());
     } catch (err) {
-      console.error('Failed to create issue:', err);
+      logger.apiError('Create issue', err);
       toast.error(err?.data?.message  || 'Failed to create issue');
     }
   }, [activeProjectId, createIssue, dispatch]);
@@ -87,7 +88,7 @@ const useIssueMutations = ({ selectedIssue } = {}) => {
       toast.success('Issue updated successfully');
       dispatch(closeEditModal());
     } catch (err) {
-      console.error('Failed to update issue:', err);
+      logger.apiError('Update issue', err);
       toast.error(err?.data?.message || 'Failed to update issue');
     }
   }, [selectedIssue, activeProjectId, updateIssue, dispatch]);

@@ -82,11 +82,13 @@ class ErrorBoundary extends Component {
             </ErrorActions>
 
             <ErrorDetails>
-              <ErrorDetailsToggle onClick={this.toggleDetails}>
-                {showDetails ? 'Hide' : 'Show'} technical details
-              </ErrorDetailsToggle>
+              {import.meta.env.DEV && (
+                <ErrorDetailsToggle onClick={this.toggleDetails}>
+                  {showDetails ? 'Hide' : 'Show'} technical details
+                </ErrorDetailsToggle>
+              )}
               
-              {showDetails && (
+              {showDetails && import.meta.env.DEV && (
                 <ErrorDetailsContent>
                   <p>
                     <strong>Error:</strong> {error?.toString()}

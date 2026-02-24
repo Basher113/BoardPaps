@@ -25,6 +25,7 @@ import {
 } from '../../Settings.styles';
 import UserAvatar from '../../../../components/ui/user-avatar/UserAvatar';
 import { XCircle, Upload, Trash2 as TrashIcon } from 'lucide-react';
+import { logger } from '../../../../utils/logger';
 import {
   useUpdateUserProfileMutation,
   useUploadUserAvatarMutation,
@@ -71,7 +72,7 @@ const ProfileSection = () => {
       toast.success('Avatar updated successfully');
       refetchProfile();
     } catch (err) {
-      console.error('Failed to upload avatar:', err);
+      logger.apiError('Avatar upload', err);
       toast.error(err.data?.message || 'Failed to upload avatar');
     }
   };
@@ -82,7 +83,7 @@ const ProfileSection = () => {
       toast.success('Avatar deleted successfully');
       refetchProfile();
     } catch (err) {
-      console.error('Failed to delete avatar:', err);
+      logger.apiError('Avatar delete', err);
       toast.error(err.data?.message || 'Failed to delete avatar');
     }
   };
@@ -95,7 +96,7 @@ const ProfileSection = () => {
       refetchProfile();
       toast.success('Profile updated successfully');
     } catch (err) {
-      console.error('Failed to update profile:', err);
+      logger.apiError('Profile update', err);
     }
   };
 

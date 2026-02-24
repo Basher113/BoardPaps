@@ -72,8 +72,8 @@ const Sidebar = ({ activeView, setActiveView, currentUser }) => {
       await signOut();
       dispatch(apiSlice.util.resetApiState());
       navigate('/');
-    } catch (error) {
-      console.error('Logout failed:', error);
+    } catch {
+      //
     }
   };
   

@@ -51,17 +51,18 @@ import {
   DashboardFooter,
   FooterText,
   IssueIconWrapper,
-  IssueKey,
-  ProjectLink,
-  IssueBadges,
+
+  LoadMoreContainer,
+  LoadMoreButton,
+  RemainingCount,
 } from './Dashboard.styles';
-import { FolderKanban, CheckCircle, ChevronRight, Plus } from 'lucide-react';
+import { FolderKanban, CheckCircle, ChevronRight, Plus, ChevronDown } from 'lucide-react';
 
 // Status colors for visual distinction
 const STATUS_COLORS = {
   'To Do': '#64748b',
   'In Progress': '#3b82f6',
-  'In Review': '#f59e0b',
+  'Review': '#f59e0b',
   'Done': '#22c55e',
   'Completed': '#22c55e',
   'Backlog': '#94a3b8',
@@ -103,6 +104,7 @@ const Dashboard = () => {
   const dispatch = useDispatch();
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(10);
   
   // Set active view on mount
   useEffect(() => {
@@ -123,6 +125,11 @@ const Dashboard = () => {
     return matchesStatus && matchesProject;
   });
 
+  // Get visible issues based on current count
+  const visibleIssues = filteredIssues.slice(0, visibleCount);
+  const hasMoreIssues = visibleCount < filteredIssues.length;
+  const remainingCount = filteredIssues.length - visibleCount;
+
   const totalCount = statusCounts.reduce((sum, item) => sum + item.count, 0);
 
   const handleStatusClick = (columnName) => {
@@ -131,6 +138,7 @@ const Dashboard = () => {
     } else {
       setSelectedStatus(columnName);
     }
+    setVisibleCount(10); // Reset visible count when filter changes
   };
 
   const handleIssueClick = (issue) => {
@@ -147,6 +155,11 @@ const Dashboard = () => {
   const handleProjectChange = (e) => {
     const value = e.target.value;
     setSelectedProject(value || null);
+    setVisibleCount(10); // Reset visible count when filter changes
+  };
+
+  const handleLoadMore = () => {
+    setVisibleCount(prev => Math.min(prev + 10, filteredIssues.length));
   };
 
   if (isLoading) {
@@ -202,7 +215,7 @@ const Dashboard = () => {
             <MetricLabel>Total Issues</MetricLabel>
             <MetricValue>{totalCount}</MetricValue>
           </MetricCard>
-          {statusCounts.slice(0, 3).map((status) => (
+          {statusCounts.map((status) => (
             <MetricCard
               key={status.columnName}
               $clickable
@@ -255,7 +268,7 @@ const Dashboard = () => {
           </SectionHeader>
           
           <TaskList>
-            {filteredIssues.slice(0, 10).map((issue) => (
+            {visibleIssues.map((issue) => (
               <TaskItem key={issue.id} onClick={() => handleIssueClick(issue)}>
                 <TaskCheckbox />
                 <IssueIconWrapper>
@@ -295,6 +308,17 @@ const Dashboard = () => {
               </EmptyStateContainer>
             )}
           </TaskList>
+          
+          {/* Load More Button */}
+          {hasMoreIssues && (
+            <LoadMoreContainer>
+              <LoadMoreButton onClick={handleLoadMore}>
+                <ChevronDown size={16} />
+                Load More
+                <RemainingCount>({remainingCount} remaining)</RemainingCount>
+              </LoadMoreButton>
+            </LoadMoreContainer>
+          )}
         </FocusSection>
       )}
 

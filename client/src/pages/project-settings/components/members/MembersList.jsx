@@ -29,6 +29,7 @@ import {
 import ConfirmModal from '../../../../components/ui/confirm-modal/ConfirmModal';
 import UserAvatarComponent from '../../../../components/ui/user-avatar/UserAvatar';
 import { useRemoveMemberMutation, useUpdateMemberRoleMutation } from '../../../../reducers/slices/member/member.apiSlice';
+import { logger } from '../../../../utils/logger';
 
 const MembersList = ({ project, currentUserId, canManageSettings, refetchProject }) => {
   const [selectedMember, setSelectedMember] = useState(null);
@@ -60,7 +61,7 @@ const MembersList = ({ project, currentUserId, canManageSettings, refetchProject
       setSelectedMember(null);
       refetchProject();
     } catch (err) {
-      console.error('Failed to remove member:', err);
+      logger.apiError('Remove member', err);
       toast.error(err.data?.message || 'Failed to remove member');
     }
   };
@@ -80,7 +81,7 @@ const MembersList = ({ project, currentUserId, canManageSettings, refetchProject
       setNewRole('');
       refetchProject();
     } catch (err) {
-      console.error('Failed to update member role:', err);
+      logger.apiError('Update member role', err);
       toast.error(err.data?.message || 'Failed to update member role');
     }
   };

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { X, ArrowUp, ArrowDown, Minus, Calendar, Trash2, Loader2 } from 'lucide-react';
 import UserAvatar from '../../../../components/ui/user-avatar/UserAvatar';
-import ConfirmModal from '../../../../components/ui/confirm-modal/ConfirmModal';
 import { useGetCommentsQuery, useCreateCommentMutation, useDeleteCommentMutation } from '../../../../reducers/slices/comment/comment.apiSlice';
 import { useGetCurrentUserQuery } from '../../../../reducers/slices/user/user.slice';
 import { formatRelativeTime } from '../../../../utils/date';
+import { logger } from '../../../../utils/logger';
 import {
   DrawerOverlay,
   IssueDrawer,
@@ -122,7 +122,7 @@ const IssueDetailModal = ({ isOpen, onClose, issue, projectId }) => {
       
       setCommentText('');
     } catch (error) {
-      console.error('Failed to post comment:', error);
+      logger.apiError('Post comment', error);
     }
   };
 
@@ -140,7 +140,7 @@ const IssueDetailModal = ({ isOpen, onClose, issue, projectId }) => {
         commentId: commentToDelete,
       }).unwrap();
     } catch (error) {
-      console.error('Failed to delete comment:', error);
+      logger.apiError('Delete comment', error);
     }
   };
 

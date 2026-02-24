@@ -24,6 +24,7 @@ import {
 } from '../../ProjectSettings.styles';
 import Modal from '../../../../components/ui/modal/Modal';
 import { useUpdateProjectMutation } from '../../../../reducers/slices/project/project.apiSlice';
+import { logger } from '../../../../utils/logger';
 
 const GeneralSettings = ({ project, canManageSettings, refetchProject }) => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -128,7 +129,7 @@ const GeneralSettingsEditModal = ({
       onClose();
       refetchProject();
     } catch (err) {
-      console.error('Failed to update project:', err);
+      logger.apiError('Project update', err);
       setError(err.data?.message || 'Failed to update project');
     }
   };

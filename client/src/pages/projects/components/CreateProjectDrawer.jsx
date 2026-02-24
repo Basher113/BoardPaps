@@ -29,6 +29,7 @@ import {
 import {
   useCreateProjectMutation,
 } from '../../../reducers/slices/project/project.apiSlice';
+import { logger } from '../../../utils/logger';
 
 const generateProjectKey = (name) => {
   if (!name) return '';
@@ -88,7 +89,7 @@ const CreateProjectDrawer = ({ isOpen, onClose }) => {
       handleClose();
       navigate(`/project/${result.data.id}`);
     } catch (error) {
-      console.error('Failed to create project:', error);
+      logger.apiError('Project creation', error);
       toast.error(error.data?.message || 'Failed to create project');
     }
   };

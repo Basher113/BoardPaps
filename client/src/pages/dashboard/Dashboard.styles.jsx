@@ -537,3 +537,44 @@ export const FooterText = styled.p`
   margin: 0;
   padding-bottom: 2rem;
 `;
+
+// Load More Button
+export const LoadMoreContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0;
+  width: 100%;
+`;
+
+export const LoadMoreButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 160px;
+
+  &:hover {
+    background: #f8f8f8;
+    border-color: #d0d0d0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+`;
+
+export const RemainingCount = styled.span`
+  font-size: 0.75rem;
+  color: #808080;
+  font-weight: 500;
+`;

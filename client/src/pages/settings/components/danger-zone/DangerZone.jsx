@@ -25,6 +25,7 @@ import ConfirmModal from '../../../../components/ui/confirm-modal/ConfirmModal';
 import { Trash2, AlertTriangle } from 'lucide-react';
 import { useDeleteAccountMutation } from '../../../../reducers/slices/settings/settings.apiSlice';
 import { apiSlice } from '../../../../reducers/apiSlice';
+import { logger } from '../../../../utils/logger';
 
 const DangerZoneSection = ({ hasPassword }) => {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ const DangerZoneSection = ({ hasPassword }) => {
       apiSlice.util.resetApiState();
       navigate('/');
     } catch (err) {
-      console.error('Failed to delete account:', err);
+      logger.apiError('Account deletion', err);
       toast.error(err.data?.message || 'Failed to delete account. Please check your password.');
     }
   };
