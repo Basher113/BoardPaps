@@ -121,10 +121,10 @@ const issueCreateLimiter = rateLimit({
   max: parseInt(process.env.ISSUE_CREATE_RATE_LIMIT || '50'),
   message: {
     success: false,
-    error: {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: 'Too many issues created. Please try again later.'
-    }
+  
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many issues created. Please try again later.'
+  
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -143,13 +143,13 @@ const issueCreateLimiter = rateLimit({
  */
 const issueUpdateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: parseInt(process.env.ISSUE_UPDATE_RATE_LIMIT || '100'),
+  max: parseInt(process.env.ISSUE_UPDATE_RATE_LIMIT || '50'),
   message: {
     success: false,
-    error: {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: 'Too many updates. Please try again later.'
-    }
+
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many updates. Please try again later.'
+
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -167,13 +167,13 @@ const issueUpdateLimiter = rateLimit({
  */
 const issueMoveLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: parseInt(process.env.ISSUE_MOVE_RATE_LIMIT || '200'),
+  max: parseInt(process.env.ISSUE_MOVE_RATE_LIMIT || '50'),
   message: {
     success: false,
-    error: {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: 'Too many move operations. Please try again later.'
-    }
+    
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many move operations. Please try again later.'
+  
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -194,10 +194,10 @@ const issueDeleteLimiter = rateLimit({
   max: parseInt(process.env.ISSUE_DELETE_RATE_LIMIT || '20'),
   message: {
     success: false,
-    error: {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: 'Too many delete operations. Please try again later.'
-    }
+    
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many delete operations. Please try again later.'
+
   },
   standardHeaders: true,
   legacyHeaders: false,

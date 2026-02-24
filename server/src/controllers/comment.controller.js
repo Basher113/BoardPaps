@@ -83,7 +83,6 @@ const getComments = async (req, res) => {
       }
     });
   } catch (error) {
-    console.log(error);
     logError('Error fetching comments', error, {
       issueId: req.params.issueId,
       userId: req.user?.id

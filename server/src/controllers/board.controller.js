@@ -131,7 +131,8 @@ const createBoard = async (req, res) => {
           create: [
             { name: 'To Do', position: 0 },
             { name: 'In Progress', position: 1 },
-            { name: 'Done', position: 2 }
+            { name: 'Review', position: 2 },
+            { name: 'Done', position: 3 }
           ]
         }
       },

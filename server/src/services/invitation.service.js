@@ -4,11 +4,11 @@ const {
   sendInvitationEmail,
   sendInvitationAcceptedEmail,
   sendInvitationDeclinedEmail,
+  isEmailEnabled,
 } = require("./email.service");
 const { auditLog, AUDIT_ACTIONS } = require("./audit.service");
 
 const INVITATION_EXPIRY_DAYS = parseInt(process.env.INVITATION_EXPIRY_DAYS || '6');
-const EMAIL_ENABLED = process.env.RESEND_API_KEY ? true : false;
 
 /**
  * Custom error classes for invitation operations
@@ -165,7 +165,7 @@ const createInvitation = async ({ projectId, email, role, message, invitedById }
     email: normalizedEmail,
     projectId,
     invitedBy: invitedById,
-    emailSent: EMAIL_ENABLED
+    emailSent: isEmailEnabled()
   });
 
   return invitation;
@@ -176,7 +176,7 @@ const createInvitation = async ({ projectId, email, role, message, invitedById }
  * @param {Object} invitation - Invitation object
  */
 const sendInvitationNotification = async (invitation) => {
-  if (!EMAIL_ENABLED) return;
+  if (!isEmailEnabled()) return;
 
   sendInvitationEmail(invitation, invitation.project, invitation.invitedBy)
     .then((result) => {
@@ -469,7 +469,7 @@ const acceptInvitation = async (invitationId, user) => {
  * @param {Object} acceptedBy - User who accepted
  */
 const sendAcceptanceNotification = async (invitation, acceptedBy) => {
-  if (!EMAIL_ENABLED || !invitation.invitedById) return;
+  if (!isEmailEnabled() || !invitation.invitedById) return;
 
   const inviter = await prisma.user.findUnique({
     where: { id: invitation.invitedById },
@@ -536,7 +536,7 @@ const declineInvitation = async (invitationId, user) => {
  * @param {Object} invitation - Invitation object
  */
 const sendDeclineNotification = async (invitation) => {
-  if (!EMAIL_ENABLED || !invitation.invitedById) return;
+  if (!isEmailEnabled() || !invitation.invitedById) return;
 
   const inviter = await prisma.user.findUnique({
     where: { id: invitation.invitedById },

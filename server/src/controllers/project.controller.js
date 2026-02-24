@@ -189,6 +189,14 @@ const getProjectSettings = async (req, res) => {
             }
           }
         },
+        columns: {
+          orderBy: { position: 'asc' },
+          include: {
+            _count: {
+              select: { issues: true }
+            }
+          }
+        },
         invitations: {
           where: { status: "PENDING" },
           include: {

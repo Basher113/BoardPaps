@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const { sanitizeText } = require("../utils/sanitize");
 
 /**
  * Transform email to lowercase and trim whitespace
@@ -15,7 +16,10 @@ const invitationSchema = z.object({
   message: z.string()
     .max(250, "Message must be 250 characters or less")
     .optional()
-    .transform((val) => val?.trim() || undefined),
+    .transform((val) => {
+      if (!val || val.trim() === '') return undefined;
+      return sanitizeText(val);
+    }),
 });
 
 module.exports = { invitationSchema };

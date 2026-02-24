@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { sanitizeText } = require('../utils/sanitize');
 
 // ==================== ENUMS ====================
 
@@ -36,14 +37,18 @@ const createIssueSchema = z.object({
   title: z.string()
     .trim()
     .min(1, 'Issue title is required')
-    .max(200, 'Title must be 200 characters or less'),
+    .max(200, 'Title must be 200 characters or less')
+    .transform((val) => sanitizeText(val)),
   
   description: z.string()
     .trim()
     .max(5000, 'Description must be 5000 characters or less')
     .optional()
     .nullable()
-    .transform(val => val === '' ? null : val),
+    .transform(val => {
+      if (!val || val === '') return null;
+      return sanitizeText(val);
+    }),
   
   type: issueTypeEnum,
   
@@ -81,6 +86,7 @@ const updateIssueSchema = z.object({
     .trim()
     .min(1, 'Title cannot be empty')
     .max(200, 'Title must be 200 characters or less')
+    .transform((val) => sanitizeText(val))
     .optional(),
   
   description: z.string()
@@ -88,7 +94,10 @@ const updateIssueSchema = z.object({
     .max(5000, 'Description must be 5000 characters or less')
     .optional()
     .nullable()
-    .transform(val => val === '' ? null : val),
+    .transform(val => {
+      if (!val || val === '') return null;
+      return sanitizeText(val);
+    }),
   
   type: issueTypeEnum.optional(),
   

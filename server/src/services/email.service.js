@@ -1,13 +1,30 @@
 const { Resend } = require('resend');
-const { logInfo, logError } = require('../lib/logger');
+const { logInfo, logError, logWarn } = require('../lib/logger');
+const { escapeHtml, escapeHtmlForEmail } = require('../utils/sanitize');
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY || "re_xxxxxxxxx");
+// Initialize Resend client - handle missing API key gracefully
+const getEmailClient = () => {
+  if (!process.env.RESEND_API_KEY) {
+    logWarn('RESEND_API_KEY not configured - email sending is disabled');
+    return null;
+  }
+  return new Resend(process.env.RESEND_API_KEY);
+};
+
+const resend = getEmailClient();
 
 // Email configuration
 const EMAIL_CONFIG = {
   from: process.env.EMAIL_FROM || 'BoardPaps <noreply@boardpaps.com>',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+};
+
+/**
+ * Check if email service is available
+ * @returns {boolean}
+ */
+const isEmailEnabled = () => {
+  return resend !== null;
 };
 
 /**
@@ -18,7 +35,22 @@ const EMAIL_CONFIG = {
  * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
  */
 const sendInvitationEmail = async (invitation, project, inviter) => {
-  const invitationUrl = `${EMAIL_CONFIG.frontendUrl}/invitations?token=${invitation.token}`;
+  // Check if email is enabled
+  if (!isEmailEnabled()) {
+    logInfo('Email sending skipped - RESEND_API_KEY not configured', {
+      invitationId: invitation.id,
+      email: invitation.email
+    });
+    return { success: false, error: 'Email service not configured', skipped: true };
+  }
+
+  // Sanitize all user-provided content to prevent XSS
+  const safeProjectName = escapeHtml(project.name);
+  const safeInviterName = escapeHtml(inviter.username || inviter.email);
+  const safeMessage = invitation.message ? escapeHtmlForEmail(invitation.message) : null;
+  const safeRole = escapeHtml(invitation.role);
+  
+  const invitationUrl = `${EMAIL_CONFIG.frontendUrl}/invitations?token=${encodeURIComponent(invitation.token)}`;
   
   const html = `
     <!DOCTYPE html>
@@ -26,7 +58,7 @@ const sendInvitationEmail = async (invitation, project, inviter) => {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>You're invited to join ${project.name}</title>
+      <title>You're invited to join ${safeProjectName}</title>
     </head>
     <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
       <table width="100%" cellpadding="0" cellspacing="0" style="padding: 40px 20px;">
@@ -46,19 +78,19 @@ const sendInvitationEmail = async (invitation, project, inviter) => {
               <tr>
                 <td style="padding: 20px 40px;">
                   <p style="margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-                    <strong style="color: #1a1a2e;">${inviter.username || inviter.email}</strong> has invited you to join the project <strong style="color: #f16363;">${project.name}</strong> on BoardPaps.
+                    <strong style="color: #1a1a2e;">${safeInviterName}</strong> has invited you to join the project <strong style="color: #f16363;">${safeProjectName}</strong> on BoardPaps.
                   </p>
                   
-                  ${invitation.message ? `
+                  ${safeMessage ? `
                     <div style="background-color: #f8f9fa; border-left: 4px solid #f16363; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
                       <p style="margin: 0; color: #4a4a4a; font-size: 14px; font-style: italic;">
-                        "${invitation.message}"
+                        "${safeMessage}"
                       </p>
                     </div>
                   ` : ''}
                   
                   <p style="margin: 0 0 10px 0; color: #4a4a4a; font-size: 14px;">
-                    <strong>Role:</strong> <span style="text-transform: capitalize; background-color: ${invitation.role === 'ADMIN' ? '#fef3c7' : '#e0e7ff'}; color: ${invitation.role === 'ADMIN' ? '#92400e' : '#3730a3'}; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">${invitation.role.toLowerCase()}</span>
+                    <strong>Role:</strong> <span style="text-transform: capitalize; background-color: ${invitation.role === 'ADMIN' ? '#fef3c7' : '#e0e7ff'}; color: ${invitation.role === 'ADMIN' ? '#92400e' : '#3730a3'}; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">${safeRole.toLowerCase()}</span>
                   </p>
                   
                   <p style="margin: 0 0 30px 0; color: #6b7280; font-size: 14px;">
@@ -119,12 +151,12 @@ const sendInvitationEmail = async (invitation, project, inviter) => {
   `;
 
   const text = `
-You're Invited to Join ${project.name}!
+You're Invited to Join ${safeProjectName}!
 
-${inviter.username || inviter.email} has invited you to join the project "${project.name}" on BoardPaps.
+${safeInviterName} has invited you to join the project "${safeProjectName}" on BoardPaps.
 
-${invitation.message ? `Personal message: "${invitation.message}"\n` : ''}
-Role: ${invitation.role}
+${safeMessage ? `Personal message: "${safeMessage}"\n` : ''}
+Role: ${safeRole}
 This invitation will expire in 6 days.
 
 Accept your invitation: ${invitationUrl}
@@ -138,7 +170,7 @@ If you didn't expect this invitation, you can safely ignore this email.
     const { data, error } = await resend.emails.send({
       from: EMAIL_CONFIG.from,
       to: invitation.email,
-      subject: `You're invited to join ${project.name} on BoardPaps`,
+      subject: `You're invited to join ${safeProjectName} on BoardPaps`,
       html,
       text,
     });
@@ -178,13 +210,23 @@ If you didn't expect this invitation, you can safely ignore this email.
  * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
  */
 const sendInvitationAcceptedEmail = async (invitation, project, inviter, newUser) => {
+  // Check if email is enabled
+  if (!isEmailEnabled()) {
+    return { success: false, error: 'Email service not configured', skipped: true };
+  }
+
+  // Sanitize all user-provided content
+  const safeProjectName = escapeHtml(project.name);
+  const safeNewUserName = escapeHtml(newUser.username || newUser.email);
+  const safeRole = escapeHtml(invitation.role);
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Invitation Accepted - ${project.name}</title>
+      <title>Invitation Accepted - ${safeProjectName}</title>
     </head>
     <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
       <table width="100%" cellpadding="0" cellspacing="0" style="padding: 40px 20px;">
@@ -204,11 +246,11 @@ const sendInvitationAcceptedEmail = async (invitation, project, inviter, newUser
               <tr>
                 <td style="padding: 20px 40px;">
                   <p style="margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-                    <strong style="color: #1a1a2e;">${newUser.username || newUser.email}</strong> has accepted your invitation to join <strong style="color: #6366f1;">${project.name}</strong>.
+                    <strong style="color: #1a1a2e;">${safeNewUserName}</strong> has accepted your invitation to join <strong style="color: #6366f1;">${safeProjectName}</strong>.
                   </p>
                   
                   <p style="margin: 0 0 10px 0; color: #4a4a4a; font-size: 14px;">
-                    <strong>Role:</strong> <span style="text-transform: capitalize;">${invitation.role.toLowerCase()}</span>
+                    <strong>Role:</strong> <span style="text-transform: capitalize;">${safeRole.toLowerCase()}</span>
                   </p>
                 </td>
               </tr>
@@ -234,9 +276,9 @@ const sendInvitationAcceptedEmail = async (invitation, project, inviter, newUser
   const text = `
 Invitation Accepted!
 
-${newUser.username || newUser.email} has accepted your invitation to join "${project.name}".
+${safeNewUserName} has accepted your invitation to join "${safeProjectName}".
 
-Role: ${invitation.role}
+Role: ${safeRole}
 
 © ${new Date().getFullYear()} BoardPaps. All rights reserved.
   `;
@@ -245,7 +287,7 @@ Role: ${invitation.role}
     const { data, error } = await resend.emails.send({
       from: EMAIL_CONFIG.from,
       to: inviter.email,
-      subject: `${newUser.username || newUser.email} joined ${project.name}`,
+      subject: `${safeNewUserName} joined ${safeProjectName}`,
       html,
       text,
     });
@@ -281,13 +323,22 @@ Role: ${invitation.role}
  * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
  */
 const sendInvitationDeclinedEmail = async (invitation, project, inviter) => {
+  // Check if email is enabled
+  if (!isEmailEnabled()) {
+    return { success: false, error: 'Email service not configured', skipped: true };
+  }
+
+  // Sanitize all user-provided content
+  const safeProjectName = escapeHtml(project.name);
+  const safeEmail = escapeHtml(invitation.email);
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Invitation Declined - ${project.name}</title>
+      <title>Invitation Declined - ${safeProjectName}</title>
     </head>
     <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
       <table width="100%" cellpadding="0" cellspacing="0" style="padding: 40px 20px;">
@@ -307,7 +358,7 @@ const sendInvitationDeclinedEmail = async (invitation, project, inviter) => {
               <tr>
                 <td style="padding: 20px 40px;">
                   <p style="margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-                    Your invitation to <strong style="color: #1a1a2e;">${invitation.email}</strong> to join <strong style="color: #6366f1;">${project.name}</strong> was declined.
+                    Your invitation to <strong style="color: #1a1a2e;">${safeEmail}</strong> to join <strong style="color: #6366f1;">${safeProjectName}</strong> was declined.
                   </p>
                 </td>
               </tr>
@@ -333,7 +384,7 @@ const sendInvitationDeclinedEmail = async (invitation, project, inviter) => {
   const text = `
 Invitation Declined
 
-Your invitation to ${invitation.email} to join "${project.name}" was declined.
+Your invitation to ${safeEmail} to join "${safeProjectName}" was declined.
 
 © ${new Date().getFullYear()} BoardPaps. All rights reserved.
   `;
@@ -342,7 +393,7 @@ Your invitation to ${invitation.email} to join "${project.name}" was declined.
     const { data, error } = await resend.emails.send({
       from: EMAIL_CONFIG.from,
       to: inviter.email,
-      subject: `Invitation to ${project.name} was declined`,
+      subject: `Invitation to ${safeProjectName} was declined`,
       html,
       text,
     });
@@ -374,4 +425,5 @@ module.exports = {
   sendInvitationEmail,
   sendInvitationAcceptedEmail,
   sendInvitationDeclinedEmail,
+  isEmailEnabled,
 };
