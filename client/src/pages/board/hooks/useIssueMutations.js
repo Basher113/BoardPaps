@@ -28,10 +28,10 @@ const useIssueMutations = ({ selectedIssue } = {}) => {
   const activeProjectId = useSelector(selectActiveProjectId);
   const deleteIssueId = useSelector(selectDeleteIssueId);
 
-  // Mutations
-  const [deleteIssue] = useDeleteIssueMutation();
-  const [createIssue] = useCreateIssueMutation();
-  const [updateIssue] = useUpdateIssueMutation();
+  // Mutations with loading states
+  const [deleteIssue, { isLoading: isDeleting }] = useDeleteIssueMutation();
+  const [createIssue, { isLoading: isCreating }] = useCreateIssueMutation();
+  const [updateIssue, { isLoading: isUpdating }] = useUpdateIssueMutation();
 
   /**
    * Delete the currently selected issue
@@ -122,6 +122,10 @@ const useIssueMutations = ({ selectedIssue } = {}) => {
     handleCloseDeleteModal,
     handleCloseCreateModal,
     handleCloseEditModal,
+    // Loading states
+    isCreating,
+    isUpdating,
+    isDeleting,
   };
 };
 

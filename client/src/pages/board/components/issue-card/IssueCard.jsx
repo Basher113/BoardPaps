@@ -49,7 +49,7 @@ const IssueCard = ({
     isDragging: isSortableDragging,
   } = useSortable({ 
     id: issue?.id || 'placeholder',
-    disabled: !currentUserId || !issue?.id, // Disable drag if not logged in or no issue
+    disabled: !currentUserId || !issue?.id || !canEdit, // Disable drag if not logged in or no issue
   });
 
   const style = {

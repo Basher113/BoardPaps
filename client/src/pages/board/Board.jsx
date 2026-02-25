@@ -327,6 +327,7 @@ const Board = () => {
         projectKey={project?.key}
         onSubmit={mutations.handleCreateIssue}
         onClose={mutations.handleCloseCreateModal}
+        isLoading={mutations.isCreating}
       />
 
       {/* Edit Issue Drawer */}
@@ -338,6 +339,7 @@ const Board = () => {
         projectKey={project?.key}
         onSubmit={mutations.handleUpdateIssue}
         onClose={mutations.handleCloseEditModal}
+        isLoading={mutations.isUpdating}
       />
 
       {/* Issue Detail Modal */}
