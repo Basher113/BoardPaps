@@ -198,6 +198,8 @@ const IssueDrawerForm = ({
                   <option value="BUG">BUG</option>
                   <option value="STORY">STORY</option>
                   <option value="EPIC">EPIC</option>
+                  <option value="FEATURE">FEATURE</option>
+                  <option value="IMPROVEMENT">IMPROVEMENT</option>
                 </SelectCustom>
               </InputGroup>
 

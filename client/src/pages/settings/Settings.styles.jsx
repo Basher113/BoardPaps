@@ -13,10 +13,9 @@ const shimmer = keyframes`
 
 export const SettingsContainer = styled.div`
   width: 100%;
-  max-width: 1440px;
-  padding: 3rem 3rem;
   animation: ${fadeIn} 0.4s ease-out;
   margin: 0 auto;
+  padding: 2rem 2.5rem 0;
   
 `;
 

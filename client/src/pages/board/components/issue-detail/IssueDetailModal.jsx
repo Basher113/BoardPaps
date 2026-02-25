@@ -157,7 +157,7 @@ const IssueDetailModal = ({ isOpen, onClose, issue, projectId }) => {
         {/* Header */}
         <DrawerHeader>
           <HeaderTop>
-            <IssueKey>{issue.key || 'BP-0000'}</IssueKey>
+            <IssueKey>{issue.issueKey || 'BP-0000'}</IssueKey>
             <CloseButton onClick={onClose}>
               <X size={20} />
             </CloseButton>

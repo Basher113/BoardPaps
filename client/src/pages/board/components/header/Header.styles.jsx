@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 export const HeaderContainer = styled.header`
-  padding: 1.25rem 2rem;
+  padding: 2rem 2.5rem 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -54,15 +54,15 @@ export const HeaderTitleWrapper = styled.div`
 `;
 
 export const BoardTitle = styled.h1`
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
   color: #18181b;
   margin: 0;
   letter-spacing: -0.025em;
 `;
 
 export const ProjectSubtitle = styled.p`
-  font-size: 0.75rem;
+  font-size: 1rem;
   color: #71717a;
   margin: 0;
 `;

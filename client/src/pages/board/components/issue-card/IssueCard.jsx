@@ -186,8 +186,8 @@ const IssueCard = ({
         <Tag>{issue.type || 'Task'}</Tag>
         {issue.priority && (
           <Tag style={{ 
-            color: issue.priority === 'HIGH' || issue.priority === 'URGENT' ? '#ff4444' : '#71717a',
-            fontWeight: issue.priority === 'HIGH' || issue.priority === 'URGENT' ? 600 : 500
+            color: issue.priority === 'HIGH' || issue.priority === 'CRITICAL' ? '#ff4444' : '#71717a',
+            fontWeight: issue.priority === 'HIGH' || issue.priority === 'CRITICAL' ? 600 : 500
           }}>
             {issue.priority}
           </Tag>

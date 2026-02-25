@@ -148,7 +148,7 @@ const CreateProjectDrawer = ({ isOpen, onClose }) => {
                   value={displayKey}
                   onChange={handleKeyChange}
                   placeholder="PROJ"
-                  maxLength={10}
+                  maxLength={6}
                   disabled={isCreating}
                 />
                 {!isKeyManuallyEdited && displayKey && (

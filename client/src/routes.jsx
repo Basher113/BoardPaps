@@ -11,6 +11,7 @@ import Calendar from "./pages/calendar/Calendar"
 import ProtectedRoute from "./ProtectedRoutes";
 import AuthLayout from "./pages/auth/AuthLayout"
 import RouteErrorBoundary from "./components/error-boundary/RouteErrorBoundary"
+import ErrorPage from "./components/error-boundary/ErrorPage"
 
 // Email verification page handled by Clerk
 
@@ -18,6 +19,7 @@ export const routes = [
   {
     path: "auth",
     element: <AuthLayout />,
+    errorElement: <ErrorPage />,
     children: [
       {
         path: "sign-in/*",
@@ -32,6 +34,7 @@ export const routes = [
   {
     path: "/",
     element: <Root />,
+    errorElement: <ErrorPage />,
     children: [
       {
         path: "dashboard",
@@ -107,3 +110,4 @@ export const routes = [
   },
   
 ]
+
