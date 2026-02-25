@@ -1,7 +1,4 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { getToken } from '@clerk/clerk-react';
-import logger from '../utils/logger';
-
 /**
  * Base API Slice Configuration
  * 
@@ -27,15 +24,13 @@ const baseQuery = fetchBaseQuery({
   prepareHeaders: async (headers) => {
     // Get the session token from Clerk and add it to the Authorization header
     // This is required for cross-domain requests (Vercel frontend -> Railway backend)
-    try {
-      const token = await getToken();
+    if (window.Clerk && window.Clerk.session) {
+      // Get the latest Clerk token for your backend
+      const token = await window.Clerk.session.getToken();
+      
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
-    } catch (error) {
-      // Token might not be available if user is not signed in
-      // Using logger.warn which only logs in development
-      logger.warn('Could not get Clerk token:', error);
     }
     return headers;
   },
