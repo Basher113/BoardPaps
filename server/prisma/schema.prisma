@@ -30,6 +30,8 @@ enum IssueType {
   BUG
   STORY
   EPIC
+  FEATURE
+  IMPROVEMENT
 }
 
 enum ProjectRole {

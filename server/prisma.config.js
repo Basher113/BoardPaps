@@ -3,12 +3,24 @@
 require("dotenv/config");
 import { defineConfig } from "prisma/config";
 
+// Select database URL based on environment (same logic as lib/prisma.js)
+const getConnectionString = () => {
+  if (process.env.NODE_ENV === 'test') {
+    return process.env.TEST_DATABASE_URL;
+  }
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.DATABASE_URL_PROD || process.env.DATABASE_URL;
+  }
+  // Development environment
+  return process.env.DATABASE_URL_DEV || process.env.DATABASE_URL;
+};
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: getConnectionString(),
   },
 });

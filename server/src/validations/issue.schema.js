@@ -3,8 +3,8 @@ const { sanitizeText } = require('../utils/sanitize');
 
 // ==================== ENUMS ====================
 
-const issueTypeEnum = z.enum(['TASK', 'BUG', 'STORY', 'EPIC'], {
-  errorMap: () => ({ message: 'Valid issue type is required (TASK, BUG, STORY, EPIC)' })
+const issueTypeEnum = z.enum(['TASK', 'BUG', 'STORY', 'EPIC', 'FEATURE', 'IMPROVEMENT'], {
+  errorMap: () => ({ message: 'Valid issue type is required (TASK, BUG, STORY, EPIC, FEATURE, IMPROVEMENT)' })
 });
 
 const issuePriorityEnum = z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'], {

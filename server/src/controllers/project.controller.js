@@ -53,6 +53,14 @@ const createProject = async (req, res) => {
     return createdResponse(res, project, 'Project created successfully');
   } catch (error) {
     logError("Create project error", error);
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        message: `Project key "${req.body.key}" is already taken. Please choose a different key.`,
+        error: 'DUPLICATE_KEY'
+      });
+    }
+    
     return errorResponse(res, "Failed to create project");
   }
 };

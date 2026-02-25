@@ -8,8 +8,8 @@ const { sanitizeText } = require("../utils/sanitize");
  * Includes XSS sanitization for all text fields.
  */
 
-// Project key must be 2-5 uppercase letters only
-const projectKeyRegex = /^[A-Z0-9]{2,5}$/;
+// Project key must be 2-6 uppercase letters and numbers only
+const projectKeyRegex = /^[A-Z0-9]{2,6}$/;
 
 /**
  * Schema for creating a new project
@@ -21,7 +21,7 @@ const createProjectSchema = z.object({
     .transform((val) => sanitizeText(val)),
   
   key: z.string()
-    .regex(projectKeyRegex, "Project key must be 2-5 uppercase letters (A-Z) and numbers only.")
+    .regex(projectKeyRegex, "Project key must be 2-6 uppercase letters (A-Z) and numbers only.")
     .transform((val) => val.toUpperCase().trim()),
   
   description: z.string()
@@ -42,7 +42,7 @@ const updateProjectSchema = z.object({
     .optional(),
   
   key: z.string()
-    .regex(projectKeyRegex, "Project key must be 2-5 uppercase letters (A-Z)")
+    .regex(projectKeyRegex, "Project key must be 2-6 uppercase letters (A-Z) and numbers only.")
     .transform((val) => val.toUpperCase().trim())
     .optional(),
   
