@@ -1,6 +1,23 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import { GripVertical, Plus, X, Check } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   SectionCard,
   SectionHeader,
@@ -26,6 +43,117 @@ import {
   useSyncColumnsMutation,
 } from "../../../../reducers/slices/column/column.apiSlice";
 
+// Helper function to get unique key for column
+const getColumnKey = (column) => column.id || column.tempId;
+
+// SortableColumn component wrapping each column for dnd-kit
+const SortableColumn = ({ 
+  column, 
+  canManageSettings, 
+  getIssueCountBadge, 
+  editingColumnId, 
+  editingColumnName, 
+  setEditingColumnId, 
+  setEditingColumnName, 
+  handleUpdateColumn, 
+  cancelEditing, 
+  handleDeleteColumn 
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: getColumnKey(column), disabled: !canManageSettings });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+  };
+
+  return (
+    <ColumnItem
+      ref={setNodeRef}
+      style={style}
+      $isDragging={isDragging}
+      $canEdit={canManageSettings}
+    >
+      <DragHandle $disabled={!canManageSettings} {...attributes} {...listeners}>
+        <GripVertical size={18} />
+      </DragHandle>
+
+      {editingColumnId === getColumnKey(column) ? (
+        <>
+          <NewColumnInput
+            value={editingColumnName}
+            onChange={(e) => setEditingColumnName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleUpdateColumn(getColumnKey(column));
+              if (e.key === "Escape") cancelEditing();
+            }}
+            autoFocus
+          />
+          <FormButton $primary onClick={() => handleUpdateColumn(getColumnKey(column))}>
+            <Check size={14} />
+          </FormButton>
+          <FormButton onClick={cancelEditing}>
+            <X size={14} />
+          </FormButton>
+        </>
+      ) : (
+        <>
+          <ColumnNameInput
+            value={column.name}
+            readOnly
+            onClick={() => {
+              if (canManageSettings) {
+                setEditingColumnId(getColumnKey(column));
+                setEditingColumnName(column.name);
+              }
+            }}
+            title={canManageSettings ? "Click to edit" : ""}
+          />
+          <ColumnBadge>{getIssueCountBadge(column)}</ColumnBadge>
+          {canManageSettings && (
+            <ActionButton
+              onClick={() => handleDeleteColumn(column)}
+              title="Delete column"
+            >
+              <X size={16} />
+            </ActionButton>
+          )}
+        </>
+      )}
+    </ColumnItem>
+  );
+};
+
+// DragOverlayColumn for visual feedback while dragging
+const DragOverlayColumn = ({ column, getIssueCountBadge }) => {
+  if (!column) return null;
+  
+  return (
+    <ColumnItem
+      $isDragging={true}
+      $canEdit={true}
+      style={{
+        opacity: 0.8,
+        boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
+      }}
+    >
+      <DragHandle $disabled={false}>
+        <GripVertical size={18} />
+      </DragHandle>
+      <ColumnNameInput value={column.name} readOnly />
+      <ColumnBadge>{getIssueCountBadge(column)}</ColumnBadge>
+    </ColumnItem>
+  );
+};
+
 const WorkflowSettings = ({ project, canManageSettings }) => {
   const [draftColumns, setDraftColumns] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
@@ -33,7 +161,7 @@ const WorkflowSettings = ({ project, canManageSettings }) => {
   const [newColumnName, setNewColumnName] = useState("");
   const [editingColumnId, setEditingColumnId] = useState(null);
   const [editingColumnName, setEditingColumnName] = useState("");
-  const [draggedColumnId, setDraggedColumnId] = useState(null);
+  const [activeColumnId, setActiveColumnId] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, column: null });
   const [discardModal, setDiscardModal] = useState(false);
 
@@ -44,6 +172,29 @@ const WorkflowSettings = ({ project, canManageSettings }) => {
   
   // Initialize draft columns from project columns
   const columns = hasChanges ? draftColumns : projectColumns;
+
+  // ==================== DND-KIT SETUP ====================
+
+  // Configure sensors for different input methods (mouse, touch, keyboard)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before drag starts
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200, // 200ms hold before drag starts (mobile-friendly)
+        tolerance: 8, // Allow 8px movement during hold
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Track active column for DragOverlay
+  const activeColumn = columns.find(c => getColumnKey(c) === activeColumnId);
 
   // Warn user about unsaved changes when leaving
   useEffect(() => {
@@ -142,39 +293,37 @@ const WorkflowSettings = ({ project, canManageSettings }) => {
     setDeleteModal({ isOpen: false, column: null });
   };
 
-  const handleDragStart = useCallback((e, columnId) => {
-    if (!canManageSettings) return;
-    setDraggedColumnId(columnId);
-    e.dataTransfer.effectAllowed = "move";
-  }, [canManageSettings]);
+  // ==================== DND-KIT HANDLERS ====================
 
-  const handleDragOver = useCallback((e) => {
-    e.preventDefault();
+  // Handle drag start
+  const handleDragStart = useCallback((event) => {
+    const { active } = event;
+    setActiveColumnId(active.id);
   }, []);
 
-  const handleDragEnd = useCallback(() => {
-    setDraggedColumnId(null);
-  }, []);
+  // Handle drag end - reorder columns
+  const handleDragEnd = useCallback((event) => {
+    const { active, over } = event;
+    
+    setActiveColumnId(null);
 
-  const handleDrop = useCallback((e, targetColumnId) => {
-    e.preventDefault();
+    // If no drop target, cancel
+    if (!over) return;
 
-    if (!draggedColumnId || draggedColumnId === targetColumnId) {
-      setDraggedColumnId(null);
-      return;
-    }
+    const activeId = active.id;
+    const overId = over.id;
+
+    // If dropped on same position, no action needed
+    if (activeId === overId) return;
 
     // Initialize draft if needed
     const currentColumns = hasChanges ? draftColumns : projectColumns;
     
     const newOrder = [...currentColumns];
-    const draggedIndex = newOrder.findIndex(c => (c.id || c.tempId) === draggedColumnId);
-    const targetIndex = newOrder.findIndex(c => (c.id || c.tempId) === targetColumnId);
+    const draggedIndex = newOrder.findIndex(c => getColumnKey(c) === activeId);
+    const targetIndex = newOrder.findIndex(c => getColumnKey(c) === overId);
 
-    if (draggedIndex === -1 || targetIndex === -1) {
-      setDraggedColumnId(null);
-      return;
-    }
+    if (draggedIndex === -1 || targetIndex === -1) return;
 
     const [draggedItem] = newOrder.splice(draggedIndex, 1);
     newOrder.splice(targetIndex, 0, draggedItem);
@@ -186,8 +335,7 @@ const WorkflowSettings = ({ project, canManageSettings }) => {
 
     setDraftColumns(updated);
     setHasChanges(true);
-    setDraggedColumnId(null);
-  }, [draftColumns, draggedColumnId, hasChanges, projectColumns]);
+  }, [draftColumns, hasChanges, projectColumns]);
 
   const handleSaveChanges = async () => {
     const payload = draftColumns.map((c, index) => ({
@@ -230,7 +378,8 @@ const WorkflowSettings = ({ project, canManageSettings }) => {
     setEditingColumnName("");
   };
 
-  const getColumnKey = (column) => column.id || column.tempId;
+  // Get column IDs for SortableContext
+  const columnIds = useMemo(() => columns.map(c => getColumnKey(c)), [columns]);
 
   return (
     <SectionCard>
@@ -245,67 +394,43 @@ const WorkflowSettings = ({ project, canManageSettings }) => {
         {columns.length === 0 ? (
           <EmptyState>No columns yet. Add your first column to get started.</EmptyState>
         ) : (
-          <ColumnList>
-            {columns.map((column) => (
-              <ColumnItem
-                key={getColumnKey(column)}
-                $isDragging={draggedColumnId === getColumnKey(column)}
-                $canEdit={canManageSettings}
-                draggable={canManageSettings}
-                onDragStart={(e) => handleDragStart(e, getColumnKey(column))}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, getColumnKey(column))}
-                onDragEnd={handleDragEnd}
-              >
-                <DragHandle $disabled={!canManageSettings}>
-                  <GripVertical size={18} />
-                </DragHandle>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveColumnId(null)}
+          >
+            <SortableContext 
+              items={columnIds} 
+              strategy={verticalListSortingStrategy}
+            >
+              <ColumnList>
+                {columns.map((column) => (
+                  <SortableColumn
+                    key={getColumnKey(column)}
+                    column={column}
+                    canManageSettings={canManageSettings}
+                    getIssueCountBadge={getIssueCountBadge}
+                    editingColumnId={editingColumnId}
+                    editingColumnName={editingColumnName}
+                    setEditingColumnId={setEditingColumnId}
+                    setEditingColumnName={setEditingColumnName}
+                    handleUpdateColumn={handleUpdateColumn}
+                    cancelEditing={cancelEditing}
+                    handleDeleteColumn={handleDeleteColumn}
+                  />
+                ))}
+              </ColumnList>
+            </SortableContext>
 
-                {editingColumnId === getColumnKey(column) ? (
-                  <>
-                    <NewColumnInput
-                      value={editingColumnName}
-                      onChange={(e) => setEditingColumnName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleUpdateColumn(getColumnKey(column));
-                        if (e.key === "Escape") cancelEditing();
-                      }}
-                      autoFocus
-                    />
-                    <FormButton $primary onClick={() => handleUpdateColumn(getColumnKey(column))}>
-                      <Check size={14} />
-                    </FormButton>
-                    <FormButton onClick={cancelEditing}>
-                      <X size={14} />
-                    </FormButton>
-                  </>
-                ) : (
-                  <>
-                    <ColumnNameInput
-                      value={column.name}
-                      readOnly
-                      onClick={() => {
-                        if (canManageSettings) {
-                          setEditingColumnId(getColumnKey(column));
-                          setEditingColumnName(column.name);
-                        }
-                      }}
-                      title={canManageSettings ? "Click to edit" : ""}
-                    />
-                    <ColumnBadge>{getIssueCountBadge(column)}</ColumnBadge>
-                    {canManageSettings && (
-                      <ActionButton
-                        onClick={() => handleDeleteColumn(column)}
-                        title="Delete column"
-                      >
-                        <X size={16} />
-                      </ActionButton>
-                    )}
-                  </>
-                )}
-              </ColumnItem>
-            ))}
-          </ColumnList>
+            <DragOverlay>
+              <DragOverlayColumn 
+                column={activeColumn} 
+                getIssueCountBadge={getIssueCountBadge}
+              />
+            </DragOverlay>
+          </DndContext>
         )}
 
         {canManageSettings && (
