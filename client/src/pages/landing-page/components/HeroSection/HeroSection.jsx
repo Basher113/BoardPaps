@@ -21,7 +21,7 @@ export default function HeroSection() {
           <HeroTitle>
             Organize Work
             <br />
-            Without the <AnimatedWord>Chaos.</AnimatedWord>
+            Without the <AnimatedWord>Noise.</AnimatedWord>
           </HeroTitle>
 
           <HeroText>
