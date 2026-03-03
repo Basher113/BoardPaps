@@ -1,12 +1,10 @@
 const { z } = require('zod');
-const { sanitizeText } = require('../utils/sanitize');
 
 const createColumnSchema = z.object({
   name: z.string()
     .trim()
     .min(1, 'Column name is required')
-    .max(50, 'Column name must be 50 characters or less')
-    .transform((val) => sanitizeText(val)),
+    .max(50, 'Column name must be 50 characters or less'),
   position: z.number()
     .int('Position must be an integer')
     .nonnegative('Position must be a non-negative integer')
@@ -19,7 +17,6 @@ const updateColumnSchema = z.object({
     .trim()
     .min(1, 'Column name cannot be empty')
     .max(50, 'Column name must be 50 characters or less')
-    .transform((val) => sanitizeText(val))
     .optional(),
   position: z.number()
     .int('Position must be an integer')

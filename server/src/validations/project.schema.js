@@ -1,11 +1,9 @@
 const { z } = require("zod");
-const { sanitizeText } = require("../utils/sanitize");
 
 /**
  * Project Validation Schemas
  * 
  * Zod schemas for validating project-related input data.
- * Includes XSS sanitization for all text fields.
  */
 
 // Project key must be 2-6 uppercase letters and numbers only
@@ -17,8 +15,7 @@ const projectKeyRegex = /^[A-Z0-9]{2,6}$/;
 const createProjectSchema = z.object({
   name: z.string()
     .min(1, "Project name is required")
-    .max(100, "Project name must be 100 characters or less")
-    .transform((val) => sanitizeText(val)),
+    .max(100, "Project name must be 100 characters or less"),
   
   key: z.string()
     .regex(projectKeyRegex, "Project key must be 2-6 uppercase letters (A-Z) and numbers only.")
@@ -26,7 +23,6 @@ const createProjectSchema = z.object({
   
   description: z.string()
     .max(500, "Description must be 500 characters or less")
-    .transform((val) => val ? sanitizeText(val) : null)
     .optional()
     .nullable(),
 });
@@ -38,7 +34,6 @@ const updateProjectSchema = z.object({
   name: z.string()
     .min(1, "Project name is required")
     .max(100, "Project name must be 100 characters or less")
-    .transform((val) => sanitizeText(val))
     .optional(),
   
   key: z.string()
@@ -48,7 +43,6 @@ const updateProjectSchema = z.object({
   
   description: z.string()
     .max(500, "Description must be 500 characters or less")
-    .transform((val) => val ? sanitizeText(val) : null)
     .optional()
     .nullable(),
 });
