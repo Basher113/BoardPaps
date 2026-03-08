@@ -80,7 +80,7 @@ const IssueDrawerForm = ({
       newErrors.description = 'Description must be 5000 characters or less';
     }
 
-    if (!['TASK', 'BUG', 'STORY', 'EPIC'].includes(data.type)) {
+    if (!['TASK', 'BUG', 'STORY', 'EPIC', "FEATURE", "IMPROVEMENT"].includes(data.type)) {
       newErrors.type = 'Invalid issue type';
     }
 
@@ -201,6 +201,9 @@ const IssueDrawerForm = ({
                   <option value="FEATURE">FEATURE</option>
                   <option value="IMPROVEMENT">IMPROVEMENT</option>
                 </SelectCustom>
+                {errors.type && (
+                  <ErrorMessage>{errors.type}</ErrorMessage>
+                )}
               </InputGroup>
 
               <InputGroup>
